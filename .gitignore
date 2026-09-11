@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# C# / Visual Studio
+**/.vs/
+**/bin/
+**/obj/
