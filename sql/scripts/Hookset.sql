@@ -66,6 +66,7 @@ CREATE TABLE dbo.FlySizes (
 CREATE TABLE dbo.Water_Bodies 
 (
 	Water_Body_ID INT IDENTITY(1,1) PRIMARY KEY,
+	FWP_LLID INT,
 	Water_Body_Name NVARCHAR(250) NOT NULL,
 );
 
@@ -73,7 +74,7 @@ CREATE TABLE dbo.Water_Bodies
 CREATE TABLE dbo.Fishes
 (
 	Fish_ID INT IDENTITY(1,1) PRIMARY KEY,
-	Fish_Name NVARCHAR(200),
+	Fish_Family NVARCHAR(200),
 	Fish_Species NVARCHAR(200),
 );
 
