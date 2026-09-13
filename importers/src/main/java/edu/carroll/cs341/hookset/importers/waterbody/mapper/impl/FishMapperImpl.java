@@ -13,6 +13,10 @@ public class FishMapperImpl implements FishMapper {
            return null;
        }
        Fish fish = new Fish();
-       return null;
+       fish.setFwpSpeciesId(fishDto.getFwpSpeciesId());
+       fish.setFishFamily(fishDto.getFishFamily());
+       fish.setFishSpecies(fishDto.getFishSpecies());
+
+       return fish;
     }
 }
