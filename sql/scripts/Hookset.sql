@@ -74,6 +74,7 @@ CREATE TABLE dbo.Water_Bodies
 CREATE TABLE dbo.Fishes
 (
 	Fish_ID INT IDENTITY(1,1) PRIMARY KEY,
+	FWP_Species_ID INT,
 	Fish_Family NVARCHAR(200),
 	Fish_Species NVARCHAR(200),
 );
