@@ -3,9 +3,9 @@ package importers.waterbody.dto;
 public class WaterBodyDto {
     private String waterBodyName;
 
-    private int fishWildLifeLLID;
+    private String fishWildLifeLLID;
 
-    public int getFishWildLifeLLID() {
+    public String getFishWildLifeLLID() {
         return fishWildLifeLLID;
     }
     public String getWaterBodyName() {
@@ -15,7 +15,7 @@ public class WaterBodyDto {
         this.waterBodyName = waterBodyName;
     }
 
-    public void setFishWildLifeLLID(int fishWildLifeLLID) {
+    public void setFishWildLifeLLID(String fishWildLifeLLID) {
         this.fishWildLifeLLID = fishWildLifeLLID;
     }
 }

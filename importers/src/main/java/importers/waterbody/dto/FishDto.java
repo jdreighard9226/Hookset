@@ -1,11 +1,11 @@
 package importers.waterbody.dto;
 
 public class FishDto {
-    private int fwpSpeciesId;
+    private String fwpSpeciesId;
     private String fishFamily;
     private String fishSpecies;
 
-    public int getFwpSpeciesId() {
+    public String getFwpSpeciesId() {
         return fwpSpeciesId;
     }
     public String getFishFamily() {
@@ -16,7 +16,7 @@ public class FishDto {
         return fishSpecies;
     }
 
-    public void setFwpSpeciesId(int fwpSpeciesId) {
+    public void setFwpSpeciesId(String fwpSpeciesId) {
         this.fwpSpeciesId = fwpSpeciesId;
     }
 
