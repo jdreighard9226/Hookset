@@ -1,4 +1,8 @@
 package jpa.repo;
 
-public interface WaterBodyRepo {
+import org.springframework.data.jpa.repository.JpaRepository;
+import shared.jpa.entity.WaterBody;
+
+public interface WaterBodyRepo extends JpaRepository<WaterBody, Integer> {
+
 }

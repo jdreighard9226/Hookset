@@ -5,24 +5,63 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Configures authentication and authorization rules for the Hookset web application.
+ *
+ * <p>This configuration determines which pages can be accessed without authentication
+ * and requires users to authenticate before accessing all other pages. It also
+ * configures Hookset to use a custom login page.</p>
+ *
+ * <p><b>Sources Used:</b></p>
+ * <ul>
+ *   <li>Spring Framework - Java-based Container Configuration:
+ *   https://docs.spring.io/spring-framework/reference/core/beans/java.html</li>
+ *   <li>Spring Security - Authorize HTTP Requests:
+ *   https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html</li>
+ *   <li>Spring Security - Form Login:
+ *   https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html</li>
+ * </ul>
+ */
 @Configuration
 public class SecurityConfig {
+
+    /**
+     * Creates the security filter chain used to control access to Hookset pages
+     * and configure form-based authentication.
+     *
+     * <p>The home, login, and signup pages are publicly accessible. All other
+     * requests require the user to be authenticated. The login form is served
+     * from the /login page and authentication requests are processed through
+     * the /login URL.</p>
+     *
+     * @param http the HttpSecurity object used to configure web security
+     * @return the configured security filter chain
+     * @throws Exception if an error occurs while building the security configuration
+     *
+     * Modified from spring SecurityFilterSecurity Example on page: https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html
+     */
     @Bean
     public SecurityFilterChain securedFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .authorizeHttpRequests(auth -> auth
+                        // Allow users to access public pages without logging in.
                         .requestMatchers("/", "/login", "/signup").permitAll()
-                        .anyRequest().authenticated()
 
+                        // Require authentication for every other request.
+                        .anyRequest().authenticated()
                 )
 
                 .formLogin((formLogin) -> formLogin
+                        // Use Hookset's custom login page.
                         .loginPage("/login")
+
+                        // Process submitted login requests through the /login URL.
                         .loginProcessingUrl("/login")
+
+                        // Allow all users to access the resources needed for login.
                         .permitAll()
                 );
-
 
         return http.build();
     }

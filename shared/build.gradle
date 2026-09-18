@@ -1,4 +1,5 @@
 plugins {
+    // see the 'shared' package as a Java Library module, sinced shared package only holds reusable code
     id 'java-library'
 }
 
