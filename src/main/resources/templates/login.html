@@ -8,11 +8,15 @@
 <center><h1>Login</h1></center>
 <form action="#" th:action="@{/login}" th:object="${loginForm}" method="post">
     <span th:if="${#fields.hasGlobalErrors()}" th:errors="*{global}">Global error</span><br/>  <!-- Add this line -->
-    <input type="text" th:field="*{username}" placeholder="Username"/>
+    <input type="text" th:field="*{username}" placeholder="Username" required minlength="6"/>
     <span th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Username error</span><br/>
-    <input type="password" th:field="*{password}" placeholder="Password"/>
+    <input type="password" th:field="*{password}" placeholder="Password" required minlength="6"/>
     <span th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Password error</span><br/>
     <button type="submit">Login</button>
+
+    <div th:if="${param.error}">
+        Invalid username or password.
+    </div>
 </form>
 </body>
 </html>
