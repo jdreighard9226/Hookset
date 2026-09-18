@@ -10,7 +10,7 @@ public class WaterBody {
     private Integer waterBodyId;
 
     @Column(name = "fwpLlid")
-    private Integer fishWildLifeLLID;
+    private String fishWildLifeLLID;
 
     @Column(name = "waterBodyName")
     private String waterBodyName;
@@ -19,7 +19,7 @@ public class WaterBody {
         return this.waterBodyId;
     }
 
-    public Integer getFishWildLifeLLID() {
+    public String getFishWildLifeLLID() {
         return this.fishWildLifeLLID;
     }
 
@@ -27,7 +27,7 @@ public class WaterBody {
         return this.waterBodyName;
     }
 
-    public void setFishWildLifeLLID(Integer fishWildLifeLLID) {
+    public void setFishWildLifeLLID(String fishWildLifeLLID) {
         this.fishWildLifeLLID = fishWildLifeLLID;
     }
 

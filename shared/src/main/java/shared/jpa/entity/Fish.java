@@ -11,7 +11,7 @@ public class Fish {
     private Integer fishId;
 
     @Column(name = "fwpSpeciesId")
-    private Integer fwpSpeciesId;
+    private String fwpSpeciesId;
 
     @Column(name = "fishFamily")
     private String fishFamily;
@@ -23,7 +23,7 @@ public class Fish {
         return fishId;
     }
 
-    public Integer getFwpSpeciesId() {
+    public String getFwpSpeciesId() {
         return fwpSpeciesId;
     }
 
@@ -35,7 +35,7 @@ public class Fish {
         return fishSpecies;
     }
 
-    public void setFwpSpeciesId(Integer fwpSpeciesId) {
+    public void setFwpSpeciesId(String fwpSpeciesId) {
         this.fwpSpeciesId = fwpSpeciesId;
     }
 
