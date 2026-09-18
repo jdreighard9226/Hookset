@@ -1,4 +1,4 @@
-package edu.carroll.cs341.hookset.importers.waterbody.dto;
+package importers.waterbody.dto;
 
 public class WaterBodyDto {
     private String waterBodyName;

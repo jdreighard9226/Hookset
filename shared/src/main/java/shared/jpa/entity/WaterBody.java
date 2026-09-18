@@ -1,4 +1,4 @@
-package edu.carroll.cs341.hookset.importers.jpa.entity;
+package shared.jpa.entity;
 
 import jakarta.persistence.*;
 
@@ -6,20 +6,20 @@ import jakarta.persistence.*;
 public class WaterBody {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Water_Body_ID")
-    private int waterBodyId;
+    @Column(name = "waterBodyId")
+    private Integer waterBodyId;
 
-    @Column(name = "FWP_LLID")
-    private int fishWildLifeLLID;
+    @Column(name = "fwpLlid")
+    private Integer fishWildLifeLLID;
 
-    @Column(name = "Water_Body_Name")
+    @Column(name = "waterBodyName")
     private String waterBodyName;
 
-    public int getWaterBodyId() {
+    public Integer getWaterBodyId() {
         return this.waterBodyId;
     }
 
-    public int getFishWildLifeLLID() {
+    public Integer getFishWildLifeLLID() {
         return this.fishWildLifeLLID;
     }
 
@@ -27,7 +27,7 @@ public class WaterBody {
         return this.waterBodyName;
     }
 
-    public void setFishWildLifeLLID(int fishWildLifeLLID) {
+    public void setFishWildLifeLLID(Integer fishWildLifeLLID) {
         this.fishWildLifeLLID = fishWildLifeLLID;
     }
 

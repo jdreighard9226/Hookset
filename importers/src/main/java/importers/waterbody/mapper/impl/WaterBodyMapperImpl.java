@@ -1,10 +1,8 @@
-package edu.carroll.cs341.hookset.importers.waterbody.mapper.impl;
+package importers.waterbody.mapper.impl;
 
-import edu.carroll.cs341.hookset.importers.jpa.entity.Fish;
-import edu.carroll.cs341.hookset.importers.jpa.entity.WaterBody;
-import edu.carroll.cs341.hookset.importers.waterbody.dto.FishDto;
-import edu.carroll.cs341.hookset.importers.waterbody.dto.WaterBodyDto;
-import edu.carroll.cs341.hookset.importers.waterbody.mapper.WaterBodyMapper;
+import shared.jpa.entity.WaterBody;
+import importers.waterbody.dto.WaterBodyDto;
+import importers.waterbody.mapper.WaterBodyMapper;
 
 public class WaterBodyMapperImpl implements WaterBodyMapper {
 
