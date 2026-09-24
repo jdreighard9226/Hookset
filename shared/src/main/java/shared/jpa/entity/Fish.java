@@ -10,13 +10,14 @@ import jakarta.persistence.*;
  * water bodies and catch records throughout Hookset.</p>
  */
 @Entity
+@Table(name = "Fish")
 public class Fish {
 
     /** The unique database identifier for the fish record. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "fishId")
-    private Integer fishId;
+    private Long fishId;
 
     /** The species identifier provided by Montana FWP. */
     @Column(name = "fwpSpeciesId")
@@ -35,7 +36,7 @@ public class Fish {
      *
      * @return the fish identifier
      */
-    public Integer getFishId() {
+    public Long getFishId() {
         return fishId;
     }
 

@@ -16,14 +16,14 @@ import jakarta.persistence.*;
  * </ul>
  */
 @Entity
-@Table(name = "users")
+@Table(name = "Users")
 public class User {
 
     /** The unique database identifier for the user. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "userId")
-    private Integer userId;
+    private Float userId;
 
     /** The username associated with the user account. */
     @Column(name = "username")
@@ -42,7 +42,7 @@ public class User {
      *
      * @return the user identifier
      */
-    public Integer getUserId() {
+    public Float getUserId() {
         return userId;
     }
 
