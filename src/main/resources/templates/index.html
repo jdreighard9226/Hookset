@@ -1,13 +1,18 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Welcome page</title>
-</head>
-<body>
-<p>Welcome to hookset!</p>
-<br/>
-<p><a href="/login">login</a> to continue!</p>
-<p><a href="/signup">signup</a> to create a new account!</p>
-</body>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Home page</title>
+    </head>
+    <body>
+        <main>
+            <p>Welcome to hookset!</p>
+            <br/>
+            <p><a href="/login">login</a> to continue!</p>
+            <p><a href="/signup">signup</a> to create a new account!</p>
+        </main>
+    </body>
 </html>
