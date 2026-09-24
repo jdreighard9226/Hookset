@@ -3,6 +3,8 @@ package edu.carroll.cs341.hookset.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -26,6 +28,16 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     /**
+     * Creates the password encoder used to hash user passwords.
+     *
+     * @return the BCrypt password encoder
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
      * Creates the security filter chain used to control access to Hookset pages
      * and configure form-based authentication.
      *
@@ -38,28 +50,29 @@ public class SecurityConfig {
      * @return the configured security filter chain
      * @throws Exception if an error occurs while building the security configuration
      *
-     * Modified from spring SecurityFilterSecurity Example on page: https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html
+     * Modified from Spring SecurityFilterSecurity example on page:
+     * https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html
      */
     @Bean
     public SecurityFilterChain securedFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .authorizeHttpRequests(auth -> auth
-                        // Allow users to access public pages without logging in.
-                        .requestMatchers("/", "/login", "/signup").permitAll()
+                        .requestMatchers(
+                                "/",
+                                "/login",
+                                "/signup",
+                                "/css/**",
+                                "/images/**",
+                                "/js/**"
+                        ).permitAll()
 
-                        // Require authentication for every other request.
                         .anyRequest().authenticated()
                 )
 
-                .formLogin((formLogin) -> formLogin
-                        // Use Hookset's custom login page.
+                .formLogin(formLogin -> formLogin
                         .loginPage("/login")
-
-                        // Process submitted login requests through the /login URL.
                         .loginProcessingUrl("/login")
-
-                        // Allow all users to access the resources needed for login.
                         .permitAll()
                 );
 
