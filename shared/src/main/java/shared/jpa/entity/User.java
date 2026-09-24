@@ -23,7 +23,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "userId")
-    private Float userId;
+    private long userId;
 
     /** The username associated with the user account. */
     @Column(name = "username")
@@ -42,7 +42,7 @@ public class User {
      *
      * @return the user identifier
      */
-    public Float getUserId() {
+    public long getUserId() {
         return userId;
     }
 

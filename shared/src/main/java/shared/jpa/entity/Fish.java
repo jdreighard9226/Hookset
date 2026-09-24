@@ -10,7 +10,7 @@ import jakarta.persistence.*;
  * water bodies and catch records throughout Hookset.</p>
  */
 @Entity
-@Table(name = "Fish")
+@Table(name = "Fishes")
 public class Fish {
 
     /** The unique database identifier for the fish record. */

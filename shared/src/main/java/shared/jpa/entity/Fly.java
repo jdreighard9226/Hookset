@@ -2,7 +2,8 @@ package shared.jpa.entity;
 
 import jakarta.persistence.*;
 
-import java.sql.Date;
+import java.time.Instant;
+
 
 @Entity
 @Table (name = "Flies")
@@ -22,10 +23,10 @@ public class Fly {
     private String color;
 
     @Column(name = "dateEntered")
-    private Date dateEntered;
+    private Instant dateEntered;
 
     @Column(name = "LastDateModified")
-    private Date lastDateModified;
+    private Instant lastDateModified;
 
     public Long getFlyId() {
         return flyId;
@@ -43,11 +44,11 @@ public class Fly {
         return color;
     }
 
-    public Date getDateEntered() {
+    public Instant getDateEntered() {
         return dateEntered;
     }
 
-    public Date getLastDateModified() {
+    public Instant getLastDateModified() {
         return lastDateModified;
     }
 
@@ -63,11 +64,11 @@ public class Fly {
         this.color = color;
     }
 
-    public void setDateEntered(Date dateEntered) {
+    public void setDateEntered(Instant dateEntered) {
         this.dateEntered = dateEntered;
     }
 
-    public void setLastDateModified(Date dateModified) {
+    public void setLastDateModified(Instant dateModified) {
         this.lastDateModified = dateModified;
     }
 }

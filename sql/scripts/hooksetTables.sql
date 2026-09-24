@@ -11,7 +11,7 @@ DROP TABLE IF EXISTS Users;
 
 
 CREATE TABLE Users (
-    userId INT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(20),
     hashPassword TEXT,
     isAdmin BOOLEAN
@@ -19,8 +19,8 @@ CREATE TABLE Users (
 
 
 CREATE TABLE Flies (
-    flyId INT AUTO_INCREMENT PRIMARY KEY,
-    userId INT NULL,
+    flyId BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT NULL,
     flyType VARCHAR(50) NULL,
     flyName VARCHAR(250),
     color VARCHAR(100),
@@ -35,7 +35,7 @@ CREATE TABLE Flies (
 
 
 CREATE TABLE FlyMaterials (
-    materialId INT AUTO_INCREMENT PRIMARY KEY,
+    materialId BIGINT AUTO_INCREMENT PRIMARY KEY,
     materialName VARCHAR(250),
     materialColor VARCHAR(100) NULL,
     materialType VARCHAR(100)
@@ -43,7 +43,7 @@ CREATE TABLE FlyMaterials (
 
 
 CREATE TABLE FlySizes (
-    flyId INT NOT NULL,
+    flyId BIGINT NOT NULL,
     size INT NOT NULL,
 
     CONSTRAINT PK_FlySizes
@@ -55,23 +55,23 @@ CREATE TABLE FlySizes (
 
 
 CREATE TABLE WaterBodies (
-    waterBodyId INT AUTO_INCREMENT PRIMARY KEY,
+    waterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
     fwpLlid VARCHAR(80),
     waterBodyName VARCHAR(250) NOT NULL
 );
 
 
 CREATE TABLE Fishes (
-    fishId INT AUTO_INCREMENT PRIMARY KEY,
-    fwpSpeciesId INT,
+    fishId BIGINT AUTO_INCREMENT PRIMARY KEY,
+    fwpSpeciesId VARCHAR(80),
     fishFamily VARCHAR(200),
     fishSpecies VARCHAR(200)
 );
 
 
 CREATE TABLE FishWaterBodies (
-    fishId INT NOT NULL,
-    waterBodyId INT NOT NULL,
+    fishId BIGINT NOT NULL,
+    waterBodyId BIGINT NOT NULL,
 
     CONSTRAINT PK_FishWaterBodies
         PRIMARY KEY (fishId, waterBodyId),

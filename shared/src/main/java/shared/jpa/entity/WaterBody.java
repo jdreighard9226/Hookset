@@ -9,14 +9,14 @@ import jakarta.persistence.*;
  * the name of the water body.</p>
  */
 @Entity
-@Table(name = "WaterBody")
+@Table(name = "WaterBodies")
 public class WaterBody {
 
     /** The unique database identifier for the water body. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "waterBodyId")
-    private Float waterBodyId;
+    private long waterBodyId;
 
     /** The LLID used by Montana FWP to identify the water body. */
     @Column(name = "fwpLlid")
@@ -31,7 +31,7 @@ public class WaterBody {
      *
      * @return the water body identifier
      */
-    public Float getWaterBodyId() {
+    public long getWaterBodyId() {
         return this.waterBodyId;
     }
 

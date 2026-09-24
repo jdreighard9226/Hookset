@@ -2,14 +2,17 @@ package shared.jpa.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "fishWaterBodies")
 public class FishWaterBody {
+    @Id
     @Column(name = "fishId")
     private long fishId;
 
+    @Id
     @Column(name = "waterBodyId")
     private long waterBodyId;
 
