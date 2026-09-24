@@ -1,0 +1,86 @@
+:root {
+    /* Raw palette */
+    --hookset-dark-green: #0F2524;
+    --hookset-green: #1F3232;
+    --hookset-medium-green: #344845;
+    --hookset-sage: #526765;
+
+    --hookset-cream: #FAF8F4;
+    --hookset-off-white: #F1EEE7;
+
+    --hookset-gold: #B98A4C;
+    --hookset-light-gold: #D1AA70;
+
+    --background-dark: var(--hookset-dark-green);
+    --background-light: var(--hookset-cream);
+    --background-secondary: var(--hookset-off-white);
+
+    --text-dark: var(--hookset-green);
+    --text-light: var(--hookset-cream);
+
+    --accent: var(--hookset-gold);
+    --accent-hover: var(--hookset-light-gold);
+}
+
+header {
+    background-color: var(--hookset-green);
+}
+
+body {
+    background-color: var(--hookset-cream);
+    color: var(--text-dark);
+}
+
+.logo-container {
+    width: 100%;
+    text-align: center;
+    padding: 1rem 0;
+    background-color: var(--hookset-dark-green);
+}
+
+.hookset-logo {
+    display: block;
+    width: 80%;
+    max-width: 1100px;
+    height: auto;
+    margin: 0 auto;
+}
+
+nav {
+    background-color: var(--hookset-green);
+    border-top: 1px solid var(--hookset-gold);
+    border-bottom: 1px solid var(--hookset-gold);
+    min-height: 60px;
+}
+
+.nav-link {
+    color: var(--hookset-cream);
+    margin: 0 1.5rem;
+}
+
+.nav-link:hover {
+    color: var(--hookset-light-gold);
+}
+.primary-button {
+    background-color: var(--hookset-gold);
+    border: 1px solid var(--hookset-gold);
+    color: var(--hookset-dark-green);
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.primary-button:hover {
+    background-color: var(--hookset-light-gold);
+    border-color: var(--hookset-light-gold);
+}
+
+.primary-button:active {
+    transform: translateY(1px);
+}
+
+.primary-button:focus {
+    outline: 2px solid var(--hookset-light-gold);
+    outline-offset: 2px;
+}
