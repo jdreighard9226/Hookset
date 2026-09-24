@@ -17,5 +17,5 @@ public interface WaterBodyMapper {
      * @param waterBodyDto the water body data to map
      * @return the mapped WaterBody entity
      */
-    public WaterBody mapToEntity(WaterBodyDto waterBodyDto);
+     WaterBody mapToEntity(WaterBodyDto waterBodyDto);
 }
