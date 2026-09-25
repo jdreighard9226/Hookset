@@ -1,12 +1,19 @@
 package importers.waterbody.service;
 
-import jpa.repo.WaterBodyRepo;
+import importers.waterbody.dto.WaterBodyAttributeDto;
+import importers.waterbody.dto.WaterBodyFeatureDto;
+import importers.waterbody.dto.WaterBodyResponseDto;
+import importers.waterbody.mapper.WaterBodyMapper;
+import importers.jpa.repo.WaterBodyRepo;
 import importers.waterbody.dto.WaterBodyDto;
-import org.springframework.beans.factory.annotation.Autowired;
+import importers.waterbody.mapper.impl.WaterBodyMapperImpl;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import tools.jackson.databind.ObjectMapper;
+import org.springframework.web.client.RestClient;
+import shared.jpa.entity.WaterBody;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides operations for importing Montana water body data into Hookset.
@@ -31,44 +38,102 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class WaterBodyImporterService {
 
-    /** Object mapper used to convert API response data into Java objects. */
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    /** Web client used to communicate with the Montana FWP Fish Distribution API. */
-    private final WebClient webClient;
-
-    /** Repository used to access and store water body records. */
+    private final RestClient restClient;
     private final WaterBodyRepo waterBodyRepo;
+    private final WaterBodyMapper waterBodyMapper;
 
-    /**
-     * Constructs the water body importer service with the required WebClient
-     * builder and water body repository.
-     *
-     * <p>The WebClient is configured with the base URL for the Montana FWP
-     * Fish Distribution API.</p>
-     *
-     * @param webClientBuilder builder used to configure the WebClient
-     * @param waterBodyRepo repository used to access and store water body records
-     */
-    public WaterBodyImporterService(WebClient.Builder webClientBuilder, WaterBodyRepo waterBodyRepo) {
-        this.webClient = webClientBuilder
+    public WaterBodyImporterService(RestClient.Builder restClientBuilder, WaterBodyRepo waterBodyRepo, WaterBodyMapper waterBodyMapper) {
+        this.restClient = restClientBuilder
                 .baseUrl("https://services1.arcgis.com/754BERmVIq3RqSf8/ArcGIS/rest/services/MT_FWP_Fish_Distribution/FeatureServer")
                 .build();
         this.waterBodyRepo = waterBodyRepo;
+        this.waterBodyMapper = waterBodyMapper;
     }
 
     /**
      * Retrieves all available water body data from the Montana FWP
      * Fish Distribution API.
      *
-     * @return a Flux containing the retrieved water body DTOs
+     * @return a list containing the retrieved water body DTOs
      */
-    public Flux<WaterBodyDto> getAllWaterBodies() {
-        Flux<WaterBodyDto> waterBodyDtos;
+    public List<WaterBodyDto> getAllWaterBodies() {
 
-        webClient.get().uri("");
+        List<WaterBodyDto> waterBodyDtos = new ArrayList<>();
 
-        return null;
+        int offset = 0;
+        int pageSize = 2000;
+
+        while (true) {
+            int currentOffset = offset;
+
+            WaterBodyResponseDto response = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/9/query")
+                            .queryParam("where", "1=1")
+                            .queryParam("outFields", "LLID,WATERNAME")
+                            .queryParam("returnGeometry", false)
+                            .queryParam("returnDistinctValues", true)
+                            .queryParam("resultOffset", currentOffset)
+                            .queryParam("resultRecordCount", pageSize)
+                            .queryParam("f", "json")
+                            .build())
+                    .retrieve()
+                    .body(WaterBodyResponseDto.class);
+
+            if (response == null ||
+                    response.getFeatures() == null ||
+                    response.getFeatures().isEmpty()) {
+                break;
+            }
+
+            for (WaterBodyFeatureDto feature : response.getFeatures()) {
+                WaterBodyAttributeDto attributes = feature.getAttributes();
+
+                WaterBodyDto waterBodyDto = new WaterBodyDto();
+
+                waterBodyDto.setFishWildLifeLLID(
+                        attributes.getFishWildLifeLLID()
+                );
+
+                waterBodyDto.setWaterBodyName(
+                        attributes.getWaterBodyName()
+                );
+
+                waterBodyDtos.add(waterBodyDto);
+            }
+
+            System.out.println(
+                    "Offset: " + currentOffset +
+                            " | Returned: " + response.getFeatures().size() +
+                            " | Total collected: " + waterBodyDtos.size()
+            );
+
+            if (response.getFeatures().size() < pageSize) {
+                break;
+            }
+
+            offset += response.getFeatures().size();
+        }
+
+        return waterBodyDtos;
+    }
+
+    private List<WaterBody> mapToEntitiy(List<WaterBodyDto> waterBodyDtos) {
+        List<WaterBody> waterBodies = new ArrayList<>();
+        for (WaterBodyDto waterBodyDto : waterBodyDtos) {
+            waterBodies.add(waterBodyMapper.mapToEntity(waterBodyDto));
+        }
+
+        return waterBodies;
+    }
+
+    public boolean saveWaterBodies(List<WaterBodyDto> WaterBodyDtos) {
+       List<WaterBody> waterBodies = mapToEntitiy(WaterBodyDtos);
+        try {
+            waterBodyRepo.saveAll(waterBodies);
+            return true;
+        } catch (DataAccessException e) {
+            return false;
+        }
     }
 }

@@ -20,8 +20,8 @@ dependencies {
     // Shared JPA entities
     implementation project(':shared')
 
-    // Lets us use WebClient to call Montana APIs
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    // Lets us use RestClient to call Montana APIs
+    implementation 'org.springframework.boot:spring-boot-starter-restclient'
 
     // JPA repositories for interacting with Hookset MySQL
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'

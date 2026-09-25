@@ -1,4 +1,4 @@
-package jpa.repo;
+package importers.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import shared.jpa.entity.WaterBody;

@@ -1,5 +1,6 @@
 package importers.waterbody.mapper.impl;
 
+import org.springframework.stereotype.Component;
 import shared.jpa.entity.WaterBody;
 import importers.waterbody.dto.WaterBodyDto;
 import importers.waterbody.mapper.WaterBodyMapper;
@@ -10,6 +11,7 @@ import importers.waterbody.mapper.WaterBodyMapper;
  * <p>This mapper converts water body data retrieved by the importer into a
  * WaterBody entity that can be stored in the Hookset database.</p>
  */
+@Component
 public class WaterBodyMapperImpl implements WaterBodyMapper {
 
     /**
