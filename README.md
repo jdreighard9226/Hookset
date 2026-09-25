@@ -1,8 +1,8 @@
 # Hookset
 
-Hookset is a fly fishing web app I am building for my Java class. The goal is to help anglers make better fly choices on Montana waters using the conditions at the time they fish. Eventually, I want to combine catch history, fish and water body data, weather, and moon information to recommend flies that have a better chance of working.
+Hookset is a fly fishing web app I am building. The goal is to help anglers make better fly choices on Montana waters using the conditions at the time they fish. Eventually, I want to combine catch history, fish and water body data, weather, and moon information to recommend flies that have a better chance of working.
 
-This is still a work in progress. The web app, database, login flow, and data import structure are the foundation. Catch logging and fly recommendations are longer-term goals, so I am not treating those as finished features yet.
+This is still a work in progress. The web app, database, login flow, and data import structure are the foundation. Catch logging and fly recommendations are longer-term goals.
 
 ## What the project uses
 
@@ -21,7 +21,7 @@ This is still a work in progress. The web app, database, login flow, and data im
 
 The project currently has a Spring Boot web app with a home page, login and signup pages, Spring Security configuration, a MySQL-backed user model, and a separate `importers` module for bringing outside data into the database. Login uses Spring Security's form login flow and a user loaded from the database. The importer work focuses on fish and water bodies from Montana Fish, Wildlife & Parks (FWP).
 
-Here is where I want to take it next:
+Where I want to take it next:
 
 - Let users record catches with the water, fish, fly, fly size, time, and conditions.
 - Show each user their own catch history and let them filter it.
