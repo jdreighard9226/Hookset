@@ -3,111 +3,107 @@
       lang="en"
       th:replace="~{layout :: layout(~{::title}, ~{::main})}">
 
-<head>
-    <meta charset="UTF-8"/>
-    <title>Signup page</title>
-</head>
-<body>
-<main>
-    <div class="container py-5 mt-5">
-        <div class="row justify-content-center">
-            <div class="col-12 col-md-6 col-xl-4">
-                <div class="card shadow-sm">
-                    <div class="card-body p-4">
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Signup page</title>
+    </head>
+    <body>
+        <main>
+            <div class="container py-5 mt-5">
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <div class="card shadow-sm">
+                            <div class="card-body p-4">
 
-                        <h1 class="text-center mb-4">Create An Account</h1>
+                                <h1 class="text-center mb-4">Create An Account</h1>
 
-                        <form th:action="@{/signup}"
-                              th:object="${signupForm}"
-                              method="post">
+                                <!-- th:action adds the CSRF token Spring Security requires -->
+                                <form th:action="@{/signup}"
+                                      th:object="${signupForm}"
+                                      method="post">
 
-                            <div th:if="${#fields.hasGlobalErrors()}"
-                                 class="alert alert-danger"
-                                 th:errors="*{global}">
-                                Global error
+                                    <!-- errors not tied to one field, such as a taken username -->
+                                    <div th:if="${#fields.hasGlobalErrors()}"
+                                         class="alert alert-danger"
+                                         th:errors="*{global}">
+                                        Global error
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="username" class="form-label">
+                                            Username
+                                        </label>
+
+                                        <input type="text"
+                                               id="username"
+                                               class="form-control"
+                                               th:field="*{username}"
+                                               placeholder="Username"/>
+
+                                        <div class="text-danger"
+                                             th:if="${#fields.hasErrors('username')}"
+                                             th:errors="*{username}">
+                                            Username error
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">
+                                            Password
+                                        </label>
+
+                                        <input type="password"
+                                               id="password"
+                                               class="form-control"
+                                               th:field="*{password}"
+                                               placeholder="Password"/>
+
+                                        <div class="text-danger"
+                                             th:if="${#fields.hasErrors('password')}"
+                                             th:errors="*{password}">
+                                            Password error
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="confirm-password" class="form-label">
+                                            Confirm Password
+                                        </label>
+
+                                        <input type="password"
+                                               id="confirm-password"
+                                               class="form-control"
+                                               th:field="*{confirmPassword}"
+                                               placeholder="Confirm Password"/>
+
+                                        <div class="text-danger"
+                                             th:if="${#fields.hasErrors('confirmPassword')}"
+                                             th:errors="*{confirmPassword}">
+                                            Confirm password error
+                                        </div>
+
+                                        <!-- from isPasswordMatching() in SignupForm -->
+                                        <div class="text-danger"
+                                             th:if="${#fields.hasErrors('passwordMatching')}"
+                                             th:errors="*{passwordMatching}">
+                                            Passwords do not match.
+                                        </div>
+                                    </div>
+
+                                    <button type="submit"
+                                            class="primary-button w-100">
+                                        Create Account
+                                    </button>
+
+                                </form>
+
                             </div>
-
-                            <div class="mb-3">
-                                <label for="username" class="form-label">
-                                    Username
-                                </label>
-
-                                <input type="text"
-                                       id="username"
-                                       class="form-control"
-                                       th:field="*{username}"
-                                       placeholder="Username"/>
-
-                                <div class="text-danger"
-                                     th:if="${#fields.hasErrors('username')}"
-                                     th:errors="*{username}">
-                                    Username error
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="password" class="form-label">
-                                    Password
-                                </label>
-
-                                <input type="password"
-                                       id="password"
-                                       class="form-control"
-                                       th:field="*{password}"
-                                       placeholder="Password"/>
-
-                                <div class="text-danger"
-                                     th:if="${#fields.hasErrors('password')}"
-                                     th:errors="*{password}">
-                                    Password error
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="password" class="form-label">
-                                    Password
-                                </label>
-
-                                <input type="password"
-                                       id="confirm-password"
-                                       class="form-control"
-                                       th:field="*{confirmPassword}"
-                                       placeholder="Confirm Password"/>
-
-                                <div class="text-danger"
-                                     th:if="${#fields.hasErrors('passwordMatching')}"
-                                     th:errors="*{passwordMatching}">
-                                    Passwords do not match.
-                                </div>
-
-                                <div class="text-danger"
-                                     th:if="${#fields.hasErrors('password')}"
-                                     th:errors="*{password}">
-                                    Password error
-                                </div>
-                            </div>
-
-                            <div th:if="${param.error}"
-                                 class="alert alert-danger">
-                                Invalid username or password.
-                            </div>
-
-
-
-                            <button type="submit"
-                                    class="primary-button w-100">
-                                Create Account
-                            </button>
-
-                        </form>
+                        </div>
 
                     </div>
                 </div>
-
             </div>
-        </div>
-    </div>
-</main>
+        </main>
 
-</body>
+    </body>
 </html>

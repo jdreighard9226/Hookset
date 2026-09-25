@@ -18,15 +18,16 @@
 
                         <h1 class="text-center mb-4">Login</h1>
 
+                        <!-- Spring Security redirects to /login?error on a failed login -->
+                        <div th:if="${param.error}"
+                             class="alert alert-danger">
+                            Invalid username or password.
+                        </div>
+
+                        <!-- th:action adds the CSRF token Spring Security requires -->
                         <form th:action="@{/login}"
                               th:object="${loginForm}"
                               method="post">
-
-                            <div th:if="${#fields.hasGlobalErrors()}"
-                                 class="alert alert-danger"
-                                 th:errors="*{global}">
-                                Global error
-                            </div>
 
                             <div class="mb-3">
                                 <label for="username" class="form-label">
@@ -38,14 +39,8 @@
                                        class="form-control"
                                        th:field="*{username}"
                                        placeholder="Username"
-                                       required
-                                       minlength="6"/>
-
-                                <div class="text-danger"
-                                     th:if="${#fields.hasErrors('username')}"
-                                     th:errors="*{username}">
-                                    Username error
-                                </div>
+                                       autocomplete="username"
+                                       required/>
                             </div>
 
                             <div class="mb-3">
@@ -58,19 +53,8 @@
                                        class="form-control"
                                        th:field="*{password}"
                                        placeholder="Password"
-                                       required
-                                       minlength="6"/>
-
-                                <div class="text-danger"
-                                     th:if="${#fields.hasErrors('password')}"
-                                     th:errors="*{password}">
-                                    Password error
-                                </div>
-                            </div>
-
-                            <div th:if="${param.error}"
-                                 class="alert alert-danger">
-                                Invalid username or password.
+                                       autocomplete="current-password"
+                                       required/>
                             </div>
 
                             <button type="submit"

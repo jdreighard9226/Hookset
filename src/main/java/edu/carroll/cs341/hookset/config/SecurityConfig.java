@@ -13,7 +13,8 @@ import org.springframework.security.web.SecurityFilterChain;
  *
  * <p>This configuration determines which pages can be accessed without authentication
  * and requires users to authenticate before accessing all other pages. It also
- * configures Hookset to use a custom login page.</p>
+ * configures Hookset to use a custom login page and manages user sessions
+ * after login.</p>
  *
  * <p><b>Sources Used:</b></p>
  * <ul>
@@ -23,6 +24,8 @@ import org.springframework.security.web.SecurityFilterChain;
  *   https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html</li>
  *   <li>Spring Security - Form Login:
  *   https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html</li>
+ *   <li>Spring Security - Session Management:
+ *   https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html</li>
  * </ul>
  */
 @Configuration
@@ -47,18 +50,23 @@ public class SecurityConfig {
      * from the /login page and authentication requests are processed through
      * the /login URL.</p>
      *
+     * <p>A session is created after a successful login so the user stays signed
+     * in between requests. The session id is changed on login to protect against
+     * session fixation attacks.</p>
+     *
+     * <p>Modified from the Spring Security form login example on page:
+     * https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html</p>
+     *
      * @param http the HttpSecurity object used to configure web security
      * @return the configured security filter chain
      * @throws Exception if an error occurs while building the security configuration
-     *
-     * Modified from Spring SecurityFilterSecurity example on page:
-     * https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/form.html
      */
     @Bean
     public SecurityFilterChain securedFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .authorizeHttpRequests(auth -> auth
+                        // pages and static files anyone can visit
                         .requestMatchers(
                                 "/",
                                 "/login",
@@ -68,24 +76,28 @@ public class SecurityConfig {
                                 "/js/**"
                         ).permitAll()
 
+                        // everything else requires a logged in user
                         .anyRequest().authenticated()
                 )
 
                 .formLogin(form -> form
+                        // use the custom login page instead of the Spring default
                         .loginPage("/login")
+                        // Spring Security handles the POST to /login
                         .loginProcessingUrl("/login")
+                        // always send the user home after login
                         .defaultSuccessUrl("/", true)
                         .permitAll()
                 )
 
                 .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                    .sessionFixation(sessionFixation ->
-                            sessionFixation.changeSessionId()
-                    )
+                        // only create a session when one is needed, such as after login
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        // give the user a new session id on login to prevent session fixation
+                        .sessionFixation(sessionFixation ->
+                                sessionFixation.changeSessionId()
+                        )
                 );
-
-
 
         return http.build();
     }
