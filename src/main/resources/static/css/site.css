@@ -15,7 +15,7 @@
     --background-light: var(--hookset-cream);
     --background-secondary: var(--hookset-off-white);
 
-    --text-dark: var(--hookset-green);
+    --dark-text: #111111;
     --text-light: var(--hookset-cream);
 
     --accent: var(--hookset-gold);
@@ -28,7 +28,7 @@ header {
 
 body {
     background-color: var(--hookset-cream);
-    color: var(--text-dark);
+    color: var(--dark-text);
     margin: 0;
     display: flex;
     flex-direction: column;
@@ -42,6 +42,7 @@ main {
 footer {
     min-height: 8rem;
     background-color: var(--hookset-dark-green);
+    color : var(--text-dark)
 }
 
 .logo-container {
