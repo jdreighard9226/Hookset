@@ -30,13 +30,16 @@ body {
     background-color: var(--hookset-cream);
     color: var(--text-dark);
     margin: 0;
-    min-height: 150dvh;
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
 }
 
 footer {
-    flex: 1;
     min-height: 8rem;
     background-color: var(--hookset-dark-green);
 }
