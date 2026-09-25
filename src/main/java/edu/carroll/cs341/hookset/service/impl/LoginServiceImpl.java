@@ -5,7 +5,7 @@ import edu.carroll.cs341.hookset.service.LoginService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import edu.carroll.cs341.hookset.security.HooksetUserDetails;
+import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import shared.jpa.entity.User;
 
 @Service

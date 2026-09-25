@@ -1,4 +1,4 @@
-package edu.carroll.cs341.hookset.security;
+package edu.carroll.cs341.hookset.userDetails;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
