@@ -2,6 +2,7 @@
 <html
         lang="en"
         xmlns:th="http://www.thymeleaf.org"
+        xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
         th:fragment="layout(title, content)">
 
     <head>
@@ -27,8 +28,19 @@
             <nav class="navbar navbar-expand-lg navbar-dark">
                 <div class="navbar-nav mx-auto">
                     <a class="nav-link" th:href="@{/}">Home</a>
-                    <a class="nav-link" th:href="@{/login}">Login</a>
-                    <a class="nav-link" th:href="@{/signup}">Sign Up</a>
+                    <a class="nav-link" th:href="@{/rivers}">Rivers</a>
+
+                    <!-- Logged out -->
+                    <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/login}">Log In</a>
+                    <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/signup}">Sign Up</a>
+
+                    <!-- Logged in -->
+                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/profile}">
+                    </a>
+                    <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="nav-link btn btn-link">Log Out</button>
+                    </form>
+
                 </div>
             </nav>
         </header>
