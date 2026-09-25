@@ -1,10 +1,13 @@
 package importers.jpa.repo;
 
-import jdk.jfr.Registered;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import shared.jpa.entity.FishWaterBody;
 
-@Repository
+/**
+ * Provides database access for FishWaterBody entities used by the importer.
+ *
+ * <p>Spring Data JPA generates the implementation for this repository,
+ * including standard save and lookup operations.</p>
+ */
 public interface FishWaterBodyRepo extends JpaRepository<FishWaterBody, Long> {
 }

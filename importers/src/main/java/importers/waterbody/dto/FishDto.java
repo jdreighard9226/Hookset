@@ -11,8 +11,6 @@ package importers.waterbody.dto;
  * <ul>
  *   <li>Montana Fish, Wildlife & Parks Fish Distribution - Streams:
  *   https://services1.arcgis.com/754BERmVIq3RqSf8/ArcGIS/rest/services/MT_FWP_Fish_Distribution/FeatureServer/9</li>
- *   <li>Montana Fish, Wildlife & Parks Fish Distribution - Lakes:
- *   https://services1.arcgis.com/754BERmVIq3RqSf8/ArcGIS/rest/services/MT_FWP_Fish_Distribution/FeatureServer/8</li>
  * </ul>
  */
 public class FishDto {
