@@ -18,10 +18,6 @@ public class WaterBody {
     @Column(name = "waterBodyId")
     private long waterBodyId;
 
-    /** The LLID used by Montana FWP to identify the water body. */
-    @Column(name = "fwpLlid")
-    private String fishWildLifeLLID;
-
     /** The name of the water body. */
     @Column(name = "waterBodyName")
     private String waterBodyName;
@@ -35,14 +31,6 @@ public class WaterBody {
         return this.waterBodyId;
     }
 
-    /**
-     * Returns the Montana FWP LLID for the water body.
-     *
-     * @return the Montana FWP LLID
-     */
-    public String getFishWildLifeLLID() {
-        return this.fishWildLifeLLID;
-    }
 
     /**
      * Returns the name of the water body.
@@ -51,15 +39,6 @@ public class WaterBody {
      */
     public String getWaterBodyName() {
         return this.waterBodyName;
-    }
-
-    /**
-     * Sets the Montana FWP LLID for the water body.
-     *
-     * @param fishWildLifeLLID the Montana FWP LLID
-     */
-    public void setFishWildLifeLLID(String fishWildLifeLLID) {
-        this.fishWildLifeLLID = fishWildLifeLLID;
     }
 
     /**

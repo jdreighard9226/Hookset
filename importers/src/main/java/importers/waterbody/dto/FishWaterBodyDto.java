@@ -1,22 +1,23 @@
 package importers.waterbody.dto;
 
 public class FishWaterBodyDto {
-    private long fishId;
-    private long waterBodyId;
 
-    public long getFishId() {
-        return fishId;
+    private String waterBodyName;
+    private Integer speciesId;
+
+    public String getWaterBodyName() {
+        return waterBodyName;
     }
 
-    public long getWaterBodyId() {
-        return waterBodyId;
+    public void setWaterBodyName(String waterBodyName) {
+        this.waterBodyName = waterBodyName;
     }
 
-    public void setFishId(long fishId) {
-        this.fishId = fishId;
+    public Integer getSpeciesId() {
+        return speciesId;
     }
 
-    public void setWaterBodyId(long waterBodyId) {
-        this.waterBodyId = waterBodyId;
+    public void setSpeciesId(Integer speciesId) {
+        this.speciesId = speciesId;
     }
 }

@@ -31,8 +31,6 @@ public class WaterBodyMapperImpl implements WaterBodyMapper {
 
         WaterBody waterBody = new WaterBody();
         waterBody.setWaterBodyName(waterBodyDto.getWaterBodyName());
-        waterBody.setFishWildLifeLLID(waterBodyDto.getFishWildLifeLLID());
-
         return waterBody;
     }
 }

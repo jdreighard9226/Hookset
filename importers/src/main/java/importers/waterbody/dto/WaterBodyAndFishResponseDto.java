@@ -2,16 +2,16 @@ package importers.waterbody.dto;
 
 import java.util.List;
 
-public class WaterBodyResponseDto {
+public class WaterBodyAndFishResponseDto {
 
-    private List<WaterBodyFeatureDto> features;
+    private List<WaterBodyAndFishFeatureDto> features;
     private boolean exceededTransferLimit;
 
-    public List<WaterBodyFeatureDto> getFeatures() {
+    public List<WaterBodyAndFishFeatureDto> getFeatures() {
         return features;
     }
 
-    public void setFeatures(List<WaterBodyFeatureDto> features) {
+    public void setFeatures(List<WaterBodyAndFishFeatureDto> features) {
         this.features = features;
     }
 

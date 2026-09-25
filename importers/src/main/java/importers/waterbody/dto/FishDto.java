@@ -18,7 +18,7 @@ package importers.waterbody.dto;
 public class FishDto {
 
     /** The species identifier provided by Montana FWP. */
-    private String fwpSpeciesId;
+    private Integer fwpSpeciesId;
 
     /** The biological family of the fish. */
     private String fishFamily;
@@ -31,7 +31,7 @@ public class FishDto {
      *
      * @return the FWP species identifier
      */
-    public String getFwpSpeciesId() {
+    public Integer getFwpSpeciesId() {
         return fwpSpeciesId;
     }
 
@@ -58,7 +58,7 @@ public class FishDto {
      *
      * @param fwpSpeciesId the FWP species identifier
      */
-    public void setFwpSpeciesId(String fwpSpeciesId) {
+    public void setFwpSpeciesId(Integer fwpSpeciesId) {
         this.fwpSpeciesId = fwpSpeciesId;
     }
 

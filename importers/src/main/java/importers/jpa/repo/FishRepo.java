@@ -2,9 +2,8 @@ package importers.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import shared.jpa.entity.WaterBody;
+import shared.jpa.entity.Fish;
 
 @Repository
-public interface WaterBodyRepo extends JpaRepository<WaterBody, Long> {
-
+public interface FishRepo extends JpaRepository<Fish, Long> {
 }

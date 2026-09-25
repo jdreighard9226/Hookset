@@ -1,5 +1,6 @@
 package importers.waterbody.mapper;
 
+import org.springframework.stereotype.Component;
 import shared.jpa.entity.Fish;
 import importers.waterbody.dto.FishDto;
 
@@ -9,6 +10,7 @@ import importers.waterbody.dto.FishDto;
  * <p>Implementations of this interface are responsible for converting a
  * {@link FishDto} into a {@link Fish} entity for use within Hookset.</p>
  */
+
 public interface FishMapper {
 
     /**

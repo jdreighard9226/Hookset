@@ -1,34 +1,39 @@
 package shared.jpa.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "fishWaterBodies")
+@Table(name = "FishWaterBodies")
 public class FishWaterBody {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "fishWaterBodyId")
+    private Long fishWaterBodyId;
+
     @Column(name = "fishId")
-    private long fishId;
+    private Long fishId;
 
-    @Id
     @Column(name = "waterBodyId")
-    private long waterBodyId;
+    private Long waterBodyId;
 
-    public long getFishId() {
+    public Long getFishWaterBodyId() {
+        return fishWaterBodyId;
+    }
+
+    public Long getFishId() {
         return fishId;
     }
 
-    public long getWaterBodyId() {
-        return waterBodyId;
-    }
-
-    public void setFishId(long fishId) {
+    public void setFishId(Long fishId) {
         this.fishId = fishId;
     }
 
-    public void setWaterBodyId(long waterBodyId) {
+    public Long getWaterBodyId() {
+        return waterBodyId;
+    }
+
+    public void setWaterBodyId(Long waterBodyId) {
         this.waterBodyId = waterBodyId;
     }
 }

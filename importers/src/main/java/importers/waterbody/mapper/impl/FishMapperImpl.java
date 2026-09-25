@@ -1,5 +1,6 @@
 package importers.waterbody.mapper.impl;
 
+import org.springframework.stereotype.Component;
 import shared.jpa.entity.Fish;
 import importers.waterbody.dto.FishDto;
 import importers.waterbody.mapper.FishMapper;
@@ -10,6 +11,7 @@ import importers.waterbody.mapper.FishMapper;
  * <p>This mapper converts fish data retrieved by the water body importer
  * into a Fish entity that can be stored in the Hookset database.</p>
  */
+@Component
 public class FishMapperImpl implements FishMapper {
 
     /**

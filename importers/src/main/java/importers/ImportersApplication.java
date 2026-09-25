@@ -1,6 +1,6 @@
 package importers;
 
-import importers.waterbody.controller.WaterBodyController;
+import importers.waterbody.controller.WaterBodyAndFishController;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,9 +16,9 @@ public class ImportersApplication {
     }
 
     @Bean
-    public CommandLineRunner run(WaterBodyController waterBodyController) {
+    public CommandLineRunner run(WaterBodyAndFishController waterBodyAndFishController) {
         return args -> {
-            waterBodyController.importWaterBodies();
+            waterBodyAndFishController.importWaterBodiesAndFish();
         };
     }
 }
