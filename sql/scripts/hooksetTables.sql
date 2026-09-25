@@ -1,4 +1,3 @@
-CREATE DATABASE IF NOT EXISTS hookset;
 USE hookset;
 
 DROP TABLE IF EXISTS FishWaterBodies;
@@ -46,8 +45,7 @@ CREATE TABLE FlySizes (
     flyId BIGINT NOT NULL,
     size INT NOT NULL,
 
-    CONSTRAINT PK_FlySizes
-        PRIMARY KEY (flyId, size),
+    PRIMARY KEY (flyId, size),
 
     FOREIGN KEY (flyId)
         REFERENCES Flies(flyId)
@@ -56,25 +54,24 @@ CREATE TABLE FlySizes (
 
 CREATE TABLE WaterBodies (
     waterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
-    fwpLlid VARCHAR(80),
-    waterBodyName VARCHAR(250) NOT NULL
+    waterBodyName VARCHAR(250) NOT NULL UNIQUE
 );
 
 
 CREATE TABLE Fishes (
     fishId BIGINT AUTO_INCREMENT PRIMARY KEY,
-    fwpSpeciesId VARCHAR(80),
+    fwpSpeciesId INT NOT NULL UNIQUE,
     fishFamily VARCHAR(200),
     fishSpecies VARCHAR(200)
 );
 
 
 CREATE TABLE FishWaterBodies (
+    fishWaterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
     fishId BIGINT NOT NULL,
     waterBodyId BIGINT NOT NULL,
 
-    CONSTRAINT PK_FishWaterBodies
-        PRIMARY KEY (fishId, waterBodyId),
+    UNIQUE (fishId, waterBodyId),
 
     FOREIGN KEY (fishId)
         REFERENCES Fishes(fishId),
