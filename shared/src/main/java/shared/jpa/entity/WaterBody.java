@@ -5,8 +5,7 @@ import jakarta.persistence.*;
 /**
  * Represents a water body stored in the Hookset database.
  *
- * <p>Each water body record stores the Montana FWP LLID along with
- * the name of the water body.</p>
+ * <p>Each water body record stores the name of the water body.</p>
  */
 @Entity
 @Table(name = "WaterBodies")
