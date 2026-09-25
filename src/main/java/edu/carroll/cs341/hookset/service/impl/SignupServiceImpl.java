@@ -1,6 +1,6 @@
 package edu.carroll.cs341.hookset.service.impl;
 
-import edu.carroll.cs341.hookset.jpa.repo.SignupRepository;
+import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
 import edu.carroll.cs341.hookset.service.SignupService;
 import edu.carroll.cs341.hookset.web.form.SignupForm;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,16 +9,16 @@ import shared.jpa.entity.User;
 
 @Service
 public class SignupServiceImpl implements SignupService {
-    private final SignupRepository signupRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public SignupServiceImpl(SignupRepository signupRepository, PasswordEncoder passwordEncoder) {
-        this.signupRepository = signupRepository;
+    public SignupServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     public boolean addUser(SignupForm signupForm) {
-        User user = signupRepository.findByUsername(signupForm.getUsername());
+        User user = userRepository.findByUsername(signupForm.getUsername());
         if (user != null) {
             return false;
         }
@@ -30,7 +30,7 @@ public class SignupServiceImpl implements SignupService {
                 passwordEncoder.encode(signupForm.getPassword())
         );
 
-        signupRepository.save(newUser);
+        userRepository.save(newUser);
         return true;
     }
 

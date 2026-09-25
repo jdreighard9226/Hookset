@@ -29,6 +29,16 @@ header {
 body {
     background-color: var(--hookset-cream);
     color: var(--text-dark);
+    margin: 0;
+    min-height: 150dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+footer {
+    flex: 1;
+    min-height: 8rem;
+    background-color: var(--hookset-dark-green);
 }
 
 .logo-container {
