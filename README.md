@@ -36,7 +36,7 @@ The recommendation system is a goal for the project; I have not trained or shipp
 
 The main application handles the website: controllers, Thymeleaf templates, login, security, and database access. The `importers` module handles outside data. It calls the FWP service, reads the JSON into DTOs, maps that data to entities, and saves it through Spring Data repositories. Shared JPA code is used across the modules where needed.
 
-The MySQL schema includes `Users`, `Fly`, `FlySize`, `FlyMaterial`, `Fish`, `WaterBody`, and `FishWaterBody`. `FishWaterBody` connects fish species to the waters where they are found. The catch table and the data needed to score fly recommendations are future additions.
+The MySQL schema includes `Users`, `Fly`, `FlySize`, `FlyMaterial`, `Fish`, `WaterBodyService`, and `FishWaterBody`. `FishWaterBody` connects fish species to the waters where they are found. The catch table and the data needed to score fly recommendations are future additions.
 
 ## Login, security, and sessions
 

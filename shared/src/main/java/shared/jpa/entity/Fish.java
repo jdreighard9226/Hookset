@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 /**
  * Represents a fish species stored in the Hookset database.
  *
- * <p>Each fish record stores the Montana FWP species identifier along with
- * the fish family and species name. Fish records can be associated with
+ * <p>Each fish record stores the fish family and species name.
+ * Fish records can be associated with
  * water bodies and catch records throughout Hookset.</p>
  */
 @Entity
@@ -18,10 +18,6 @@ public class Fish {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "fishId")
     private Long fishId;
-
-    /** The species identifier provided by Montana FWP. */
-    @Column(name = "fwpSpeciesId")
-    private Integer fwpSpeciesId;
 
     /** The biological family of the fish. */
     @Column(name = "fishFamily")
@@ -40,14 +36,6 @@ public class Fish {
         return fishId;
     }
 
-    /**
-     * Returns the Montana FWP species identifier.
-     *
-     * @return the FWP species identifier
-     */
-    public Integer getFwpSpeciesId() {
-        return fwpSpeciesId;
-    }
 
     /**
      * Returns the biological family of the fish.
@@ -65,15 +53,6 @@ public class Fish {
      */
     public String getFishSpecies() {
         return fishSpecies;
-    }
-
-    /**
-     * Sets the Montana FWP species identifier.
-     *
-     * @param fwpSpeciesId the FWP species identifier
-     */
-    public void setFwpSpeciesId(Integer fwpSpeciesId) {
-        this.fwpSpeciesId = fwpSpeciesId;
     }
 
     /**
