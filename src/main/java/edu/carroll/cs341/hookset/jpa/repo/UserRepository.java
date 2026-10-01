@@ -1,6 +1,7 @@
 package edu.carroll.cs341.hookset.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import shared.jpa.entity.User;
 
 /**
@@ -10,6 +11,7 @@ import shared.jpa.entity.User;
  * including standard save and lookup operations. Additional queries are
  * derived from the method names declared here.</p>
  */
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
