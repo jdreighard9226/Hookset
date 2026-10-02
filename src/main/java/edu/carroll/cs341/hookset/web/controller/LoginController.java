@@ -1,7 +1,8 @@
 package edu.carroll.cs341.hookset.web.controller;
 
-import edu.carroll.cs341.hookset.service.LoginService;
 import edu.carroll.cs341.hookset.web.form.LoginForm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,10 +12,11 @@ import org.springframework.web.bind.annotation.GetMapping;
  *
  * <p>This controller displays the login page and adds a new LoginForm
  * object to the model for use by the login form.</p>
- *
  */
 @Controller
 public class LoginController {
+
+    private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 
     /**
      * Handles GET requests for the Hookset login page.
@@ -27,6 +29,8 @@ public class LoginController {
      */
     @GetMapping("/login")
     public String loginGet(Model model) {
+        log.info("Request received for login page");
+
         model.addAttribute("loginForm", new LoginForm());
         return "login";
     }

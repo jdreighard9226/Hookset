@@ -3,6 +3,8 @@ package edu.carroll.cs341.hookset.service.impl;
 import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
 import edu.carroll.cs341.hookset.service.SignupService;
 import edu.carroll.cs341.hookset.web.form.SignupForm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import shared.jpa.entity.User;
@@ -16,6 +18,8 @@ import shared.jpa.entity.User;
  */
 @Service
 public class SignupServiceImpl implements SignupService {
+
+    private static final Logger log = LoggerFactory.getLogger(SignupServiceImpl.class);
 
     /** The repository used to look up and save users. */
     private final UserRepository userRepository;
@@ -45,9 +49,12 @@ public class SignupServiceImpl implements SignupService {
     @Override
     public boolean addUser(SignupForm signupForm) {
 
+        log.info("Attempting signup for username: {}", signupForm.getUsername());
+
         // stop if the username is already in use
         User user = userRepository.findByUsername(signupForm.getUsername());
         if (user != null) {
+            log.warn("Signup failed. Username already taken: {}", signupForm.getUsername());
             return false;
         }
 
@@ -61,6 +68,9 @@ public class SignupServiceImpl implements SignupService {
         );
 
         userRepository.save(newUser);
+
+        log.info("User created: {}", signupForm.getUsername());
+
         return true;
     }
 }

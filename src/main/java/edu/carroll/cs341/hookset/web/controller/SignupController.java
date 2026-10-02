@@ -3,6 +3,8 @@ package edu.carroll.cs341.hookset.web.controller;
 import edu.carroll.cs341.hookset.service.SignupService;
 import edu.carroll.cs341.hookset.web.form.SignupForm;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.PostMapping;
  */
 @Controller
 public class SignupController {
+
+    private static final Logger log = LoggerFactory.getLogger(SignupController.class);
 
     /** The service used to create new user accounts. */
     private final SignupService signupService;
@@ -43,6 +47,8 @@ public class SignupController {
      */
     @GetMapping("/signup")
     public String signupGet(Model model) {
+        log.info("Request received for signup page");
+
         model.addAttribute("signupForm", new SignupForm());
         return "signup";
     }
@@ -63,6 +69,7 @@ public class SignupController {
 
         // show the form again if any validation rules failed
         if (result.hasErrors()) {
+            log.warn("Signup form failed validation with {} error(s)", result.getErrorCount());
             return "signup";
         }
 
