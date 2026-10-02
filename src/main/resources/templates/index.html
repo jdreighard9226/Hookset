@@ -8,8 +8,67 @@
         <title>Home page</title>
     </head>
     <body>
-        <main class="my-5">
-            <h1>Welcome to hookset!</h1>
-        </main>
+    <main class="container py-5 mt-5">
+
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold">Welcome to Hookset</h1>
+
+            <p class="lead mx-auto index-lead">
+                Explore Montana waters, discover the fish species that live there,
+                and use Hookset to make smarter decisions before your next trip.
+            </p>
+
+            <div class="mt-4">
+                <a th:href="@{/waterbodies}" class="primary-button me-2 text-decoration-none">
+                    Explore Water Bodies
+                </a>
+
+                <a th:href="@{/fish}" class="secondary-button text-decoration-none">
+                    Browse Fish Species
+                </a>
+            </div>
+        </div>
+
+
+        <div class="row justify-content-center text-center g-4">
+
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h3>Explore Waters</h3>
+                        <p>
+                            Browse rivers, lakes, and streams across Montana
+                            and learn more about each location.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h3>Discover Fish</h3>
+                        <p>
+                            See which fish species are associated with each
+                            water body and learn about Montana fisheries.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h3>Plan Smarter</h3>
+                        <p>
+                            Use Hookset as your starting point for exploring
+                            fishing opportunities and planning your next trip.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
     </body>
-</html>

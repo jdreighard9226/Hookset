@@ -148,3 +148,8 @@ nav {
     border-top: 2px solid var(--hookset-green);
     border-bottom: 2px solid var(--hookset-green);
 }
+
+
+.index-lead {
+    max-width: 700px;
+}
