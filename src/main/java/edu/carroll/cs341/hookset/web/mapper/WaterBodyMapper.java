@@ -13,6 +13,7 @@ public class WaterBodyMapper {
         waterBodyDto.setWaterBodyId(waterBody.getWaterBodyId());
         waterBodyDto.setWaterBodyName(waterBody.getWaterBodyName());
         waterBodyDto.setWaterBodyType(waterBody.getWaterBodyType());
+        waterBodyDto.setWaterBodyState(waterBody.getWaterBodyState());
         waterBodyDto.setWaterBodyDescription(waterBody.getWaterBodyDescription());
         waterBodyDto.setWaterBodySlug(waterBody.getWaterBodySlug());
 

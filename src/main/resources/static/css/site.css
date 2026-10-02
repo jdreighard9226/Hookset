@@ -42,7 +42,8 @@ main {
 footer {
     min-height: 8rem;
     background-color: var(--hookset-dark-green);
-    color : var(--dark-text)
+    color : var(--text-light);
+    padding: 1rem;
 }
 
 .logo-container {
