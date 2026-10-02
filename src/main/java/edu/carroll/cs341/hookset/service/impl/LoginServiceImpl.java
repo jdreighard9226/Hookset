@@ -2,10 +2,12 @@ package edu.carroll.cs341.hookset.service.impl;
 
 import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
 import edu.carroll.cs341.hookset.service.LoginService;
+import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import shared.jpa.entity.User;
 
 /**
@@ -18,6 +20,8 @@ import shared.jpa.entity.User;
  */
 @Service
 public class LoginServiceImpl implements LoginService {
+
+    private static final Logger log = LoggerFactory.getLogger(LoginServiceImpl.class);
 
     /** The repository used to look up users. */
     private final UserRepository userRepository;
@@ -41,12 +45,17 @@ public class LoginServiceImpl implements LoginService {
     @Override
     public UserDetails loadUserByUsername(String username) {
 
+        log.info("Attempting login for username: {}", username);
+
         User user = userRepository.findByUsername(username);
 
         // Spring Security expects this exception when the user does not exist
         if (user == null) {
+            log.warn("Login failed. User not found: {}", username);
             throw new UsernameNotFoundException("User not found");
         }
+
+        log.info("User found for login: {}", username);
 
         return new HooksetUserDetails(user);
     }
