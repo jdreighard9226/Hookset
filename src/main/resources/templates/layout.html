@@ -28,15 +28,13 @@
             <nav class="navbar navbar-expand-lg navbar-dark">
                 <div class="navbar-nav mx-auto">
                     <a class="nav-link" th:href="@{/}">Home</a>
-                    <a class="nav-link" th:href="@{/rivers}">Rivers</a>
-
                     <!-- Logged out -->
                     <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/login}">Log In</a>
                     <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/signup}">Sign Up</a>
 
                     <!-- Logged in -->
-                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/profile}">
-                    </a>
+                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/waterbodies}">Water Bodies</a>
+                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/profile}">Profile</a>
                     <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="d-inline">
                         <button type="submit" class="nav-link btn btn-link">Log Out</button>
                     </form>

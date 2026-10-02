@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Water Body Details</title>
+    </head>
+
+    <main>
+        <div class="container py-5 mt-5">
+
+            <div class="text-center">
+                <h1 th:text="${waterBody.waterBodyName}"></h1>
+                <h3 th:text="'Location: ' + ${waterBody.waterBodyState}"></h3>
+                <p class="w-75 mx-auto" th:text="${waterBody.waterBodyDescription}"></p>
+            </div>
+
+            <div class="row justify-content-center">
+
+                <h2 class="text-center" th:text="'Fish Species at ' + ${waterBody.waterBodyName}"></h2>
+                <div th:each="fish : ${fishes}" class="col-12 col-md-6 my-3">
+                    <div class="card shadow-sm text-center fish-card-green">
+                        <div class="card-body">
+                            <img class="fish-image"
+                                 th:src="'/images/fish/' + ${fish.fishImage}"
+                                 alt="Image of Species">
+                            <h3 th:text="${fish.fishSpecies}"></h3>
+                            <p th:text="'Family: ' + ${fish.fishFamily}"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <form th:action="@{/waterbodies}"
+                      method="get">
+                    <button class="primary-button mt-4">Return To Water Bodies</button>
+                </form>
+            </div>
+
+        </div>
+
+    </main>
+</html>

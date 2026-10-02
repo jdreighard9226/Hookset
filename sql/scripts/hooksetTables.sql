@@ -54,15 +54,20 @@ CREATE TABLE FlySizes (
 
 CREATE TABLE WaterBodies (
     waterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
-    waterBodyName VARCHAR(250) NOT NULL UNIQUE
+    waterBodyName VARCHAR(250) NOT NULL,
+    waterBodyType VARCHAR(100) NOT NULL,
+    waterBodyState VARCHAR(100) NOT NULL,
+    waterBodyDescription varchar(1000) NOT NULL,
+    waterBodySlug varchar(100) NOT NULL UNIQUE,
+       CHECK (waterBodyType IN ('River', 'Lake', 'Stream'))
 );
 
 
 CREATE TABLE Fishes (
     fishId BIGINT AUTO_INCREMENT PRIMARY KEY,
-    fwpSpeciesId INT NOT NULL UNIQUE,
-    fishFamily VARCHAR(200),
-    fishSpecies VARCHAR(200)
+    fishFamily VARCHAR(200) NOT NULL,
+    fishSpecies VARCHAR(200) NOT NULL,
+    fishImage VARCHAR(100) NOT NULL
 );
 
 

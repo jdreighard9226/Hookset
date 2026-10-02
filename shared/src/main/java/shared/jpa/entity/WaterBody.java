@@ -21,6 +21,35 @@ public class WaterBody {
     @Column(name = "waterBodyName")
     private String waterBodyName;
 
+    @Column(name = "waterBodyState")
+    private String waterBodyState;
+
+    @Column(name = "waterBodyType")
+    private String waterBodyType;
+
+    @Column(name = "waterBodyDescription")
+    private String waterBodyDescription;
+
+    public String getWaterBodyDescription() {
+        return waterBodyDescription;
+    }
+
+    public void setWaterBodyDescription(String waterBodyDescription) {
+        this.waterBodyDescription = waterBodyDescription;
+    }
+
+    public String getWaterBodySlug() {
+        return waterBodySlug;
+    }
+
+    public void setWaterBodySlug(String waterBodySlug) {
+        this.waterBodySlug = waterBodySlug;
+    }
+
+    @Column(name = "waterBodySlug")
+    private String waterBodySlug;
+
+
     /**
      * Returns the unique identifier for the water body.
      *
@@ -40,6 +69,10 @@ public class WaterBody {
         return this.waterBodyName;
     }
 
+    public String getWaterBodyType() {
+        return this.waterBodyType;
+    }
+
     /**
      * Sets the name of the water body.
      *
@@ -47,5 +80,17 @@ public class WaterBody {
      */
     public void setWaterBodyName(String waterBodyName) {
         this.waterBodyName = waterBodyName;
+    }
+
+    public void setWaterBodyType(String waterBodyType) {
+        this.waterBodyType = waterBodyType;
+    }
+
+    public String getWaterBodyState() {
+        return waterBodyState;
+    }
+
+    public void setWaterBodyState(String waterBodyState) {
+        this.waterBodyState = waterBodyState;
     }
 }

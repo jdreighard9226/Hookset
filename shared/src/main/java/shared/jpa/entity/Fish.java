@@ -27,6 +27,9 @@ public class Fish {
     @Column(name = "fishSpecies")
     private String fishSpecies;
 
+    @Column(name = "fishImage")
+    private String fishImage;
+
     /**
      * Returns the unique identifier for the fish record.
      *
@@ -71,5 +74,13 @@ public class Fish {
      */
     public void setFishSpecies(String fishSpecies) {
         this.fishSpecies = fishSpecies;
+    }
+
+    public String getFishImage() {
+        return fishImage;
+    }
+
+    public void setFishImage(String fishImage) {
+        this.fishImage = fishImage;
     }
 }

@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Fish</title>
+    </head>
+    <main>
+        <div class="container py-5 mt-5">
+            <h1 class="text-center">Fish</h1>
+            <p class="text-center">Below are all the fish available to create catch logs for!</p>
+
+            <div class="row justify-content-center">
+                <div th:each="fish : ${fishes}" class="col-12 col-md-6 col-lg-4 my-3 d-flex justify-content-center">
+                    <div class="card shadow-sm text-center fish-card">
+                        <div class="card-body">
+                            <img class="fish-image"
+                                 th:src="'/images/fish/' + ${fish.fishImage}"
+                                 alt="Image of Species">
+                            <h3 th:text="${fish.fishSpecies}"></h3>
+                            <p th:text="'Family: ' + ${fish.fishFamily}"></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+</html>
