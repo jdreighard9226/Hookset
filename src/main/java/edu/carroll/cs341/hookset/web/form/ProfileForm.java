@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 
 public class ProfileForm {
 
+    private String username;
     /** The password entered into the signup form. */
     @NotBlank(message = "Password is required.")
     @Size(min = 6, max = 20, message = "Password must be between 6 and 20 characters.")
@@ -50,6 +51,16 @@ public class ProfileForm {
     public void setConfirmPassword(String confirmPassword) {
         this.confirmPassword = confirmPassword;
     }
+
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
 
     /**
      * Checks whether the password and password confirmation match.
