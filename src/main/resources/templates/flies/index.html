@@ -1,0 +1,49 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Water Bodies</title>
+</head>
+
+<main>
+    <div class="container py-5 mt-5">
+        <h1 class="text-center">Hookset Fly Catalog</h1>
+        <div class="d-flex justify-content-center gap-3 my-4">
+            <a th:href="@{/flies(filter='all')}"
+               class="secondary-button">
+                All Flies
+            </a>
+
+            <a th:href="@{/flies(filter='hookset')}"
+               class="secondary-button">
+                Hookset Flies
+            </a>
+
+            <a th:href="@{/flies(filter='mine')}"
+               class="secondary-button">
+                My Flies
+            </a>
+        </div>
+
+        <div class="row justify-content-center">
+            <div th:each="fly : ${flies}" class="col-12 col-md-6 col-lg-4 my-3 d-flex justify-content-center">
+                <div class="card shadow-sm text-center fly-card-gold">
+                    <div class="card-body">
+
+                        <img class="fly-image"
+                             th:src="'/images/flies/' + ${fly.flyImage}"
+                             alt="Image of Fly Type">
+                        <h4 th:text="${fly.flyName}"></h4>
+                        <p th:text="'Fly Type: ' + ${fly.flyType}"></p>
+                        <p th:text="'Color: ' + ${fly.color}"></p>
+
+                        <p th:text="'Common sizes: ' + ${fly.minSize} + ' - ' + ${fly.maxSize}"></p>
+                        <p th:if="${fly.userId != null}">Custom Fly</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

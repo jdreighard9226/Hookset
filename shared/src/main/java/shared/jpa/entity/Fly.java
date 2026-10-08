@@ -36,13 +36,15 @@ public class Fly {
     @Column(name = "color")
     private String color;
 
-    /** The date and time the fly was entered. */
-    @Column(name = "dateEntered")
-    private Instant dateEntered;
+    @Column(name = "minSize")
+    private Integer minSize;
 
-    /** The date and time the fly was last modified. May be null. */
-    @Column(name = "LastDateModified")
-    private Instant lastDateModified;
+    @Column(name = "maxSize")
+    private Integer maxSize;
+
+
+    @Column(name = "flyImage")
+    private String flyImage;
 
     /**
      * Returns the unique identifier for the fly.
@@ -90,24 +92,6 @@ public class Fly {
     }
 
     /**
-     * Returns the date and time the fly was entered.
-     *
-     * @return the date entered
-     */
-    public Instant getDateEntered() {
-        return dateEntered;
-    }
-
-    /**
-     * Returns the date and time the fly was last modified.
-     *
-     * @return the last modified date, or null if never modified
-     */
-    public Instant getLastDateModified() {
-        return lastDateModified;
-    }
-
-    /**
      * Sets the identifier of the user who entered the fly.
      *
      * @param userId the user identifier
@@ -143,21 +127,28 @@ public class Fly {
         this.color = color;
     }
 
-    /**
-     * Sets the date and time the fly was entered.
-     *
-     * @param dateEntered the date entered
-     */
-    public void setDateEntered(Instant dateEntered) {
-        this.dateEntered = dateEntered;
+
+    public Integer getMinSize() {
+        return minSize;
     }
 
-    /**
-     * Sets the date and time the fly was last modified.
-     *
-     * @param dateModified the last modified date
-     */
-    public void setLastDateModified(Instant dateModified) {
-        this.lastDateModified = dateModified;
+    public void setMinSize(Integer minSize) {
+        this.minSize = minSize;
+    }
+
+    public Integer getMaxSize() {
+        return maxSize;
+    }
+
+    public void setMaxSize(Integer maxSize) {
+        this.maxSize = maxSize;
+    }
+
+    public String getFlyImage() {
+        return flyImage;
+    }
+
+    public void setFlyImage(String flyImage) {
+        this.flyImage = flyImage;
     }
 }

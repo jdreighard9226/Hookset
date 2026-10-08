@@ -28,23 +28,26 @@ public class ProfileServiceImpl implements ProfileService {
         if (!profileForm.getPassword().equals(profileForm.getConfirmPassword())) {
             return false;
         }
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() && !(authentication instanceof AnonymousAuthenticationToken)) {
-            Object principal = authentication.getPrincipal();
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
 
-            if (principal instanceof UserDetails) {
-                String username = ((UserDetails) principal).getUsername();
-                User user = userRepository.findByUsername(username);
-                user.setHashPassword(passwordEncoder.encode(profileForm.getPassword()));
-                userRepository.save(user);
-                return true;
-            } else {
-                return false;
-            }
-
-        } else {
+        if (authentication == null ||
+                !authentication.isAuthenticated() ||
+                authentication instanceof AnonymousAuthenticationToken) {
             return false;
         }
+
+        String username = authentication.getName();
+        User user = userRepository.findByUsername(username);
+
+        if (user == null) {
+            return false;
+        }
+
+        user.setHashPassword(passwordEncoder.encode(profileForm.getPassword()));
+        userRepository.save(user);
+
+        return true;
     }
 }
 

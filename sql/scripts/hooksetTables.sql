@@ -25,7 +25,7 @@ CREATE TABLE Flies (
     color VARCHAR(100),
     minSize INT,
     maxSize INT,
-    dateEntered DATETIME,
+	dateEntered DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     lastDateModified DATETIME NULL,
 
     FOREIGN KEY (userId)
@@ -38,17 +38,6 @@ CREATE TABLE FlyMaterials (
     materialName VARCHAR(250),
     materialColor VARCHAR(100) NULL,
     materialType VARCHAR(100)
-);
-
-
-CREATE TABLE FlySizes (
-    flyId BIGINT NOT NULL,
-    size INT NOT NULL,
-
-    PRIMARY KEY (flyId, size),
-
-    FOREIGN KEY (flyId)
-        REFERENCES Flies(flyId)
 );
 
 
