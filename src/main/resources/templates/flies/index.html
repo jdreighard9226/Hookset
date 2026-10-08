@@ -4,12 +4,12 @@
       th:replace="~{layout :: layout(~{::title}, ~{::main})}">
 <head>
     <meta charset="UTF-8"/>
-    <title>Water Bodies</title>
+    <title>Flies</title>
 </head>
-
 <main>
     <div class="container py-5 mt-5">
         <h1 class="text-center">Hookset Fly Catalog</h1>
+
         <div class="d-flex justify-content-center gap-3 my-4">
             <a th:href="@{/flies(filter='all')}"
                class="secondary-button">
@@ -27,23 +27,42 @@
             </a>
         </div>
 
-        <div class="row justify-content-center">
-            <div th:each="fly : ${flies}" class="col-12 col-md-6 col-lg-4 my-3 d-flex justify-content-center">
-                <div class="card shadow-sm text-center fly-card-gold">
-                    <div class="card-body">
+        <div class="table-responsive">
+            <table id="fliesTable"
+                   class="table table-striped table-hover align-middle"
+                   style="width: 100%">
 
+                <thead>
+                <tr>
+                    <th>Emblem</th>
+                    <th>Fly Name</th>
+                    <th>Fly Type</th>
+                    <th>Details</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="fly : ${flies}">
+                    <td>
                         <img class="fly-image"
-                             th:src="'/images/flies/' + ${fly.flyImage}"
-                             alt="Image of Fly Type">
-                        <h4 th:text="${fly.flyName}"></h4>
-                        <p th:text="'Fly Type: ' + ${fly.flyType}"></p>
-                        <p th:text="'Color: ' + ${fly.color}"></p>
+                             th:src="@{'/images/flies/' + ${fly.flyImage}}"
+                             th:alt="${fly.flyName}">
+                    </td>
 
-                        <p th:text="'Common sizes: ' + ${fly.minSize} + ' - ' + ${fly.maxSize}"></p>
-                        <p th:if="${fly.userId != null}">Custom Fly</p>
-                    </div>
-                </div>
-            </div>
+                    <td th:text="${fly.flyName}"></td>
+
+                    <td th:text="${fly.flyType}"></td>
+
+                    <td>
+                        <a th:href="@{/flies/details/{slug}(slug=${fly.flySlug})}"
+                           class="secondary-button">
+                             Details
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
+
     </div>
 </main>

@@ -46,6 +46,16 @@ public class FlyServiceImpl implements FlyService {
         return mapAllFlyDtos(flies);
     }
 
+    @Override
+    public FlyDto getFlyFromSlug(String flySlug) {
+        Fly fly = flyRepository.getFlyByFlySlug(flySlug);
+        if (fly == null) {
+            return null;
+        }
+
+        return flyMapper.createFlyDto(fly);
+    }
+
     private Long getCurrentUserId() {
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();

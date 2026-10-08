@@ -1,0 +1,73 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Fly Details</title>
+</head>
+
+<main>
+    <div class="container py-5 mt-5">
+
+        <h1 class="text-center mb-4" th:text="${fly.flyName}"></h1>
+
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-8">
+
+                <div class="card shadow-sm fly-card-gold">
+                    <div class="card-body p-4">
+
+                        <div class="row align-items-center">
+
+                            <!-- Fly Image -->
+                            <div class="col-12 col-md-5 text-center mb-4 mb-md-0">
+                                <img class="img-fluid fly-details-image"
+                                     th:src="@{'/images/flies/' + ${fly.flyImage}}"
+                                     th:alt="${fly.flyName}">
+                            </div>
+
+                            <!-- Fly Information -->
+                            <div class="col-12 col-md-7">
+                                <h3 th:text="${fly.flyName}"></h3>
+
+                                <hr>
+
+                                <p>
+                                    <strong>Fly Type:</strong>
+                                    <span th:text="${fly.flyType}"></span>
+                                </p>
+
+                                <p>
+                                    <strong>Color:</strong>
+                                    <span th:text="${fly.color}"></span>
+                                </p>
+
+                                <p>
+                                    <strong>Common Sizes:</strong>
+                                    <span th:text="${fly.minSize} + ' - ' + ${fly.maxSize}"></span>
+                                </p>
+
+                                <p>
+                                    <strong>Category:</strong>
+                                    <span th:text="${fly.userId != null ? 'Custom Fly' : 'Hookset Fly'}"></span>
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Return Button -->
+                <div class="text-center mt-4">
+                    <a th:href="@{/flies}" class="secondary-button">
+                        Back to Fly Catalog
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+</html>

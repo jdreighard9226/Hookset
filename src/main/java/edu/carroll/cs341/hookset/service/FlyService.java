@@ -8,4 +8,5 @@ public interface FlyService {
     List<FlyDto> getAllFlies();
     List<FlyDto> getAllHooksetFlies();
     List<FlyDto> getAllUserFlies();
+    FlyDto getFlyFromSlug(String flySlug);
 }

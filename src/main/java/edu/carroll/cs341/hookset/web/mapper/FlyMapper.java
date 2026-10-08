@@ -18,6 +18,7 @@ public class FlyMapper {
         flyDto.setMinSize(fly.getMinSize());
         flyDto.setMaxSize(fly.getMaxSize());
         flyDto.setFlyImage(fly.getFlyImage());
+        flyDto.setFlySlug(fly.getFlySlug());
 
         return flyDto;
     }

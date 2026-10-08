@@ -46,6 +46,9 @@ public class Fly {
     @Column(name = "flyImage")
     private String flyImage;
 
+    @Column(name ="flySlug")
+    private String flySlug;
+
     /**
      * Returns the unique identifier for the fly.
      *
@@ -150,5 +153,13 @@ public class Fly {
 
     public void setFlyImage(String flyImage) {
         this.flyImage = flyImage;
+    }
+
+    public String getFlySlug() {
+        return flySlug;
+    }
+
+    public void setFlySlug(String flySlug) {
+        this.flySlug = flySlug;
     }
 }

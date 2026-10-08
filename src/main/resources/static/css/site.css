@@ -61,7 +61,7 @@ footer {
     margin: 0 auto;
 }
 
-nav {
+nav.navbar {
     background-color: var(--hookset-green);
     border-top: 1px solid var(--hookset-gold);
     border-bottom: 1px solid var(--hookset-gold);
@@ -141,15 +141,6 @@ nav {
     margin-right: auto;
 }
 
-.fly-image {
-    width: 60%;
-    height: auto;
-    border-radius: 16px;
-    object-fit: cover;
-    margin-left: auto;
-    margin-right: auto;
-}
-
 .fish-card {
     border-top: 2px solid var(--hookset-light-gold);
     border-bottom: 2px solid var(--hookset-light-gold);
@@ -169,4 +160,66 @@ nav {
 
 .index-lead {
     max-width: 700px;
+}
+
+#fliesTable {
+    border-top: 2px solid var(--hookset-gold);
+    border-bottom: 2px solid var(--hookset-gold);
+}
+
+#fliesTable thead th {
+    background-color: var(--hookset-dark-green);
+    color: var(--hookset-cream);
+}
+
+#fliesTable thead th .dt-column-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+}
+
+#fliesTable thead th .dt-column-title {
+    flex-grow: 0;
+}
+
+#fliesTable thead th .dt-column-order {
+    position: relative;
+    flex-shrink: 0;
+}
+
+#fliesTable .fly-image {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+}
+
+/* Unselected Pagination Buttons */
+#fliesTable_wrapper .pagination .page-link {
+    color: var(--hookset-dark-green);
+}
+
+/* Active Pagination Button */
+#fliesTable_wrapper .pagination .active .page-link {
+    background-color: var(--hookset-gold);
+    border-color: var(--hookset-gold);
+    color: white;
+}
+
+.fly-details-image {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+    object-fit: contain;
+}
+
+@media (max-width: 767px) {
+    #fliesTable {
+        min-width: 650px;
+    }
+
+    #fliesTable .fly-image {
+        width: 60px;
+        height: 60px;
+    }
 }

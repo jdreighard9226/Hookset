@@ -9,6 +9,7 @@ public class FlyDto {
     private Integer minSize;
     private Integer maxSize;
     private String flyImage;
+    private String flySlug;
 
 
     public Long getFlyId() {
@@ -77,5 +78,13 @@ public class FlyDto {
 
     public void setFlyImage(String flyImage) {
         this.flyImage = flyImage;
+    }
+
+    public String getFlySlug() {
+        return flySlug;
+    }
+
+    public void setFlySlug(String flySlug) {
+        this.flySlug = flySlug;
     }
 }

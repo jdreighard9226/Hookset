@@ -2,7 +2,6 @@ package edu.carroll.cs341.hookset.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import shared.jpa.entity.Fly;
-
 import java.util.List;
 
 public interface FlyRepository extends JpaRepository<Fly, Long> {
@@ -15,4 +14,6 @@ public interface FlyRepository extends JpaRepository<Fly, Long> {
 
     // Both default and user-created flies
     List<Fly> findByUserIdIsNullOrUserId(Long userId);
+
+    Fly getFlyByFlySlug(String flySlug);
 }
