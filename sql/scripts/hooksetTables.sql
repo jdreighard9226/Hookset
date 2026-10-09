@@ -22,7 +22,7 @@ CREATE TABLE Flies (
     flyId BIGINT AUTO_INCREMENT PRIMARY KEY,
     userId BIGINT NULL,
     flyType VARCHAR(50) NULL,
-    flyName VARCHAR(100) NOT NULL UNIQUE,
+    flyName VARCHAR(100) NOT NULL,
     color VARCHAR(40),
     minSize INT,
     maxSize INT,
