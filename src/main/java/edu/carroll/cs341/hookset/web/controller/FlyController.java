@@ -2,13 +2,14 @@ package edu.carroll.cs341.hookset.web.controller;
 
 import edu.carroll.cs341.hookset.service.FlyService;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
+import edu.carroll.cs341.hookset.web.form.FlyForm;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -54,5 +55,30 @@ public class FlyController {
         FlyDto flyDto = flyService.getFlyFromSlug(slug);
         model.addAttribute("fly", flyDto);
         return "flies/details";
+    }
+
+
+    @GetMapping("/flies/add")
+    public String getAddFly(Model model) {
+        model.addAttribute("flyForm", new FlyForm());
+        return "/flies/add";
+    }
+
+    @PostMapping("/flies/add")
+    public String postAddFly(@Valid @ModelAttribute("flyForm") FlyForm flyForm,
+                             BindingResult result) {
+
+        // Run business logic validation
+        flyService.validateFly(flyForm, result);
+
+        // Check both Jakarta and business validation errors
+        if (result.hasErrors()) {
+            return "flies/add";
+        }
+
+        // Save the fly
+        flyService.addFly(flyForm);
+
+        return "redirect:/flies";
     }
 }

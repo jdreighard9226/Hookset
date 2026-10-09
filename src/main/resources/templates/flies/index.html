@@ -25,6 +25,13 @@
                class="secondary-button">
                 My Flies
             </a>
+
+            <a th:if="${filter == 'mine'}"
+               th:href="@{/flies/add}"
+               class="secondary-button">
+                Add Fly
+            </a>
+
         </div>
 
         <div class="table-responsive">

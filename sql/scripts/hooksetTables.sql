@@ -2,6 +2,7 @@ USE hookset;
 
 DROP TABLE IF EXISTS FishWaterBodies;
 DROP TABLE IF EXISTS FlySizes;
+DROP TABLE IF EXISTS Catches;
 DROP TABLE IF EXISTS Flies;
 DROP TABLE IF EXISTS FlyMaterials;
 DROP TABLE IF EXISTS Fishes;
@@ -21,13 +22,13 @@ CREATE TABLE Flies (
     flyId BIGINT AUTO_INCREMENT PRIMARY KEY,
     userId BIGINT NULL,
     flyType VARCHAR(50) NULL,
-    flyName VARCHAR(250),
-    color VARCHAR(100),
+    flyName VARCHAR(100) NOT NULL UNIQUE,
+    color VARCHAR(40),
     minSize INT,
     maxSize INT,
-	dateEntered DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    lastDateModified DATETIME NULL,
-
+    flyImage VARCHAR(100),
+    flySlug VARCHAR(125) NOT NULL,
+    
     FOREIGN KEY (userId)
         REFERENCES Users(userId)
 );
@@ -72,4 +73,29 @@ CREATE TABLE FishWaterBodies (
 
     FOREIGN KEY (waterBodyId)
         REFERENCES WaterBodies(waterBodyId)
+);
+
+CREATE TABLE Catches (
+    catchId BIGINT AUTO_INCREMENT PRIMARY KEY,
+    userId BIGINT NOT NULL,
+    flyId BIGINT NOT NULL,
+    fishId BIGINT NOT NULL,
+    waterBodyId BIGINT NOT NULL,
+    fishLength DECIMAL(5,2),
+    dateCaught DATETIME NOT NULL,
+    notes VARCHAR(1000),
+
+    FOREIGN KEY (userId)
+        REFERENCES Users(userId),
+
+    FOREIGN KEY (flyId)
+        REFERENCES Flies(flyId),
+
+    FOREIGN KEY (fishId)
+        REFERENCES Fishes(fishId),
+
+    FOREIGN KEY (waterBodyId)
+        REFERENCES WaterBodies(waterBodyId),
+
+    CHECK (fishLength > 0)
 );

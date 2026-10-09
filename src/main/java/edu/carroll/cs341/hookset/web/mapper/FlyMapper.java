@@ -1,6 +1,7 @@
 package edu.carroll.cs341.hookset.web.mapper;
 
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
+import edu.carroll.cs341.hookset.web.form.FlyForm;
 import org.springframework.stereotype.Component;
 import shared.jpa.entity.Fly;
 
@@ -21,5 +22,17 @@ public class FlyMapper {
         flyDto.setFlySlug(fly.getFlySlug());
 
         return flyDto;
+    }
+
+    public Fly createFlyEntity(FlyForm flyForm) {
+        Fly fly = new Fly();
+
+        fly.setFlyName(flyForm.getFlyName().trim());
+        fly.setFlyType(flyForm.getFlyType());
+        fly.setColor(flyForm.getFlyColor());
+        fly.setMinSize(flyForm.getMinSize());
+        fly.setMaxSize(flyForm.getMaxSize());
+
+        return fly;
     }
 }

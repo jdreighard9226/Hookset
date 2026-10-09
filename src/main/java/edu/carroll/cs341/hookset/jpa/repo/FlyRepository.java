@@ -16,4 +16,8 @@ public interface FlyRepository extends JpaRepository<Fly, Long> {
     List<Fly> findByUserIdIsNullOrUserId(Long userId);
 
     Fly getFlyByFlySlug(String flySlug);
+
+    boolean existsByUserIdAndFlyNameIgnoreCase(Long userId, String flyName);
+
+    void deleteFly();
 }

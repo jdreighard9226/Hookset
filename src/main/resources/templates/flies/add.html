@@ -1,0 +1,168 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>Add Fly</title>
+</head>
+
+<body>
+<main>
+    <div class="container py-5 mt-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-xl-6">
+                <div class="card shadow-sm fly-card-gold">
+                    <div class="card-body p-4">
+
+                        <h1 class="text-center mb-4">Add Custom Fly</h1>
+
+                        <form th:action="@{/flies/add}"
+                              th:object="${flyForm}"
+                              method="post">
+
+                            <!-- Errors not tied to a specific field -->
+                            <div th:if="${#fields.hasGlobalErrors()}"
+                                 class="alert alert-danger"
+                                 th:errors="*{global}">
+                                Global error
+                            </div>
+
+                            <!-- Fly Name -->
+                            <div class="mb-3">
+                                <label for="flyName" class="form-label">
+                                    Fly Name
+                                </label>
+
+                                <input type="text"
+                                       id="flyName"
+                                       class="form-control"
+                                       th:field="*{flyName}"
+                                       placeholder="Enter Fly Name"/>
+
+                                <div class="text-danger"
+                                     th:if="${#fields.hasErrors('flyName')}"
+                                     th:errors="*{flyName}">
+                                    Fly name error
+                                </div>
+                            </div>
+
+                            <!-- Fly Type -->
+                            <div class="mb-3">
+                                <label for="flyType" class="form-label">
+                                    Fly Type
+                                </label>
+
+                                <select id="flyType"
+                                        class="form-select"
+                                        th:field="*{flyType}">
+                                    <option value="">Select Fly Type</option>
+                                    <option value="Dry">Dry Fly</option>
+                                    <option value="Nymph">Nymph</option>
+                                    <option value="Streamer">Streamer</option>
+                                </select>
+
+                                <div class="text-danger"
+                                     th:if="${#fields.hasErrors('flyType')}"
+                                     th:errors="*{flyType}">
+                                    Fly type error
+                                </div>
+                            </div>
+
+                            <!-- Fly Color -->
+                            <div class="mb-3">
+                                <label for="flyColor" class="form-label">
+                                    Fly Color
+                                </label>
+
+                                <input type="text"
+                                       id="flyColor"
+                                       class="form-control"
+                                       th:field="*{flyColor}"
+                                       placeholder="Enter Fly Color"/>
+
+                                <div class="text-danger"
+                                     th:if="${#fields.hasErrors('flyColor')}"
+                                     th:errors="*{flyColor}">
+                                    Fly color error
+                                </div>
+                            </div>
+
+                            <!-- Hook Sizes -->
+                            <div class="row">
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="minSize" class="form-label">
+                                        Minimum Hook Size
+                                    </label>
+
+                                    <select id="minSize"
+                                            class="form-select"
+                                            th:field="*{minSize}">
+                                        <option value="">Select Minimum Size</option>
+                                        <option th:each="size : ${#numbers.sequence(1, 32)}"
+                                                th:value="${size}"
+                                                th:text="${size}">
+                                        </option>
+                                    </select>
+
+                                    <div class="text-danger"
+                                         th:if="${#fields.hasErrors('minSize')}"
+                                         th:errors="*{minSize}">
+                                        Minimum size error
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="maxSize" class="form-label">
+                                        Maximum Hook Size
+                                    </label>
+
+                                    <select id="maxSize"
+                                            class="form-select"
+                                            th:field="*{maxSize}">
+                                        <option value="">Select Maximum Size</option>
+                                        <option th:each="size : ${#numbers.sequence(1, 32)}"
+                                                th:value="${size}"
+                                                th:text="${size}">
+                                        </option>
+                                    </select>
+
+                                    <div class="text-danger"
+                                         th:if="${#fields.hasErrors('maxSize')}"
+                                         th:errors="*{maxSize}">
+                                        Maximum size error
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- From isSizeRangeValid() in FlyForm -->
+                            <div class="text-danger mb-3"
+                                 th:if="${#fields.hasErrors('sizeRangeValid')}"
+                                 th:errors="*{sizeRangeValid}">
+                                Invalid hook size range.
+                            </div>
+
+                            <!-- Submit -->
+                            <button type="submit"
+                                    class="primary-button w-100">
+                                Add Fly
+                            </button>
+
+                        </form>
+
+                        <div class="text-center mt-4">
+                            <a th:href="@{/flies(filter='mine')}"
+                               class="secondary-button">
+                                Back to My Flies
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
