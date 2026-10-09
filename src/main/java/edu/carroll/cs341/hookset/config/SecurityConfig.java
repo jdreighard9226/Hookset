@@ -71,6 +71,8 @@ public class SecurityConfig {
                                 "/",
                                 "/login",
                                 "/signup",
+                                "/fish",
+                                "/waterbodies",
                                 "/css/**",
                                 "/images/**",
                                 "/js/**"
