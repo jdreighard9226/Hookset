@@ -81,4 +81,10 @@ public class FlyController {
 
         return "redirect:/flies";
     }
+
+    @PostMapping("/flies/delete/{flyId}")
+    public String deleteFly(@PathVariable Long flyId) {
+        flyService.deleteFly(flyId);
+        return "redirect:/flies";
+    }
 }

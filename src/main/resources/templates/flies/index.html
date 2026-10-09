@@ -61,10 +61,23 @@
                     <td th:text="${fly.flyType}"></td>
 
                     <td>
-                        <a th:href="@{/flies/details/{slug}(slug=${fly.flySlug})}"
-                           class="secondary-button">
-                             Details
-                        </a>
+                        <div class="d-flex align-items-center gap-2">
+                            <a th:href="@{/flies/details/{slug}(slug=${fly.flySlug})}"
+                               class="secondary-button">
+                                Details
+                            </a>
+
+                            <form th:if="${fly.userId != null}"
+                                  th:action="@{/flies/delete/{flyId}(flyId=${fly.flyId})}"
+                                  method="post"
+                                  class="m-0">
+
+                                <button type="submit" class="secondary-button"
+                                        onclick="return confirm('Are you sure you want to delete this fly?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 </tbody>

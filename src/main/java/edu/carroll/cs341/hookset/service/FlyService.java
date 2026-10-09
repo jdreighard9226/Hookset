@@ -12,4 +12,5 @@ public interface FlyService {
     FlyDto getFlyFromSlug(String flySlug);
     void addFly(FlyForm flyForm);
     void validateFly(FlyForm flyForm, BindingResult result);
+    void deleteFly(Long flyId);
 }
