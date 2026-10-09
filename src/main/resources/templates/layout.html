@@ -38,6 +38,8 @@
                     <!-- Logged in -->
                     <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/waterbodies}">Water Bodies</a>
                     <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/fish}">Fish</a>
+                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/flies}">Flies</a>
+                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/catches}">Catches</a>
                     <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/profile}">Profile</a>
                     <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="d-inline">
                         <button type="submit" class="nav-link btn btn-link">Log Out</button>
@@ -65,6 +67,7 @@
 
         <!-- Custom JavaScript -->
         <script th:src="@{/js/flies.js}"></script>
+        <script th:src="@{/js/catches.js}"></script>
 
     </body>
 </html>
