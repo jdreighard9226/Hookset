@@ -11,15 +11,18 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * Handles requests for the Hookset signup page.
  *
- * <p>This controller displays the signup form, validates submitted form
- * data, and creates new user accounts through the signup service. After a
- * successful signup the user is redirected to the login page.</p>
+ * <p>This controller maps requests under {@code /signup}, displays the signup
+ * form, validates submitted form data, and creates new user accounts through
+ * the signup service. After a successful signup the user is redirected to the
+ * login page.</p>
  */
 @Controller
+@RequestMapping("/signup")
 public class SignupController {
 
     private static final Logger log = LoggerFactory.getLogger(SignupController.class);
@@ -45,11 +48,12 @@ public class SignupController {
      * @param model the model used to provide data to the signup view
      * @return the name of the signup view to render
      */
-    @GetMapping("/signup")
-    public String signupGet(Model model) {
-        log.info("Request received for signup page");
+    @GetMapping
+    public String getSignup(Model model) {
+        log.info("Loading signup page");
 
         model.addAttribute("signupForm", new SignupForm());
+
         return "signup";
     }
 
@@ -64,8 +68,9 @@ public class SignupController {
      * @param result the validation results for the form
      * @return the view to render or the redirect to perform
      */
-    @PostMapping("/signup")
-    public String signupPost(@Valid @ModelAttribute SignupForm signupForm, BindingResult result) {
+    @PostMapping
+    public String postSignup(@Valid @ModelAttribute SignupForm signupForm, BindingResult result) {
+        log.info("Signup form submitted");
 
         // show the form again if any validation rules failed
         if (result.hasErrors()) {
@@ -77,9 +82,11 @@ public class SignupController {
             return "redirect:/login";
         }
 
+        log.warn("Signup failed");
+
         // username is taken, shown as a global error on the form
         result.reject(
-                "usernameExists",
+                "duplicate.username",
                 "That username is already taken."
         );
 

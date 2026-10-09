@@ -2,60 +2,64 @@
 <html xmlns:th="http://www.thymeleaf.org"
       lang="en"
       th:replace="~{layout :: layout(~{::title}, ~{::main})}">
-<head>
-    <meta charset="UTF-8"/>
-    <title>All Catches</title>
-</head>
+    <!--/* this whole page is swapped into layout.html, only the title and main are kept */-->
+    <head>
+        <meta charset="UTF-8"/>
+        <title>All Catches</title>
+    </head>
 
-<main>
-    <div class="container py-5 mt-5">
-        <h1 class="text-center">Hookset Catch Catalog</h1>
+    <main>
+        <div class="container py-5 mt-5">
+            <h1 class="text-center">Hookset Catch Catalog</h1>
 
-        <div class="d-flex flex-wrap justify-content-center gap-3 my-4">
-            <a th:href="@{/catches}" class="secondary-button">
-                All Catches
-            </a>
+            <!--/* switches between every user's catches and the logged-in user's catches */-->
+            <div class="d-flex flex-wrap justify-content-center gap-3 my-4">
+                <a th:href="@{/catches}" class="secondary-button">
+                    All Catches
+                </a>
 
-            <a th:href="@{/catches/mine}" class="secondary-button">
-                My Catches
-            </a>
+                <a th:href="@{/catches/mine}" class="secondary-button">
+                    My Catches
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table id="catchesTable"
+                       class="table table-striped table-hover align-middle"
+                       style="width: 100%">
+
+                    <thead>
+                    <tr>
+                        <th>Fish Species</th>
+                        <th>Water Body</th>
+                        <th>Date Caught</th>
+                        <th>Details</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <!--/* named catchRecord because catch is a reserved word in java */-->
+                    <tr th:each="catchRecord : ${catches}">
+                        <td th:text="${catchRecord.fish.fishSpecies}"></td>
+
+                        <td th:text="${catchRecord.waterBody.waterBodyName}"></td>
+
+                        <!--/* data-order holds the raw date so the table sorts by date, not by the formatted text */-->
+                        <td th:attr="data-order=${catchRecord.dateCaught}"
+                            th:text="${#temporals.format(catchRecord.dateCaught, 'MMM d, yyyy')}">
+                        </td>
+
+                        <td>
+                            <a th:href="@{/catches/details/{id}(id=${catchRecord.catchId})}"
+                               class="secondary-button">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
-
-        <div class="table-responsive">
-            <table id="catchesTable"
-                   class="table table-striped table-hover align-middle"
-                   style="width: 100%">
-
-                <thead>
-                <tr>
-                    <th>Fish Species</th>
-                    <th>Water Body</th>
-                    <th>Date Caught</th>
-                    <th>Details</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr th:each="catchRecord : ${catches}">
-                    <td th:text="${catchRecord.fish.fishSpecies}"></td>
-
-                    <td th:text="${catchRecord.waterBody.waterBodyName}"></td>
-
-                    <td th:attr="data-order=${catchRecord.dateCaught}"
-                        th:text="${#temporals.format(catchRecord.dateCaught, 'MMM d, yyyy')}">
-                    </td>
-
-                    <td>
-                        <a th:href="@{/catches/details/{id}(id=${catchRecord.catchId})}"
-                           class="secondary-button">
-                            View Details
-                        </a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-
-    </div>
-</main>
+    </main>
 </html>

@@ -7,16 +7,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
 
 /**
  * Handles requests for the fish species pages.
  *
- * <p>This controller loads fish species from the fish service and passes
- * them to the view that lists every species in the database.</p>
+ * <p>This controller maps requests under {@code /fish}, loads fish species
+ * from the fish service, and passes them to the view that lists every
+ * species in the database.</p>
  */
 @Controller
+@RequestMapping("/fish")
 public class FishController {
 
     private static final Logger log = LoggerFactory.getLogger(FishController.class);
@@ -39,13 +42,13 @@ public class FishController {
      * @param model the model used to pass the fish species to the view
      * @return the name of the fish list view to render
      */
-    @GetMapping("/fish")
-    public String getFish(Model model) {
-        log.info("Request received for fish list page");
+    @GetMapping
+    public String index(Model model) {
+        log.info("Loading fish page");
 
         List<FishDto> fishDtos = fishService.getAllFish();
         model.addAttribute("fishes", fishDtos);
 
-        return "/fish/index";
+        return "fish/index";
     }
 }

@@ -132,7 +132,7 @@ public class CatchServiceImpl implements CatchService {
 
     private CatchDto mapCatchDto(Catch catchRecord) {
         Fly fly = flyRepository.findById(catchRecord.getFlyId())
-                .orElseThrow();
+                .orElseThrow();;
 
         Fish fish = fishRepository.findById(catchRecord.getFishId())
                 .orElseThrow();
@@ -140,11 +140,11 @@ public class CatchServiceImpl implements CatchService {
         WaterBody waterBody = waterBodyRepository.findById(catchRecord.getWaterBodyId())
                 .orElseThrow();
 
-        FlyDto flyDto = flyMapper.createFlyDto(fly);
-        FishDto fishDto = fishMapper.mapToDto(fish);
+        FlyDto flyDto = flyMapper.toDto(fly);
+        FishDto fishDto = fishMapper.toDto(fish);
         WaterBodyDto waterBodyDto = waterBodyMapper.toDto(waterBody);
 
-        return catchMapper.createCatchDto(
+        return catchMapper.toDto(
                 catchRecord,
                 flyDto,
                 fishDto,

@@ -65,7 +65,7 @@ public class FishServiceImpl implements FishService {
 
         List<FishDto> fishDtos = new ArrayList<>();
         for (Fish fish : fishEntities) {
-            fishDtos.add(fishMapper.mapToDto(fish));
+            fishDtos.add(fishMapper.toDto(fish));
         }
 
         log.info("Loaded {} fish", fishDtos.size());
@@ -91,7 +91,7 @@ public class FishServiceImpl implements FishService {
 
         List<FishDto> fishDtos = new ArrayList<>();
         for (Fish fish : fishEntities) {
-            fishDtos.add(fishMapper.mapToDto(fish));
+            fishDtos.add(fishMapper.toDto(fish));
         }
 
         log.info("Loaded {} fish for water body id: {}", fishDtos.size(), waterBodyId);

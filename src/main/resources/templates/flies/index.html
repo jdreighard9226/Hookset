@@ -2,87 +2,93 @@
 <html xmlns:th="http://www.thymeleaf.org"
       lang="en"
       th:replace="~{layout :: layout(~{::title}, ~{::main})}">
-<head>
-    <meta charset="UTF-8"/>
-    <title>Flies</title>
-</head>
-<main>
-    <div class="container py-5 mt-5">
-        <h1 class="text-center">Hookset Fly Catalog</h1>
+    <!--/* the title and main below are inserted into layout.html, which adds the navbar, footer, and shared head */-->
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Flies</title>
+    </head>
 
-        <div class="d-flex justify-content-center gap-3 my-4">
-            <a th:href="@{/flies(filter='all')}"
-               class="secondary-button">
-                All Flies
-            </a>
+    <main>
+        <div class="container py-5 mt-5">
+            <h1 class="text-center">Hookset Fly Catalog</h1>
 
-            <a th:href="@{/flies(filter='hookset')}"
-               class="secondary-button">
-                Hookset Flies
-            </a>
+            <!--/* each filter link reloads the page with a filter param the controller reads */-->
+            <div class="d-flex justify-content-center gap-3 my-4">
+                <a th:href="@{/flies(filter='all')}"
+                   class="secondary-button">
+                    All Flies
+                </a>
 
-            <a th:href="@{/flies(filter='mine')}"
-               class="secondary-button">
-                My Flies
-            </a>
+                <a th:href="@{/flies(filter='hookset')}"
+                   class="secondary-button">
+                    Hookset Flies
+                </a>
 
-            <a th:if="${filter == 'mine'}"
-               th:href="@{/flies/add}"
-               class="secondary-button">
-                Add Fly
-            </a>
+                <a th:href="@{/flies(filter='mine')}"
+                   class="secondary-button">
+                    My Flies
+                </a>
+
+                <!--/* only shown on my flies since added flies always belong to the current user */-->
+                <a th:if="${filter == 'mine'}"
+                   th:href="@{/flies/add}"
+                   class="secondary-button">
+                    Add Fly
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table id="fliesTable"
+                       class="table table-striped table-hover align-middle"
+                       style="width: 100%">
+
+                    <thead>
+                    <tr>
+                        <th>Emblem</th>
+                        <th>Fly Name</th>
+                        <th>Fly Type</th>
+                        <th>Details</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="fly : ${flies}">
+                        <td>
+                            <img class="fly-image"
+                                 th:src="@{'/images/flies/' + ${fly.flyImage}}"
+                                 th:alt="${fly.flyName}">
+                        </td>
+
+                        <td th:text="${fly.flyName}"></td>
+
+                        <td th:text="${fly.flyType}"></td>
+
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <a th:href="@{/flies/details/{slug}(slug=${fly.flySlug})}"
+                                   class="secondary-button">
+                                    Details
+                                </a>
+
+                                <!--/* default flies have no user, so delete only shows for custom flies */-->
+                                <!--/* th:action adds the csrf token spring security requires on posts */-->
+                                <form th:if="${fly.userId != null}"
+                                      th:action="@{/flies/delete/{flyId}(flyId=${fly.flyId})}"
+                                      method="post"
+                                      class="m-0">
+
+                                    <button type="submit" class="secondary-button"
+                                            onclick="return confirm('Are you sure you want to delete this fly?');">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
 
         </div>
-
-        <div class="table-responsive">
-            <table id="fliesTable"
-                   class="table table-striped table-hover align-middle"
-                   style="width: 100%">
-
-                <thead>
-                <tr>
-                    <th>Emblem</th>
-                    <th>Fly Name</th>
-                    <th>Fly Type</th>
-                    <th>Details</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr th:each="fly : ${flies}">
-                    <td>
-                        <img class="fly-image"
-                             th:src="@{'/images/flies/' + ${fly.flyImage}}"
-                             th:alt="${fly.flyName}">
-                    </td>
-
-                    <td th:text="${fly.flyName}"></td>
-
-                    <td th:text="${fly.flyType}"></td>
-
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <a th:href="@{/flies/details/{slug}(slug=${fly.flySlug})}"
-                               class="secondary-button">
-                                Details
-                            </a>
-
-                            <form th:if="${fly.userId != null}"
-                                  th:action="@{/flies/delete/{flyId}(flyId=${fly.flyId})}"
-                                  method="post"
-                                  class="m-0">
-
-                                <button type="submit" class="secondary-button"
-                                        onclick="return confirm('Are you sure you want to delete this fly?');">
-                                    Delete
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-
-    </div>
-</main>
+    </main>
+</html>

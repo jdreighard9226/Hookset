@@ -2,13 +2,12 @@
 <html xmlns:th="http://www.thymeleaf.org"
       lang="en"
       th:replace="~{layout :: layout(~{::title}, ~{::main})}">
-
+<!--/* the title and main below are inserted into layout.html, which adds the navbar, footer, and shared head */-->
 <head>
     <meta charset="UTF-8"/>
     <title>Add Fly</title>
 </head>
 
-<body>
 <main>
     <div class="container py-5 mt-5">
         <div class="row justify-content-center">
@@ -22,14 +21,13 @@
                               th:object="${flyForm}"
                               method="post">
 
-                            <!-- Errors not tied to a specific field -->
+                            <!--/* errors added with result.reject() that aren't tied to one field */-->
                             <div th:if="${#fields.hasGlobalErrors()}"
                                  class="alert alert-danger"
                                  th:errors="*{global}">
                                 Global error
                             </div>
 
-                            <!-- Fly Name -->
                             <div class="mb-3">
                                 <label for="flyName" class="form-label">
                                     Fly Name
@@ -41,6 +39,7 @@
                                        th:field="*{flyName}"
                                        placeholder="Enter Fly Name"/>
 
+                                <!--/* the text inside error divs is only a placeholder, th:errors replaces it with the real message */-->
                                 <div class="text-danger"
                                      th:if="${#fields.hasErrors('flyName')}"
                                      th:errors="*{flyName}">
@@ -48,7 +47,6 @@
                                 </div>
                             </div>
 
-                            <!-- Fly Type -->
                             <div class="mb-3">
                                 <label for="flyType" class="form-label">
                                     Fly Type
@@ -70,7 +68,6 @@
                                 </div>
                             </div>
 
-                            <!-- Fly Color -->
                             <div class="mb-3">
                                 <label for="flyColor" class="form-label">
                                     Fly Color
@@ -89,7 +86,6 @@
                                 </div>
                             </div>
 
-                            <!-- Hook Sizes -->
                             <div class="row">
                                 <div class="col-12 col-md-6 mb-3">
                                     <label for="minSize" class="form-label">
@@ -136,14 +132,13 @@
                                 </div>
                             </div>
 
-                            <!-- From isSizeRangeValid() in FlyForm -->
+                            <!--/* comes from isSizeRangeValid() in FlyForm, spring drops the "is" so the property is sizeRangeValid */-->
                             <div class="text-danger mb-3"
                                  th:if="${#fields.hasErrors('sizeRangeValid')}"
                                  th:errors="*{sizeRangeValid}">
                                 Invalid hook size range.
                             </div>
 
-                            <!-- Submit -->
                             <button type="submit"
                                     class="primary-button w-100">
                                 Add Fly
@@ -164,5 +159,4 @@
         </div>
     </div>
 </main>
-</body>
 </html>

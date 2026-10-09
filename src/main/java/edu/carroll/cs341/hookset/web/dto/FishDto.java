@@ -30,21 +30,21 @@ public class FishDto {
     }
 
     /**
+     * Sets the database identifier of the fish species.
+     *
+     * @param fishId the fish identifier
+     */
+    public void setFishId(Long fishId) {
+        this.fishId = fishId;
+    }
+
+    /**
      * Returns the family the fish species belongs to.
      *
      * @return the fish family
      */
     public String getFishFamily() {
         return fishFamily;
-    }
-
-    /**
-     * Returns the name of the fish species.
-     *
-     * @return the fish species name
-     */
-    public String getFishSpecies() {
-        return fishSpecies;
     }
 
     /**
@@ -57,21 +57,21 @@ public class FishDto {
     }
 
     /**
+     * Returns the name of the fish species.
+     *
+     * @return the fish species name
+     */
+    public String getFishSpecies() {
+        return fishSpecies;
+    }
+
+    /**
      * Sets the name of the fish species.
      *
      * @param fishSpecies the fish species name
      */
     public void setFishSpecies(String fishSpecies) {
         this.fishSpecies = fishSpecies;
-    }
-
-    /**
-     * Sets the database identifier of the fish species.
-     *
-     * @param fishId the fish identifier
-     */
-    public void setFishId(Long fishId) {
-        this.fishId = fishId;
     }
 
     /**

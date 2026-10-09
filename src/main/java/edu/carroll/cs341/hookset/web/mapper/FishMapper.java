@@ -19,7 +19,7 @@ public class FishMapper {
      * @param fish the fish entity to convert
      * @return the fish as a DTO
      */
-    public FishDto mapToDto(Fish fish) {
+    public FishDto toDto(Fish fish) {
         FishDto fishDto = new FishDto();
 
         fishDto.setFishId(fish.getFishId());

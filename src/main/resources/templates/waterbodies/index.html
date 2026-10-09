@@ -2,44 +2,46 @@
 <html xmlns:th="http://www.thymeleaf.org"
       lang="en"
       th:replace="~{layout :: layout(~{::title}, ~{::main})}">
-    <head>
-        <meta charset="UTF-8"/>
-        <title>Water Bodies</title>
-    </head>
-    <main>
-        <div class="container py-5 mt-5">
-            <h1 class="text-center">Popular Water Bodies in Montana</h1>
-            <div class="row justify-content-center">
-                <div th:each="waterBody : ${waterBodies}" class="col-12 col-md-6 col-lg-4 my-3 d-flex justify-content-center">
-                    <div class="card shadow-sm text-center">
-                        <div class="card-body">
+<!--/* the title and main below are inserted into layout.html, which adds the navbar, footer, and shared head */-->
+<head>
+    <meta charset="UTF-8"/>
+    <title>Water Bodies</title>
+</head>
 
-                            <img class="water-body-image" th:if="${waterBody.waterBodyType == 'River'}"
-                                 th:src="@{/images/river.png}"
-                                 alt="River">
+<main>
+    <div class="container py-5 mt-5">
+        <h1 class="text-center">Popular Water Bodies in Montana</h1>
 
-                            <img class="water-body-image" th:if="${waterBody.waterBodyType == 'Lake'}"
-                                 th:src="@{/images/lake.png}"
-                                 alt="Lake">
+        <div class="row justify-content-center">
+            <!--/* one card per water body, three across on large screens, two on medium, one on phones */-->
+            <div th:each="waterBody : ${waterBodies}" class="col-12 col-md-6 col-lg-4 my-3 d-flex justify-content-center">
+                <div class="card shadow-sm text-center">
+                    <div class="card-body">
 
-                            <img class="water-body-image" th:if="${waterBody.waterBodyType == 'Stream'}"
-                                 th:src="@{/images/stream.png}"
-                                 alt="Stream">
+                        <!--/* water bodies don't have their own images, so the image is picked by type */-->
+                        <img class="water-body-image" th:if="${waterBody.waterBodyType == 'River'}"
+                             th:src="@{/images/river.png}"
+                             alt="River">
 
-                            <h3 class="mt-t" th:text="${waterBody.waterBodyName}"></h3>
-                            <p th:text="${waterBody.waterBodyType}"></p>
+                        <img class="water-body-image" th:if="${waterBody.waterBodyType == 'Lake'}"
+                             th:src="@{/images/lake.png}"
+                             alt="Lake">
 
-                            <form th:action="@{/waterbodies/details/{slug}(slug=${waterBody.waterBodySlug})}"
-                                  method="get">
+                        <img class="water-body-image" th:if="${waterBody.waterBodyType == 'Stream'}"
+                             th:src="@{/images/stream.png}"
+                             alt="Stream">
 
-                                <button class="secondary-button" type="submit">
-                                    See details
-                                </button>
-                            </form>
-                        </div>
+                        <h3 class="mt-t" th:text="${waterBody.waterBodyName}"></h3>
+                        <p th:text="${waterBody.waterBodyType}"></p>
+
+                        <a th:href="@{/waterbodies/details/{slug}(slug=${waterBody.waterBodySlug})}"
+                           class="secondary-button">
+                            See details
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+</main>
 </html>
