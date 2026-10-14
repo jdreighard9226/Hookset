@@ -40,6 +40,22 @@
                                                th:field="*{username}"
                                                placeholder="Username"/>
 
+                                        <div th:if="${usernameBlank}" class="text-danger mt-1">
+                                            Username cannot be blank
+                                        </div>
+
+                                        <div th:if="${usernameTooLong}" class="text-danger mt-1">
+                                            Username cannot exceed 20 characters
+                                        </div>
+
+                                        <div th:if="${usernameHasSpaces}" class="text-danger mt-1">
+                                            Username cannot contain spaces
+                                        </div>
+
+                                        <div th:if="${usernameTaken}" class="text-danger mt-1">
+                                            This username is already taken
+                                        </div>
+
                                         <div class="text-danger"
                                              th:if="${#fields.hasErrors('username')}"
                                              th:errors="*{username}">
@@ -62,6 +78,18 @@
                                              th:if="${#fields.hasErrors('password')}"
                                              th:errors="*{password}">
                                             Password error
+                                        </div>
+
+                                        <div th:if="${passwordBlank}" class="text-danger mt-1">
+                                            Password cannot be blank
+                                        </div>
+
+                                        <div th:if="${passwordTooShort}" class="text-danger mt-1">
+                                            Password must be at least 8 characters
+                                        </div>
+
+                                        <div th:if="${passwordHasSpaces}" class="text-danger mt-1">
+                                            Password cannot contain spaces
                                         </div>
                                     </div>
 
@@ -90,16 +118,17 @@
                                         </div>
                                     </div>
 
+                                    <div th:if="${signupFailed}" class="text-danger text-center mb-3">
+                                        Unable to create your account. Please try again.
+                                    </div>
+
                                     <button type="submit"
                                             class="primary-button w-100">
                                         Create Account
                                     </button>
-
                                 </form>
-
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>

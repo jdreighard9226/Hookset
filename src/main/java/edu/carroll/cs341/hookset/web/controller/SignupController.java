@@ -1,5 +1,6 @@
 package edu.carroll.cs341.hookset.web.controller;
 
+import edu.carroll.cs341.hookset.service.UserService;
 import edu.carroll.cs341.hookset.web.form.SignupForm;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -27,15 +28,15 @@ public class SignupController {
     private static final Logger log = LoggerFactory.getLogger(SignupController.class);
 
     /** The service used to create new user accounts. */
-    private final SignupService signupService;
+    private final UserService userService;
 
     /**
      * Creates the controller with the signup service it depends on.
      *
      * @param signupService the service used to create new users
      */
-    public SignupController(SignupService signupService) {
-        this.signupService = signupService;
+    public SignupController(UserService userService) {
+        this.userService = userService;
     }
 
     /**
@@ -68,27 +69,61 @@ public class SignupController {
      * @return the view to render or the redirect to perform
      */
     @PostMapping
-    public String postSignup(@Valid @ModelAttribute SignupForm signupForm, BindingResult result) {
+    public String postSignup(
+            @Valid @ModelAttribute SignupForm signupForm,
+            BindingResult result,
+            Model model) {
+
         log.info("Signup form submitted");
 
-        // show the form again if any validation rules failed
-        if (result.hasErrors()) {
-            log.warn("Signup form failed validation with {} error(s)", result.getErrorCount());
+        boolean hasCustomErrors = false;
+
+        if (userService.isUsernameBlank(signupForm.getUsername())) {
+            model.addAttribute("usernameBlank", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isUsernameTooLong(signupForm.getUsername())) {
+            model.addAttribute("usernameTooLong", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isUsernameSpaceFree(signupForm.getUsername()) == false) {
+            model.addAttribute("usernameHasSpaces", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isUsernameTaken(signupForm.getUsername())) {
+            model.addAttribute("usernameTaken", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isPasswordBlank(signupForm.getPassword())) {
+            model.addAttribute("passwordBlank", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isPasswordTooShort(signupForm.getPassword())) {
+            model.addAttribute("passwordTooShort", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isPasswordSpaceFree(signupForm.getPassword()) == false) {
+            model.addAttribute("passwordHasSpaces", true);
+            hasCustomErrors = true;
+        }
+
+        if (result.hasErrors() || hasCustomErrors) {
+            log.warn("Signup form failed validation");
             return "signup";
         }
 
-        if (signupService.addUser(signupForm)) {
-            return "redirect:/login";
+        if (userService.addUser(signupForm) == false) {
+            log.warn("Signup failed");
+            model.addAttribute("signupFailed", true);
+            return "signup";
         }
 
-        log.warn("Signup failed");
-
-        // username is taken, shown as a global error on the form
-        result.reject(
-                "duplicate.username",
-                "That username is already taken."
-        );
-
-        return "signup";
+        return "redirect:/login";
     }
 }
