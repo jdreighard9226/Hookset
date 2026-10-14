@@ -13,6 +13,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import shared.jpa.entity.Fly;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -64,16 +65,18 @@ public class FlyController {
     public String index(@RequestParam(defaultValue = "hookset") String filter, Model model) {
         log.info("Loading flies page with filter: {}", filter);
 
-        List<FlyDto> flyDtos;
+        List<Fly> flies;
 
         if (filter.equals("all")) {
-            flyDtos = flyService.getAllFlies();
+            flies = flyService.getAllFlies();
         } else if (filter.equals("mine")) {
-            flyDtos = flyService.getAllUserFlies();
+            flies = flyService.getAllUserFlies();
         } else {
-            flyDtos = flyService.getAllHooksetFlies();
+            flies = flyService.getAllHooksetFlies();
             filter = "hookset";
         }
+
+        List<FlyDto> flyDtos = mapAllFlyDtos(flies);
 
         model.addAttribute("flies", flyDtos);
         model.addAttribute("filter", filter);
@@ -92,7 +95,8 @@ public class FlyController {
     public String getDetails(@PathVariable String slug, Model model) {
         log.info("Loading fly details page for slug: {}", slug);
 
-        FlyDto flyDto = flyService.getFlyFromSlug(slug);
+        Fly fly = flyService.getFlyFromSlug(slug);
+        FlyDto flyDto = flyMapper.toDto(fly);
         model.addAttribute("fly", flyDto);
 
         return "flies/details";
@@ -202,5 +206,27 @@ public class FlyController {
         flyService.deleteFly(flyId);
 
         return "redirect:/flies";
+    }
+
+    /**
+     * Converts a list of fly entities into fly DTOs.
+     *
+     * @param flies the fly entities to convert
+     * @return the list of fly DTOs
+     */
+    private List<FlyDto> mapAllFlyDtos(List<Fly> flies) {
+        if (flies.isEmpty()) {
+            log.info("No flies found");
+        } else {
+            log.info("Found {} flies", flies.size());
+        }
+
+        List<FlyDto> flyDtos = new ArrayList<>();
+
+        for (Fly fly : flies) {
+            flyDtos.add(flyMapper.toDto(fly));
+        }
+
+        return flyDtos;
     }
 }

@@ -56,13 +56,13 @@ public class FlyServiceImpl implements FlyService {
      * @return the combined list of flies as DTOs
      */
     @Override
-    public List<FlyDto> getAllFlies() {
+    public List<Fly> getAllFlies() {
         Long userId = getCurrentUserId();
 
         log.info("Getting default and custom flies for user ID: {}", userId);
 
         List<Fly> flies = flyRepository.findByUserIdIsNullOrUserId(userId);
-        return mapAllFlyDtos(flies);
+        return flies;
     }
 
     /**
@@ -71,11 +71,11 @@ public class FlyServiceImpl implements FlyService {
      * @return the list of default flies as DTOs
      */
     @Override
-    public List<FlyDto> getAllHooksetFlies() {
+    public List<Fly> getAllHooksetFlies() {
         log.info("Getting default Hookset flies");
 
         List<Fly> flies = flyRepository.findByUserIdIsNull();
-        return mapAllFlyDtos(flies);
+        return flies;
     }
 
     /**
@@ -84,13 +84,13 @@ public class FlyServiceImpl implements FlyService {
      * @return the list of the user's custom flies as DTOs
      */
     @Override
-    public List<FlyDto> getAllUserFlies() {
+    public List<Fly> getAllUserFlies() {
         Long userId = getCurrentUserId();
 
         log.info("Getting custom flies for user ID: {}", userId);
 
         List<Fly> flies = flyRepository.findByUserId(userId);
-        return mapAllFlyDtos(flies);
+        return flies;
     }
 
     /**
@@ -100,7 +100,7 @@ public class FlyServiceImpl implements FlyService {
      * @return the matching fly as a DTO, or {@code null} if none exists
      */
     @Override
-    public FlyDto getFlyFromSlug(String flySlug) {
+    public Fly getFlyFromSlug(String flySlug) {
         log.info("Looking up fly with slug: {}", flySlug);
 
         Fly fly = flyRepository.findByFlySlug(flySlug);
@@ -110,7 +110,7 @@ public class FlyServiceImpl implements FlyService {
             return null;
         }
 
-        return flyMapper.toDto(fly);
+        return fly;
     }
 
     /**
@@ -294,28 +294,6 @@ public class FlyServiceImpl implements FlyService {
         }
 
         return null;
-    }
-
-    /**
-     * Converts a list of fly entities into fly DTOs.
-     *
-     * @param flies the fly entities to convert
-     * @return the list of fly DTOs
-     */
-    private List<FlyDto> mapAllFlyDtos(List<Fly> flies) {
-        if (flies.isEmpty()) {
-            log.info("No flies found");
-        } else {
-            log.info("Found {} flies", flies.size());
-        }
-
-        List<FlyDto> flyDtos = new ArrayList<>();
-
-        for (Fly fly : flies) {
-            flyDtos.add(flyMapper.toDto(fly));
-        }
-
-        return flyDtos;
     }
 
     /**

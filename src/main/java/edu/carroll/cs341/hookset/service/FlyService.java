@@ -3,6 +3,7 @@ package edu.carroll.cs341.hookset.service;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
 import edu.carroll.cs341.hookset.web.form.FlyForm;
 import org.springframework.validation.BindingResult;
+import shared.jpa.entity.Fly;
 
 import java.util.List;
 
@@ -20,21 +21,21 @@ public interface FlyService {
      *
      * @return the combined list of flies as DTOs
      */
-    List<FlyDto> getAllFlies();
+    List<Fly> getAllFlies();
 
     /**
      * Returns all default Hookset flies.
      *
      * @return the list of default flies as DTOs
      */
-    List<FlyDto> getAllHooksetFlies();
+    List<Fly> getAllHooksetFlies();
 
     /**
      * Returns all custom flies created by the current user.
      *
      * @return the list of the user's custom flies as DTOs
      */
-    List<FlyDto> getAllUserFlies();
+    List<Fly> getAllUserFlies();
 
     /**
      * Returns a single fly by its URL slug.
@@ -42,7 +43,7 @@ public interface FlyService {
      * @param flySlug the slug of the fly to look up
      * @return the matching fly as a DTO, or {@code null} if none exists
      */
-    FlyDto getFlyFromSlug(String flySlug);
+    Fly getFlyFromSlug(String flySlug);
 
     /**
      * Saves a new custom fly for the current user.
