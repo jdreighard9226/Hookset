@@ -51,13 +51,6 @@ public interface FlyService {
      */
     void addFly(FlyForm flyForm);
 
-    /**
-     * Checks a submitted fly form for errors that annotations can't catch.
-     *
-     * @param flyForm the form to validate
-     * @param result the binding result to add any errors to
-     */
-    void validateFly(FlyForm flyForm, BindingResult result);
 
     /**
      * Deletes a custom fly owned by the current user.
@@ -65,4 +58,13 @@ public interface FlyService {
      * @param flyId the ID of the fly to delete
      */
     void deleteFly(Long flyId);
+
+    FlyDto getFlyById(Long flyId);
+
+    boolean isSizeRangeValid(FlyForm flyForm);
+
+    boolean isFlyNameUnique(FlyForm flyForm);
+    boolean isFlyNameUniqueForEdit(Long flyId, FlyForm flyForm);
+    boolean updateFly(Long flyId, FlyForm flyForm);
+
 }

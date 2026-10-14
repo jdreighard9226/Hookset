@@ -8,11 +8,11 @@ import edu.carroll.cs341.hookset.web.form.FlyForm;
 import edu.carroll.cs341.hookset.web.mapper.FlyMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.BindingResult;
 import shared.jpa.entity.Fly;
 
 import java.util.ArrayList;
@@ -147,18 +147,8 @@ public class FlyServiceImpl implements FlyService {
         log.info("Custom fly saved with slug: {}", fly.getFlySlug());
     }
 
-    /**
-     * Checks a submitted fly form for errors that annotations can't catch.
-     *
-     * <p>Rejects the form if the minimum size is larger than the maximum size,
-     * or if the current user already has a fly with the same name. Errors are
-     * added to the binding result so the form can show them.</p>
-     *
-     * @param flyForm the form to validate
-     * @param result the binding result to add any errors to
-     */
     @Override
-    public void validateFly(FlyForm flyForm, BindingResult result) {
+    public boolean isSizeRangeValid(FlyForm flyForm) {
         if (flyForm.getMinSize() != null
                 && flyForm.getMaxSize() != null) {
 
@@ -166,26 +156,90 @@ public class FlyServiceImpl implements FlyService {
                 log.warn("Fly validation failed. Min size {} exceeds max size {}",
                         flyForm.getMinSize(), flyForm.getMaxSize());
 
-                result.rejectValue(
-                        "minSize",
-                        "invalid.size",
-                        "Minimum size cannot exceed maximum size"
-                );
+                return false;
             }
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean isFlyNameUnique(FlyForm flyForm) {
+        if (flyForm.getFlyName() == null || flyForm.getFlyName().isBlank()) {
+            return false;
         }
 
         Long userId = getCurrentUserId();
 
         if (flyRepository.existsByUserIdAndFlyNameIgnoreCase(
                 userId, flyForm.getFlyName().trim())) {
+
             log.warn("Fly validation failed. Duplicate fly name: {} for user ID: {}",
                     flyForm.getFlyName().trim(), userId);
 
-            result.rejectValue(
-                    "flyName",
-                    "duplicate.flyName",
-                    "You already have a fly with this name"
-            );
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean isFlyNameUniqueForEdit(Long flyId, FlyForm flyForm) {
+       Fly fly = flyRepository.findById(flyId).orElseThrow();
+        if (flyForm.getFlyName() == null || flyForm.getFlyName().isBlank()) {
+            return false;
+        }
+        if (fly.getFlyName().toLowerCase().trim().equals(flyForm.getFlyName().toLowerCase().trim())) {
+           return true;
+        }
+
+        Long userId = getCurrentUserId();
+
+        if (flyRepository.existsByUserIdAndFlyNameIgnoreCase(
+                userId, flyForm.getFlyName().trim())) {
+
+            log.warn("Fly Edit Validation failed. Duplicate fly name: {} for user ID: {}",
+                    flyForm.getFlyName().trim(), userId);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean updateFly(Long flyId, FlyForm flyForm) {
+
+
+        Fly fly = flyRepository.findById(flyId).orElseThrow();
+
+        if (!fly.getUserId().equals(getCurrentUserId())) {
+            throw new AccessDeniedException("You cannot edit this fly");
+        }
+
+        fly.setFlyName(flyForm.getFlyName());
+        fly.setColor(flyForm.getFlyColor());
+        fly.setFlyType(flyForm.getFlyType());
+        fly.setMinSize(flyForm.getMinSize());
+        fly.setMaxSize(flyForm.getMaxSize());
+        fly.setFlySlug(generateFlySlug(fly.getFlyName()));
+
+        String flyType = fly.getFlyType();
+
+        if (flyType.equals("Dry Fly")) {
+            fly.setFlyImage("dry.png");
+        } else if (flyType.equals("Streamer")) {
+            fly.setFlyImage("streamer.png");
+        } else {
+            fly.setFlyImage("nymph.png");
+        }
+
+        try {
+            flyRepository.save(fly);
+            return true;
+        } catch (DataIntegrityViolationException e) {
+            log.error("Failed to save fly due to database constraints", e);
+            return false;
         }
     }
 
@@ -216,6 +270,13 @@ public class FlyServiceImpl implements FlyService {
         flyRepository.delete(fly);
 
         log.info("Fly deleted with ID: {}", flyId);
+    }
+
+    @Override
+    public FlyDto getFlyById(Long flyId) {
+        Fly fly = flyRepository.findById(flyId).orElseThrow();
+
+        return flyMapper.toDto(fly);
     }
 
     /**

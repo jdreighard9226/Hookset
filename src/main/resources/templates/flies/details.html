@@ -53,8 +53,14 @@
                                         <strong>Category:</strong>
                                         <span th:text="${fly.userId != null ? 'Custom Fly' : 'Hookset Fly'}"></span>
                                     </p>
-                                </div>
 
+                                    <a th:if="${fly.userId != null}"
+                                       th:href="@{/flies/edit/{flyId}(flyId=${fly.flyId})}"
+                                       class="secondary-button">
+                                        Edit Fly
+                                    </a>
+
+                                </div>
                             </div>
                         </div>
                     </div>

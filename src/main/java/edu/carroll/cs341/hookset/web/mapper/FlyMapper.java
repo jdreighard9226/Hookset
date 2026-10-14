@@ -58,4 +58,18 @@ public class FlyMapper {
 
         return fly;
     }
+
+
+    public FlyForm toForm(FlyDto flydto) {
+        FlyForm flyForm = new FlyForm();
+
+        flyForm.setFlyId(flydto.getFlyId());
+        flyForm.setFlyName(flydto.getFlyName());
+        flyForm.setFlyType(flydto.getFlyType());
+        flyForm.setFlyColor(flydto.getColor());
+        flyForm.setMinSize(flydto.getMinSize());
+        flyForm.setMaxSize(flydto.getMaxSize());
+        return flyForm;
+    }
+
 }

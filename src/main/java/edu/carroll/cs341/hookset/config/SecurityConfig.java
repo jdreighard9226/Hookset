@@ -71,11 +71,11 @@ public class SecurityConfig {
                                 "/",
                                 "/login",
                                 "/signup",
-                                "/fish",
-                                "/waterbodies",
                                 "/css/**",
+                                "/js/**",
                                 "/images/**",
-                                "/js/**"
+                                "/favicon.ico",
+                                "/error"
                         ).permitAll()
 
                         // everything else requires a logged in user

@@ -11,6 +11,8 @@ import jakarta.validation.constraints.*;
  */
 public class FlyForm {
 
+    private Long flyId;
+
     /** The name of the fly. */
     @NotBlank(message = "Fly name is required.")
     @Size(max = 150, message = "Fly name cannot exceed 150 characters.")
@@ -125,6 +127,14 @@ public class FlyForm {
      */
     public void setMaxSize(Integer maxSize) {
         this.maxSize = maxSize;
+    }
+
+    public Long getFlyId() {
+        return flyId;
+    }
+
+    public void setFlyId(Long flyId) {
+        this.flyId = flyId;
     }
 
     /**

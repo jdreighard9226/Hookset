@@ -3,6 +3,7 @@ package edu.carroll.cs341.hookset.web.controller;
 import edu.carroll.cs341.hookset.service.FlyService;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
 import edu.carroll.cs341.hookset.web.form.FlyForm;
+import edu.carroll.cs341.hookset.web.mapper.FlyMapper;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import shared.jpa.entity.Fly;
 
 import java.util.List;
 
@@ -35,13 +37,16 @@ public class FlyController {
     /** The service used to look up, create, and delete flies. */
     private final FlyService flyService;
 
+    private final FlyMapper flyMapper;
+
     /**
      * Creates the fly controller with the service it depends on.
      *
      * @param flyService the service used to look up, create, and delete flies
      */
-    public FlyController(FlyService flyService) {
+    public FlyController(FlyService flyService, FlyMapper flyMapper) {
         this.flyService = flyService;
+        this.flyMapper = flyMapper;
     }
 
     /**
@@ -120,19 +125,66 @@ public class FlyController {
      * @return a redirect to the fly list on success, or the add fly view if there are errors
      */
     @PostMapping("/add")
-    public String postAddFly(@Valid @ModelAttribute("flyForm") FlyForm flyForm,
-                             BindingResult result) {
-        log.info("Add fly form submitted");
+    public String addFly(@Valid @ModelAttribute FlyForm flyForm, BindingResult result, Model model) {
 
-        // business rules run after annotation validation so both sets of errors show together
-        flyService.validateFly(flyForm, result);
+        boolean hasCustomErrors = false;
 
-        if (result.hasErrors()) {
-            log.warn("Add fly failed with {} validation errors", result.getErrorCount());
+        if (flyService.isSizeRangeValid(flyForm) == false) {
+            model.addAttribute("invalidSizeRange", true);
+            hasCustomErrors = true;
+        }
+
+        if (flyService.isFlyNameUnique(flyForm) == false) {
+            model.addAttribute("duplicateFlyName", true);
+            hasCustomErrors = true;
+        }
+
+        if (result.hasErrors() || hasCustomErrors) {
             return "flies/add";
         }
 
         flyService.addFly(flyForm);
+
+        return "redirect:/flies";
+    }
+
+    @GetMapping("/edit/{flyId}")
+    public String getEditFly(@PathVariable Long flyId, Model model) {
+        FlyDto flyDto = flyService.getFlyById(flyId);
+        FlyForm flyForm = flyMapper.toForm(flyDto);
+
+        model.addAttribute("flyForm", flyForm);
+
+        model.addAttribute("fly", flyDto);
+
+        return "flies/edit";
+    }
+
+    @PostMapping("/edit/{flyId}")
+    public String postEditFly(
+            @PathVariable Long flyId,
+            @Valid @ModelAttribute FlyForm flyForm,
+            BindingResult result,
+            Model model) {
+
+        boolean hasCustomErrors = false;
+
+        if (flyService.isSizeRangeValid(flyForm) == false) {
+            model.addAttribute("invalidSizeRange", true);
+            hasCustomErrors = true;
+        }
+
+        if (flyService.isFlyNameUniqueForEdit(flyId, flyForm) == false) {
+            model.addAttribute("duplicateFlyName", true);
+            hasCustomErrors = true;
+        }
+
+        if (result.hasErrors() || hasCustomErrors) {
+            model.addAttribute("flyId", flyId);
+            return "flies/edit";
+        }
+
+        flyService.updateFly(flyId, flyForm);
 
         return "redirect:/flies";
     }

@@ -33,6 +33,10 @@
                                     Fly Name
                                 </label>
 
+                                <div th:if="${duplicateFlyName}" class="text-danger mt-1">
+                                    You already have a fly with this name
+                                </div>
+
                                 <input type="text"
                                        id="flyName"
                                        class="form-control"
@@ -101,6 +105,10 @@
                                                 th:text="${size}">
                                         </option>
                                     </select>
+
+                                    <div th:if="${invalidSizeRange}" class="text-danger mt-1">
+                                        Minimum size cannot exceed maximum size
+                                    </div>
 
                                     <div class="text-danger"
                                          th:if="${#fields.hasErrors('minSize')}"
