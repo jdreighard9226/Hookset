@@ -71,5 +71,4 @@ public class FlyMapper {
         flyForm.setMaxSize(flydto.getMaxSize());
         return flyForm;
     }
-
 }

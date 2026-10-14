@@ -4,6 +4,7 @@ import edu.carroll.cs341.hookset.service.FishService;
 import edu.carroll.cs341.hookset.service.WaterBodyService;
 import edu.carroll.cs341.hookset.web.dto.FishDto;
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
+import edu.carroll.cs341.hookset.web.mapper.FishMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -11,7 +12,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import shared.jpa.entity.Fish;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,15 +36,17 @@ public class WaterBodyController {
     /** The service used to look up the fish species in a water body. */
     private final FishService fishService;
 
+    private final FishMapper fishMapper;
     /**
      * Creates the water body controller with the services it depends on.
      *
      * @param waterBodyService the service used to look up water bodies
      * @param fishService the service used to look up the fish species in a water body
      */
-    public WaterBodyController(WaterBodyService waterBodyService, FishService fishService) {
+    public WaterBodyController(WaterBodyService waterBodyService, FishService fishService, FishMapper fishMapper) {
         this.waterBodyService = waterBodyService;
         this.fishService = fishService;
+        this.fishMapper = fishMapper;
     }
 
     /**
@@ -73,7 +78,11 @@ public class WaterBodyController {
         log.info("Loading water body details page for slug: {}", slug);
 
         WaterBodyDto waterBody = waterBodyService.getWaterBodyFromSlug(slug);
-        List<FishDto> fishDtos = fishService.getAllFishForWaterBody(waterBody.getWaterBodyId());
+        List<Fish> fishEntities = fishService.getAllFishForWaterBody(waterBody.getWaterBodyId());
+        List<FishDto> fishDtos = new ArrayList<>();
+        for (Fish fish : fishEntities) {
+            fishDtos.add(fishMapper.toDto(fish));
+        }
 
         model.addAttribute("waterBody", waterBody);
         model.addAttribute("fishes", fishDtos);

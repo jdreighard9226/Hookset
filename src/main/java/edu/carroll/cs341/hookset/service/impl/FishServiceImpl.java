@@ -31,20 +31,15 @@ public class FishServiceImpl implements FishService {
     /** The repository used to look up which fish are in which water bodies. */
     private final FishWaterBodyRepository fishWaterBodyRepository;
 
-    /** The mapper used to convert fish entities into DTOs. */
-    private final FishMapper fishMapper;
-
     /**
      * Creates the fish service with the repositories and mapper it depends on.
      *
      * @param fishRepository the repository used to look up fish species
      * @param fishWaterBodyRepository the repository used to look up which fish are in which water bodies
-     * @param fishMapper the mapper used to convert fish entities into DTOs
      */
-    public FishServiceImpl(FishRepository fishRepository, FishWaterBodyRepository fishWaterBodyRepository, FishMapper fishMapper) {
+    public FishServiceImpl(FishRepository fishRepository, FishWaterBodyRepository fishWaterBodyRepository) {
         this.fishRepository = fishRepository;
         this.fishWaterBodyRepository = fishWaterBodyRepository;
-        this.fishMapper = fishMapper;
     }
 
     /**
@@ -53,24 +48,20 @@ public class FishServiceImpl implements FishService {
      * @return the fish species as DTOs, or an empty list if none exist
      */
     @Override
-    public List<FishDto> getAllFish() {
+    public List<Fish> getAllFish() {
         log.info("Loading all fish");
 
-        List<Fish> fishEntities = fishRepository.findAll();
+        List<Fish> fish = fishRepository.findAll();
 
         // An empty fish table usually means the importer has not been run
-        if (fishEntities.size() < 1) {
+
+        if (fish.size() < 1) {
             log.warn("No fish found in the database");
         }
 
-        List<FishDto> fishDtos = new ArrayList<>();
-        for (Fish fish : fishEntities) {
-            fishDtos.add(fishMapper.toDto(fish));
-        }
+        log.info("Loaded {} fish", fish.size());
 
-        log.info("Loaded {} fish", fishDtos.size());
-
-        return fishDtos;
+        return fish;
     }
 
     /**
@@ -80,22 +71,17 @@ public class FishServiceImpl implements FishService {
      * @return the fish species in the water body as DTOs, or an empty list if none exist
      */
     @Override
-    public List<FishDto> getAllFishForWaterBody(Long waterBodyId) {
+    public List<Fish> getAllFishForWaterBody(Long waterBodyId) {
         log.info("Loading fish for water body id: {}", waterBodyId);
 
-        List<Fish> fishEntities = fishWaterBodyRepository.findFishByWaterBodyId(waterBodyId);
+        List<Fish> fish = fishWaterBodyRepository.findFishByWaterBodyId(waterBodyId);
 
-        if (fishEntities.size() < 1) {
+        if (fish.size() < 1) {
             log.warn("No fish found for water body id: {}", waterBodyId);
         }
 
-        List<FishDto> fishDtos = new ArrayList<>();
-        for (Fish fish : fishEntities) {
-            fishDtos.add(fishMapper.toDto(fish));
-        }
+        log.info("Loaded {} fish for water body id: {}", fish.size(), waterBodyId);
 
-        log.info("Loaded {} fish for water body id: {}", fishDtos.size(), waterBodyId);
-
-        return fishDtos;
+        return fish;
     }
 }
