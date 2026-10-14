@@ -1,6 +1,7 @@
 package edu.carroll.cs341.hookset.service;
 
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
+import shared.jpa.entity.WaterBody;
 
 import java.util.List;
 
@@ -17,7 +18,7 @@ public interface WaterBodyService {
      *
      * @return the water bodies as DTOs, or an empty list if none exist
      */
-    List<WaterBodyDto> getAllWaterBodies();
+    List<WaterBody> getAllWaterBodies();
 
     /**
      * Gets a water body by its URL slug.
@@ -25,5 +26,5 @@ public interface WaterBodyService {
      * @param waterBodySlug the slug used in the water body's URL
      * @return the matching water body as a DTO
      */
-    WaterBodyDto getWaterBodyFromSlug(String waterBodySlug);
+    WaterBody getWaterBodyFromSlug(String waterBodySlug);
 }

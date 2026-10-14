@@ -5,6 +5,7 @@ import edu.carroll.cs341.hookset.service.WaterBodyService;
 import edu.carroll.cs341.hookset.web.dto.FishDto;
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
 import edu.carroll.cs341.hookset.web.mapper.FishMapper;
+import edu.carroll.cs341.hookset.web.mapper.WaterBodyMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import shared.jpa.entity.Fish;
+import shared.jpa.entity.WaterBody;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,16 +39,19 @@ public class WaterBodyController {
     private final FishService fishService;
 
     private final FishMapper fishMapper;
+
+    private final WaterBodyMapper waterBodyMapper;
     /**
      * Creates the water body controller with the services it depends on.
      *
      * @param waterBodyService the service used to look up water bodies
      * @param fishService the service used to look up the fish species in a water body
      */
-    public WaterBodyController(WaterBodyService waterBodyService, FishService fishService, FishMapper fishMapper) {
+    public WaterBodyController(WaterBodyService waterBodyService, FishService fishService, FishMapper fishMapper, WaterBodyMapper waterBodyMapper) {
         this.waterBodyService = waterBodyService;
         this.fishService = fishService;
         this.fishMapper = fishMapper;
+        this.waterBodyMapper = waterBodyMapper;
     }
 
     /**
@@ -59,8 +64,12 @@ public class WaterBodyController {
     public String index(Model model) {
         log.info("Loading water bodies page");
 
-        List<WaterBodyDto> waterBodies = waterBodyService.getAllWaterBodies();
+        List<WaterBody> waterBodyEntities = waterBodyService.getAllWaterBodies();
 
+        List<WaterBodyDto> waterBodies= new ArrayList<>();
+        for (WaterBody waterBody : waterBodyEntities) {
+            waterBodies.add(waterBodyMapper.toDto(waterBody));
+        }
         model.addAttribute("waterBodies", waterBodies);
 
         return "waterbodies/index";
@@ -77,7 +86,9 @@ public class WaterBodyController {
     public String getDetails(@PathVariable String slug, Model model) {
         log.info("Loading water body details page for slug: {}", slug);
 
-        WaterBodyDto waterBody = waterBodyService.getWaterBodyFromSlug(slug);
+        WaterBody waterBodyEntity = waterBodyService.getWaterBodyFromSlug(slug);
+        WaterBodyDto waterBody = waterBodyMapper.toDto(waterBodyEntity);
+
         List<Fish> fishEntities = fishService.getAllFishForWaterBody(waterBody.getWaterBodyId());
         List<FishDto> fishDtos = new ArrayList<>();
         for (Fish fish : fishEntities) {

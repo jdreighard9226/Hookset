@@ -47,7 +47,7 @@ public class WaterBodyServiceImpl implements WaterBodyService {
      * @return the water bodies as DTOs, or an empty list if none exist
      */
     @Override
-    public List<WaterBodyDto> getAllWaterBodies() {
+    public List<WaterBody> getAllWaterBodies() {
         log.info("Loading all water bodies");
 
         List<WaterBody> waterBodyEntities = waterBodyRepository.findAll();
@@ -57,14 +57,9 @@ public class WaterBodyServiceImpl implements WaterBodyService {
             log.warn("No water bodies found in the database. Size: {}", waterBodyEntities.size());
         }
 
-        List<WaterBodyDto> waterBodyDtos = new ArrayList<>();
-        for (WaterBody waterBody : waterBodyEntities) {
-            waterBodyDtos.add(waterBodyMapper.toDto(waterBody));
-        }
+        log.info("Loaded {} water bodies", waterBodyEntities.size());
 
-        log.info("Loaded {} water bodies", waterBodyDtos.size());
-
-        return waterBodyDtos;
+        return waterBodyEntities;
     }
 
     /**
@@ -74,7 +69,7 @@ public class WaterBodyServiceImpl implements WaterBodyService {
      * @return the matching water body as a DTO
      */
     @Override
-    public WaterBodyDto getWaterBodyFromSlug(String waterBodySlug) {
+    public WaterBody getWaterBodyFromSlug(String waterBodySlug) {
         log.info("Loading water body for slug: {}", waterBodySlug);
 
         WaterBody waterBody = waterBodyRepository.getWaterBodyByWaterBodySlug(waterBodySlug);
@@ -83,6 +78,6 @@ public class WaterBodyServiceImpl implements WaterBodyService {
             log.warn("No water body found for slug: {}", waterBodySlug);
         }
 
-        return waterBodyMapper.toDto(waterBody);
+        return waterBody;
     }
 }
