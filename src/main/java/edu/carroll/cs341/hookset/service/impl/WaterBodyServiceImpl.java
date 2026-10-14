@@ -27,18 +27,14 @@ public class WaterBodyServiceImpl implements WaterBodyService {
     /** The repository used to look up water bodies. */
     private final WaterBodyRepository waterBodyRepository;
 
-    /** The mapper used to convert water body entities into DTOs. */
-    private final WaterBodyMapper waterBodyMapper;
 
     /**
      * Creates the water body service with the repository and mapper it depends on.
      *
      * @param waterBodyRepository the repository used to look up water bodies
-     * @param waterBodyMapper the mapper used to convert water body entities into DTOs
      */
-    public WaterBodyServiceImpl(WaterBodyRepository waterBodyRepository, WaterBodyMapper waterBodyMapper) {
+    public WaterBodyServiceImpl(WaterBodyRepository waterBodyRepository) {
         this.waterBodyRepository = waterBodyRepository;
-        this.waterBodyMapper = waterBodyMapper;
     }
 
     /**
