@@ -1,6 +1,6 @@
 package edu.carroll.cs341.hookset.web.controller;
 
-import edu.carroll.cs341.hookset.service.ProfileService;
+import edu.carroll.cs341.hookset.service.UserService;
 import edu.carroll.cs341.hookset.web.form.ProfileForm;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -28,15 +28,15 @@ public class ProfileController {
     private static final Logger log = LoggerFactory.getLogger(ProfileController.class);
 
     /** The service used to update the logged-in user's profile. */
-    private final ProfileService profileService;
+    private final UserService userService;
 
     /**
      * Creates the profile controller with the service it depends on.
      *
      * @param profileService the service used to update the logged-in user's profile
      */
-    public ProfileController(ProfileService profileService) {
-        this.profileService = profileService;
+    public ProfileController(UserService userService) {
+        this.userService = userService;
     }
 
     /**
@@ -73,21 +73,41 @@ public class ProfileController {
      * @return a redirect to the home page on success, or the profile view if there are errors
      */
     @PostMapping
-    public String postProfile(@Valid @ModelAttribute ProfileForm profileForm, BindingResult result) {
+    public String postProfile(
+            @Valid @ModelAttribute ProfileForm profileForm,
+            BindingResult result,
+            Model model) {
+
         log.info("Profile form submitted");
 
-        if (result.hasErrors()) {
-            log.warn("Profile form failed validation with {} error(s)", result.getErrorCount());
+        boolean hasCustomErrors = false;
+
+        if (userService.isPasswordBlank(profileForm.getPassword())) {
+            model.addAttribute("passwordBlank", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isPasswordTooShort(profileForm.getPassword())) {
+            model.addAttribute("passwordTooShort", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.isPasswordSpaceFree(profileForm.getPassword()) == false) {
+            model.addAttribute("passwordHasSpaces", true);
+            hasCustomErrors = true;
+        }
+
+        if (userService.doPasswordsMatch(profileForm) == false) {
+            model.addAttribute("passwordMismatch", true);
+            hasCustomErrors = true;
+        }
+
+        if (result.hasErrors() || hasCustomErrors) {
             return "profile";
         }
 
-        boolean changePassword = profileService.changePassword(profileForm);
-
-        if (!changePassword) {
-            log.warn("Password change failed");
-
-            result.reject("password.change.failed",
-                    "Unable to change password. Please try again.");
+        if (userService.changePassword(profileForm) == false) {
+            model.addAttribute("passwordChangeFailed", true);
             return "profile";
         }
 

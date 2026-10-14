@@ -1,6 +1,5 @@
 package edu.carroll.cs341.hookset.web.controller;
 
-import edu.carroll.cs341.hookset.service.SignupService;
 import edu.carroll.cs341.hookset.web.form.SignupForm;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;

@@ -5,7 +5,7 @@
 
 <head>
     <meta charset="UTF-8"/>
-    <title>Signup page</title>
+    <title>Profile page</title>
 </head>
 <body>
 <main>
@@ -53,6 +53,18 @@
                                      th:errors="*{password}">
                                     Password error
                                 </div>
+
+                                <div th:if="${passwordBlank}" class="text-danger mt-1">
+                                    Password cannot be blank
+                                </div>
+
+                                <div th:if="${passwordTooShort}" class="text-danger mt-1">
+                                    Password must be at least 8 characters
+                                </div>
+
+                                <div th:if="${passwordHasSpaces}" class="text-danger mt-1">
+                                    Password cannot contain spaces
+                                </div>
                             </div>
 
                             <div class="mb-3">
@@ -73,13 +85,15 @@
                                 </div>
 
                                 <!-- from isPasswordMatching() in SignupForm -->
-                                <div class="text-danger"
-                                     th:if="${#fields.hasErrors('passwordMatching')}"
-                                     th:errors="*{passwordMatching}">
-                                    Passwords do not match.
+                                <div th:if="${passwordMismatch}" class="text-danger mt-1">
+                                    Passwords do not match
                                 </div>
                             </div>
 
+                            <div th:if="${passwordChangeFailed}"
+                                 class="text-danger text-center mb-3">
+                                Unable to change password.
+                            </div>
                             <button type="submit"
                                     class="primary-button w-100">
                                 Change Password
