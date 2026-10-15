@@ -21,16 +21,17 @@ CREATE TABLE Users (
 CREATE TABLE Flies (
     flyId BIGINT AUTO_INCREMENT PRIMARY KEY,
     userId BIGINT NULL,
-    flyType VARCHAR(50) NULL,
+    flyType VARCHAR(50) NOT NULL,
     flyName VARCHAR(100) NOT NULL,
-    color VARCHAR(40),
-    minSize INT,
-    maxSize INT,
-    flyImage VARCHAR(100),
+    color VARCHAR(40) NOT NULL,
+    minSize INT NOT NULL,
+    maxSize INT NOT NULL,
+    flyImage VARCHAR(100) NOT NULL,
     flySlug VARCHAR(125) NOT NULL,
     
     FOREIGN KEY (userId)
-        REFERENCES Users(userId)
+        REFERENCES Users(userId),
+	UNIQUE (userId, flySlug)
 );
 
 

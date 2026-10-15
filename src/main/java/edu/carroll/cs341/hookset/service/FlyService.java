@@ -60,7 +60,7 @@ public interface FlyService {
      */
     void deleteFly(Long flyId);
 
-    FlyDto getFlyById(Long flyId);
+    Fly getFlyById(Long flyId);
 
     boolean isSizeRangeValid(FlyForm flyForm);
 

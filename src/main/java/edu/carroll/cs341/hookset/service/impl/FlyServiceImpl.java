@@ -102,11 +102,23 @@ public class FlyServiceImpl implements FlyService {
     @Override
     public Fly getFlyFromSlug(String flySlug) {
         log.info("Looking up fly with slug: {}", flySlug);
+        Long userId = getCurrentUserId();
 
-        Fly fly = flyRepository.findByFlySlug(flySlug);
+        Fly fly = flyRepository.findByFlySlugAndUserIdIsNull(flySlug);
+
+        if (fly != null) {
+            return fly;
+        }
+
+        log.info("No Hookset fly exists for slug: {}", flySlug);
+
+        // a null user ID would turn this into an IS NULL query and match default flies again
+        if (userId != null) {
+            fly = flyRepository.findByFlySlugAndUserId(flySlug, userId);
+        }
 
         if (fly == null) {
-            log.warn("Fly not found with slug: {}", flySlug);
+            log.warn("Fly not found with slug: {} in user flies or Hookset flies", flySlug);
             return null;
         }
 
@@ -163,6 +175,15 @@ public class FlyServiceImpl implements FlyService {
         return true;
     }
 
+    /**
+     * Checks that a new fly name is not already used by a default fly or one of
+     * the current user's custom flies.
+     *
+     * <p>The comparison ignores case and surrounding whitespace.</p>
+     *
+     * @param flyForm the form containing the fly name to check
+     * @return {@code true} if the name is unique, otherwise {@code false}
+     */
     @Override
     public boolean isFlyNameUnique(FlyForm flyForm) {
         if (flyForm.getFlyName() == null || flyForm.getFlyName().isBlank()) {
@@ -170,38 +191,59 @@ public class FlyServiceImpl implements FlyService {
         }
 
         Long userId = getCurrentUserId();
+        String newName = flyForm.getFlyName().trim();
 
-        if (flyRepository.existsByUserIdAndFlyNameIgnoreCase(
-                userId, flyForm.getFlyName().trim())) {
+        List<Fly> visibleFlies = flyRepository.findByUserIdIsNullOrUserId(userId);
 
-            log.warn("Fly validation failed. Duplicate fly name: {} for user ID: {}",
-                    flyForm.getFlyName().trim(), userId);
-
-            return false;
+        for (Fly fly : visibleFlies) {
+            if (fly.getFlyName().trim().equalsIgnoreCase(newName)) {
+                log.warn("Fly validation failed. Duplicate fly name: {} for user ID: {}", newName, userId);
+                return false;
+            }
         }
 
         return true;
     }
 
+    /**
+     * Checks that an edited fly name is not already used by a default fly or
+     * another of the current user's custom flies.
+     *
+     * <p>Keeping the fly's current name is always allowed. The comparison
+     * ignores case and surrounding whitespace.</p>
+     *
+     * @param flyId the ID of the fly being edited
+     * @param flyForm the form containing the new fly name
+     * @return {@code true} if the name is unique, otherwise {@code false}
+     */
     @Override
     public boolean isFlyNameUniqueForEdit(Long flyId, FlyForm flyForm) {
-       Fly fly = flyRepository.findById(flyId).orElseThrow();
+        Fly flyBeingEdited = flyRepository.findById(flyId).orElse(null);
+
+        if (flyBeingEdited == null) {
+            log.warn("Fly edit validation failed. Fly not found with ID: {}", flyId);
+            return false;
+        }
+
         if (flyForm.getFlyName() == null || flyForm.getFlyName().isBlank()) {
             return false;
         }
-        if (fly.getFlyName().toLowerCase().trim().equals(flyForm.getFlyName().toLowerCase().trim())) {
-           return true;
+
+        String newName = flyForm.getFlyName().trim();
+
+        if (flyBeingEdited.getFlyName().trim().equalsIgnoreCase(newName)) {
+            return true;
         }
 
         Long userId = getCurrentUserId();
 
-        if (flyRepository.existsByUserIdAndFlyNameIgnoreCase(
-                userId, flyForm.getFlyName().trim())) {
+        List<Fly> userAndDefaultFlies = flyRepository.findByUserIdIsNullOrUserId(userId);
 
-            log.warn("Fly Edit Validation failed. Duplicate fly name: {} for user ID: {}",
-                    flyForm.getFlyName().trim(), userId);
-
-            return false;
+        for (Fly fly : userAndDefaultFlies) {
+            if (fly.getFlyName().trim().equalsIgnoreCase(newName)) {
+                log.warn("Fly edit validation failed. Duplicate fly name: {} for user ID: {}", newName, userId);
+                return false;
+            }
         }
 
         return true;
@@ -211,9 +253,16 @@ public class FlyServiceImpl implements FlyService {
     public boolean updateFly(Long flyId, FlyForm flyForm) {
 
 
-        Fly fly = flyRepository.findById(flyId).orElseThrow();
+        Fly fly = flyRepository.findById(flyId).orElse(null);
 
-        if (!fly.getUserId().equals(getCurrentUserId())) {
+        if (fly == null) {
+            log.warn("Fly update failed. Fly not found with ID: {}", flyId);
+            return false;
+        }
+
+        // default flies have a null user ID and can never be edited
+        if (fly.getUserId() == null || !fly.getUserId().equals(getCurrentUserId())) {
+            log.warn("Update denied. User ID: {} does not own fly ID: {}", getCurrentUserId(), flyId);
             throw new AccessDeniedException("You cannot edit this fly");
         }
 
@@ -272,11 +321,32 @@ public class FlyServiceImpl implements FlyService {
         log.info("Fly deleted with ID: {}", flyId);
     }
 
+    /**
+     * Returns a single fly by its ID.
+     *
+     * <p>Default flies can be loaded by anyone. Custom flies can only be loaded
+     * by the user who owns them.</p>
+     *
+     * @param flyId the ID of the fly to look up
+     * @return the matching fly, or {@code null} if none exists
+     * @throws AccessDeniedException if the fly belongs to another user
+     */
     @Override
-    public FlyDto getFlyById(Long flyId) {
-        Fly fly = flyRepository.findById(flyId).orElseThrow();
+    public Fly getFlyById(Long flyId) {
+        Fly fly = flyRepository.findById(flyId).orElse(null);
 
-        return flyMapper.toDto(fly);
+        if (fly == null) {
+            log.warn("Fly not found with ID: {}", flyId);
+            return null;
+        }
+
+        // default flies have a null user ID and are visible to everyone
+        if (fly.getUserId() != null && !fly.getUserId().equals(getCurrentUserId())) {
+            log.warn("Access denied. User ID: {} does not own fly ID: {}", getCurrentUserId(), flyId);
+            throw new AccessDeniedException("You cannot view this fly");
+        }
+
+        return fly;
     }
 
     /**

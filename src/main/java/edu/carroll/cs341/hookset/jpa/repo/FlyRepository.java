@@ -43,7 +43,8 @@ public interface FlyRepository extends JpaRepository<Fly, Long> {
      * @param flySlug the slug of the fly to look up
      * @return the matching fly, or {@code null} if none exists
      */
-    Fly findByFlySlug(String flySlug);
+    Fly findByFlySlugAndUserId(String flySlug, Long userId);
+    Fly findByFlySlugAndUserIdIsNull(String flySlug);
 
     /**
      * Checks whether the given user already has a custom fly with the given name.

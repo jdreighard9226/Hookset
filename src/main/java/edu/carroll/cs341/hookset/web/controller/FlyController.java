@@ -154,7 +154,9 @@ public class FlyController {
 
     @GetMapping("/edit/{flyId}")
     public String getEditFly(@PathVariable Long flyId, Model model) {
-        FlyDto flyDto = flyService.getFlyById(flyId);
+        Fly fly = flyService.getFlyById(flyId);
+
+        FlyDto flyDto = flyMapper.toDto(fly);
         FlyForm flyForm = flyMapper.toForm(flyDto);
 
         model.addAttribute("flyForm", flyForm);
