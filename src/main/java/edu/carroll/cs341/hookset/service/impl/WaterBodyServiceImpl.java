@@ -66,6 +66,12 @@ public class WaterBodyServiceImpl implements WaterBodyService {
      */
     @Override
     public WaterBody getWaterBodyFromSlug(String waterBodySlug) {
+
+        if (waterBodySlug == null || waterBodySlug.isBlank()) {
+            log.warn("getWaterBodyFromSlug called with null or blank slug");
+            return null;
+        }
+
         log.info("Loading water body for slug: {}", waterBodySlug);
 
         WaterBody waterBody = waterBodyRepository.getWaterBodyByWaterBodySlug(waterBodySlug);
