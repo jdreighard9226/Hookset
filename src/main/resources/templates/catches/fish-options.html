@@ -1,0 +1,11 @@
+<!--/* used on page load by the catch forms and returned by getFishOptions for htmx to swap in */-->
+<th:block th:fragment="options">
+    <option value=""
+            th:text="${#lists.isEmpty(fish)} ? 'Select a water body first' : 'Select Fish Species'">
+        Select Fish Species
+    </option>
+    <option th:each="fishOption : ${fish}"
+            th:value="${fishOption.fishId}"
+            th:text="${fishOption.fishSpecies}">
+    </option>
+</th:block>

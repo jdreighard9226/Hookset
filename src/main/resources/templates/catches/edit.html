@@ -1,0 +1,200 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<!--/* the title and main below are inserted into layout.html, which adds the navbar, footer, and shared head */-->
+<head>
+    <meta charset="UTF-8"/>
+    <title>Edit Catch</title>
+</head>
+
+<main>
+    <div class="container py-5 mt-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-xl-6">
+                <div class="card shadow-sm fly-card-gold">
+                    <div class="card-body p-4">
+
+                        <h1 class="text-center mb-4">Edit Catch</h1>
+
+                        <form th:action="@{/catches/edit/{catchId}(catchId=${catchId})}"
+                              th:object="${catchForm}"
+                              method="post">
+
+                            <!--/* errors added with result.reject() that aren't tied to one field */-->
+                            <div th:if="${#fields.hasGlobalErrors()}"
+                                 class="alert alert-danger"
+                                 th:errors="*{global}">
+                                Global error
+                            </div>
+
+                            <div th:if="${editCatchFailed}" class="alert alert-danger">
+                                Your changes could not be saved. Please try again.
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="waterBodyId" class="form-label">
+                                    Water Body
+                                </label>
+
+                                <div th:if="${waterBodyInvalid}" class="text-danger mt-1">
+                                    Please select a valid water body
+                                </div>
+
+                                <!--/* htmx calls getFishOptions on change and puts the returned options inside #fishId */-->
+                                <select id="waterBodyId"
+                                        class="form-select"
+                                        th:field="*{waterBodyId}"
+                                        th:hx-get="@{/catches/fish-options}"
+                                        hx-trigger="change"
+                                        hx-target="#fishId">
+                                    <option value="">Select Water Body</option>
+                                    <option th:each="waterBody : ${waterBodies}"
+                                            th:value="${waterBody.waterBodyId}"
+                                            th:text="${waterBody.waterBodyName}">
+                                    </option>
+                                </select>
+
+                                <!--/* the text inside error divs is only a placeholder, th:errors replaces it with the real message */-->
+                                <div class="text-danger"
+                                     th:if="${#fields.hasErrors('waterBodyId')}"
+                                     th:errors="*{waterBodyId}">
+                                    Water body error
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="fishId" class="form-label">
+                                    Fish Species
+                                </label>
+
+                                <div th:if="${fishInvalid}" class="text-danger mt-1">
+                                    Please select a valid fish species
+                                </div>
+
+                                <div th:if="${fishNotInWaterBody}" class="text-danger mt-1">
+                                    That fish species is not found in the selected water body
+                                </div>
+
+                                <!--/* options come from the same fragment htmx swaps in, so they always match */-->
+                                <select id="fishId"
+                                        class="form-select"
+                                        th:field="*{fishId}">
+                                    <th:block th:replace="~{catches/fish-options :: options}"></th:block>
+                                </select>
+
+                                <div class="text-danger"
+                                     th:if="${#fields.hasErrors('fishId')}"
+                                     th:errors="*{fishId}">
+                                    Fish species error
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="flyId" class="form-label">
+                                    Fly Used
+                                </label>
+
+                                <div th:if="${flyInvalid}" class="text-danger mt-1">
+                                    Please select a valid fly
+                                </div>
+
+                                <select id="flyId"
+                                        class="form-select"
+                                        th:field="*{flyId}">
+                                    <option value="">Select Fly</option>
+                                    <option th:each="fly : ${flies}"
+                                            th:value="${fly.flyId}"
+                                            th:text="${fly.flyName}">
+                                    </option>
+                                </select>
+
+                                <div class="text-danger"
+                                     th:if="${#fields.hasErrors('flyId')}"
+                                     th:errors="*{flyId}">
+                                    Fly error
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="fishLength" class="form-label">
+                                        Fish Length (inches)
+                                    </label>
+
+                                    <input type="number"
+                                           id="fishLength"
+                                           class="form-control"
+                                           th:field="*{fishLength}"
+                                           step="0.01"
+                                           min="0.01"
+                                           max="999.99"
+                                           placeholder="Optional"/>
+
+                                    <div class="text-danger"
+                                         th:if="${#fields.hasErrors('fishLength')}"
+                                         th:errors="*{fishLength}">
+                                        Fish length error
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="dateCaught" class="form-label">
+                                        Date and Time Caught
+                                    </label>
+
+                                    <!--/* max comes from the controller so future dates are greyed out, the server still checks it */-->
+                                    <input type="datetime-local"
+                                           id="dateCaught"
+                                           class="form-control"
+                                           th:field="*{dateCaught}"
+                                           th:max="${maxDateCaught}"/>
+
+                                    <div class="text-danger"
+                                         th:if="${#fields.hasErrors('dateCaught')}"
+                                         th:errors="*{dateCaught}">
+                                        Date caught error
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">
+                                    Notes
+                                </label>
+
+                                <textarea id="notes"
+                                          class="form-control"
+                                          th:field="*{notes}"
+                                          rows="4"
+                                          maxlength="1000"
+                                          placeholder="Optional"></textarea>
+
+                                <div class="text-danger"
+                                     th:if="${#fields.hasErrors('notes')}"
+                                     th:errors="*{notes}">
+                                    Notes error
+                                </div>
+                            </div>
+
+                            <button type="submit"
+                                    class="primary-button w-100">
+                                Save Changes
+                            </button>
+
+                        </form>
+
+                        <div class="text-center mt-4">
+                            <a th:href="@{/catches/mine}"
+                               class="secondary-button">
+                                Back to My Catches
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</html>

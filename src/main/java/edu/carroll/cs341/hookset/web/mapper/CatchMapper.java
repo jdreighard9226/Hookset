@@ -4,6 +4,7 @@ import edu.carroll.cs341.hookset.web.dto.CatchDto;
 import edu.carroll.cs341.hookset.web.dto.FishDto;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
+import edu.carroll.cs341.hookset.web.form.CatchForm;
 import org.springframework.stereotype.Component;
 import shared.jpa.entity.Catch;
 
@@ -38,5 +39,24 @@ public class CatchMapper {
         catchDto.setNotes(catchRecord.getNotes());
 
         return catchDto;
+    }
+
+    /**
+     * Converts a catch into a form so it can be edited.
+     *
+     * @param catchRecord the catch to convert
+     * @return a catch form filled with the catch's values
+     */
+    public CatchForm toForm(Catch catchRecord) {
+        CatchForm catchForm = new CatchForm();
+
+        catchForm.setFlyId(catchRecord.getFlyId());
+        catchForm.setFishId(catchRecord.getFishId());
+        catchForm.setWaterBodyId(catchRecord.getWaterBodyId());
+        catchForm.setFishLength(catchRecord.getFishLength());
+        catchForm.setDateCaught(catchRecord.getDateCaught());
+        catchForm.setNotes(catchRecord.getNotes());
+
+        return catchForm;
     }
 }
