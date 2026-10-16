@@ -66,6 +66,6 @@ public interface FlyService {
 
     boolean isFlyNameUnique(FlyForm flyForm);
     boolean isFlyNameUniqueForEdit(Long flyId, FlyForm flyForm);
+    boolean isFlyNameBlank(String flyname);
     boolean updateFly(Long flyId, FlyForm flyForm);
-
 }

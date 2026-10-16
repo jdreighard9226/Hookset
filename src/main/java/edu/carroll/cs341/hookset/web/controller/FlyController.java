@@ -139,8 +139,11 @@ public class FlyController {
         }
 
         if (!flyService.isFlyNameUnique(flyForm)) {
-            model.addAttribute("duplicateFlyName", true);
-            hasCustomErrors = true;
+            // only display to user if they didn't type a blank name. Blank names will be caught by form
+            if (!flyService.isFlyNameBlank(flyForm.getFlyName())) {
+                model.addAttribute("duplicateFlyName", true);
+                hasCustomErrors = true;
+            }
         }
 
         if (result.hasErrors() || hasCustomErrors) {
@@ -185,8 +188,10 @@ public class FlyController {
         }
 
         if (!flyService.isFlyNameUniqueForEdit(flyId, flyForm)) {
-            model.addAttribute("duplicateFlyName", true);
-            hasCustomErrors = true;
+            if (!flyService.isFlyNameBlank(flyForm.getFlyName())) {
+                model.addAttribute("duplicateFlyName", true);
+                hasCustomErrors = true;
+            }
         }
 
         if (result.hasErrors() || hasCustomErrors) {

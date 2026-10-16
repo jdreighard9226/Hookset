@@ -406,6 +406,16 @@ public class FlyServiceImpl implements FlyService {
         return fly;
     }
 
+    @Override
+    public boolean isFlyNameBlank(String flyname) {
+        if (flyname == null || flyname.isBlank()) {
+            log.warn("Fly Name validation failed. Fly Name is blank");
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * Gets the ID of the currently logged-in user.
      *
