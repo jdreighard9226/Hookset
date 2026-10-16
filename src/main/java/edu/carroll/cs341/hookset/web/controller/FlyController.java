@@ -133,12 +133,12 @@ public class FlyController {
 
         boolean hasCustomErrors = false;
 
-        if (flyService.isSizeRangeValid(flyForm) == false) {
+        if (!flyService.isSizeRangeValid(flyForm)) {
             model.addAttribute("invalidSizeRange", true);
             hasCustomErrors = true;
         }
 
-        if (flyService.isFlyNameUnique(flyForm) == false) {
+        if (!flyService.isFlyNameUnique(flyForm)) {
             model.addAttribute("duplicateFlyName", true);
             hasCustomErrors = true;
         }
@@ -147,7 +147,11 @@ public class FlyController {
             return "flies/add";
         }
 
-        flyService.addFly(flyForm);
+        if (!flyService.addFly(flyForm)) {
+            log.warn("Add fly failed");
+            model.addAttribute("addFlyFailed", true);
+            return "flies/add";
+        }
 
         return "redirect:/flies";
     }
@@ -175,12 +179,12 @@ public class FlyController {
 
         boolean hasCustomErrors = false;
 
-        if (flyService.isSizeRangeValid(flyForm) == false) {
+        if (!flyService.isSizeRangeValid(flyForm)) {
             model.addAttribute("invalidSizeRange", true);
             hasCustomErrors = true;
         }
 
-        if (flyService.isFlyNameUniqueForEdit(flyId, flyForm) == false) {
+        if (!flyService.isFlyNameUniqueForEdit(flyId, flyForm)) {
             model.addAttribute("duplicateFlyName", true);
             hasCustomErrors = true;
         }

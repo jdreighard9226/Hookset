@@ -48,18 +48,11 @@
                                        th:field="*{password}"
                                        placeholder="Password"/>
 
+                                <!--/* the text inside error divs is only a placeholder, th:errors replaces it with the real message */-->
                                 <div class="text-danger"
                                      th:if="${#fields.hasErrors('password')}"
                                      th:errors="*{password}">
                                     Password error
-                                </div>
-
-                                <div th:if="${passwordBlank}" class="text-danger mt-1">
-                                    Password cannot be blank
-                                </div>
-
-                                <div th:if="${passwordTooShort}" class="text-danger mt-1">
-                                    Password must be at least 8 characters
                                 </div>
 
                                 <div th:if="${passwordHasSpaces}" class="text-danger mt-1">
@@ -84,8 +77,10 @@
                                     Confirm password error
                                 </div>
 
-                                <!-- from isPasswordMatching() in SignupForm -->
-                                <div th:if="${passwordMismatch}" class="text-danger mt-1">
+                                <!--/* comes from isPasswordMatching() in ProfileForm, spring drops the "is" so the property is passwordMatching */-->
+                                <div class="text-danger mt-1"
+                                     th:if="${#fields.hasErrors('passwordMatching')}"
+                                     th:errors="*{passwordMatching}">
                                     Passwords do not match
                                 </div>
                             </div>

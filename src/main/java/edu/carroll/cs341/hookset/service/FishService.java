@@ -5,25 +5,25 @@ import shared.jpa.entity.Fish;
 import java.util.List;
 
 /**
- * Defines the operations for looking up fish species.
+ * Service for looking up fish species.
  *
- * <p>Implementations read fish records from the database and return them
- * as DTOs for the web layer.</p>
+ * <p>Fish can be looked up as a full list or filtered to the species found
+ * in a single water body.</p>
  */
 public interface FishService {
 
     /**
-     * Gets every fish species in the database.
+     * Returns every fish species in the database.
      *
-     * @return the fish species as DTOs, or an empty list if none exist
+     * @return the list of fish species, or an empty list if none exist
      */
     List<Fish> getAllFish();
 
     /**
-     * Gets every fish species found in a water body.
+     * Returns every fish species found in a water body.
      *
-     * @param waterBodyId the identifier of the water body
-     * @return the fish species in the water body as DTOs, or an empty list if none exist
+     * @param waterBodyId the ID of the water body
+     * @return the list of fish species in the water body, or an empty list if none exist
      */
     List<Fish> getAllFishForWaterBody(Long waterBodyId);
 }

@@ -29,7 +29,7 @@ import java.util.List;
 @Controller
 @RequestMapping("/waterbodies")
 public class WaterBodyController {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(WaterBodyController.class);
 
     /** The service used to look up water bodies. */
@@ -38,16 +38,24 @@ public class WaterBodyController {
     /** The service used to look up the fish species in a water body. */
     private final FishService fishService;
 
+    /** The mapper used to convert fish entities into DTOs. */
     private final FishMapper fishMapper;
 
+    /** The mapper used to convert water body entities into DTOs. */
     private final WaterBodyMapper waterBodyMapper;
+
     /**
-     * Creates the water body controller with the services it depends on.
+     * Creates the water body controller with the services and mappers it depends on.
      *
      * @param waterBodyService the service used to look up water bodies
      * @param fishService the service used to look up the fish species in a water body
+     * @param fishMapper the mapper used to convert fish entities into DTOs
+     * @param waterBodyMapper the mapper used to convert water body entities into DTOs
      */
-    public WaterBodyController(WaterBodyService waterBodyService, FishService fishService, FishMapper fishMapper, WaterBodyMapper waterBodyMapper) {
+    public WaterBodyController(WaterBodyService waterBodyService,
+                               FishService fishService,
+                               FishMapper fishMapper,
+                               WaterBodyMapper waterBodyMapper) {
         this.waterBodyService = waterBodyService;
         this.fishService = fishService;
         this.fishMapper = fishMapper;
@@ -66,10 +74,12 @@ public class WaterBodyController {
 
         List<WaterBody> waterBodyEntities = waterBodyService.getAllWaterBodies();
 
-        List<WaterBodyDto> waterBodies= new ArrayList<>();
+        List<WaterBodyDto> waterBodies = new ArrayList<>();
+
         for (WaterBody waterBody : waterBodyEntities) {
             waterBodies.add(waterBodyMapper.toDto(waterBody));
         }
+
         model.addAttribute("waterBodies", waterBodies);
 
         return "waterbodies/index";
@@ -80,17 +90,26 @@ public class WaterBodyController {
      *
      * @param slug the slug of the water body taken from the URL
      * @param model the model used to pass the water body and its fish species to the view
-     * @return the name of the water body details view to render
+     * @return the name of the water body details view, or a redirect to the list if no water body matches
      */
     @GetMapping("/details/{slug}")
     public String getDetails(@PathVariable String slug, Model model) {
         log.info("Loading water body details page for slug: {}", slug);
 
         WaterBody waterBodyEntity = waterBodyService.getWaterBodyFromSlug(slug);
+
+        // a mistyped or old URL would otherwise crash the mapper on null
+        if (waterBodyEntity == null) {
+            log.warn("Water body details not found for slug: {}", slug);
+            return "redirect:/waterbodies";
+        }
+
         WaterBodyDto waterBody = waterBodyMapper.toDto(waterBodyEntity);
 
         List<Fish> fishEntities = fishService.getAllFishForWaterBody(waterBody.getWaterBodyId());
+
         List<FishDto> fishDtos = new ArrayList<>();
+
         for (Fish fish : fishEntities) {
             fishDtos.add(fishMapper.toDto(fish));
         }

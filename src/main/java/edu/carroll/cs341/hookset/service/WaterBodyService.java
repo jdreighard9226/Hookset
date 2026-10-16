@@ -1,30 +1,29 @@
 package edu.carroll.cs341.hookset.service;
 
-import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
 import shared.jpa.entity.WaterBody;
 
 import java.util.List;
 
 /**
- * Defines the operations for looking up water bodies.
+ * Service for looking up water bodies.
  *
- * <p>Implementations read water body records from the database and return
- * them as DTOs for the web layer.</p>
+ * <p>Water bodies can be looked up as a full list or individually by their
+ * URL slug.</p>
  */
 public interface WaterBodyService {
 
     /**
-     * Gets every water body in the database.
+     * Returns every water body in the database.
      *
-     * @return the water bodies as DTOs, or an empty list if none exist
+     * @return the list of water bodies, or an empty list if none exist
      */
     List<WaterBody> getAllWaterBodies();
 
     /**
-     * Gets a water body by its URL slug.
+     * Returns a single water body by its URL slug.
      *
      * @param waterBodySlug the slug used in the water body's URL
-     * @return the matching water body as a DTO
+     * @return the matching water body, or {@code null} if the slug is blank or no water body matches
      */
     WaterBody getWaterBodyFromSlug(String waterBodySlug);
 }

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 @RequestMapping("/profile")
 public class ProfileController {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(ProfileController.class);
 
     /** The service used to update the logged-in user's profile. */
@@ -32,7 +32,8 @@ public class ProfileController {
 
     /**
      * Creates the profile controller with the service it depends on.
-
+     *
+     * @param userService the service used to update the logged-in user's profile
      */
     public ProfileController(UserService userService) {
         this.userService = userService;
@@ -41,8 +42,8 @@ public class ProfileController {
     /**
      * Handles GET requests for the profile page.
      *
-     * <p>A new ProfileForm is filled with the logged-in user's username and
-     * added to the model so the profile view can display it.</p>
+     * <p>A new {@code ProfileForm} is filled with the logged-in user's username
+     * and added to the model so the profile view can display it.</p>
      *
      * @param model the model used to pass the profile form to the view
      * @param authentication the logged-in user's authentication details
@@ -64,11 +65,14 @@ public class ProfileController {
     /**
      * Handles POST requests to change the logged-in user's password.
      *
-     * <p>If the form fails validation or the password change fails, the
-     * profile page is shown again with the errors.</p>
+     * <p>Blank, length, and matching errors come from the form annotations.
+     * Spaces are checked here because no annotation covers them. If anything
+     * fails, the profile page is shown again with the errors. Otherwise the
+     * user is redirected to the home page.</p>
      *
      * @param profileForm the submitted profile form
-     * @param result the binding result holding any validation errors
+     * @param result the validation results for the form
+     * @param model the model used to pass error flags to the view
      * @return a redirect to the home page on success, or the profile view if there are errors
      */
     @PostMapping
@@ -81,31 +85,19 @@ public class ProfileController {
 
         boolean hasCustomErrors = false;
 
-        if (userService.isPasswordBlank(profileForm.getPassword())) {
-            model.addAttribute("passwordBlank", true);
-            hasCustomErrors = true;
-        }
-
-        if (userService.isPasswordTooShort(profileForm.getPassword())) {
-            model.addAttribute("passwordTooShort", true);
-            hasCustomErrors = true;
-        }
-
-        if (userService.isPasswordSpaceFree(profileForm.getPassword()) == false) {
+        // no annotation checks for spaces, so this is the only place that message comes from
+        if (!userService.isPasswordSpaceFree(profileForm.getPassword())) {
             model.addAttribute("passwordHasSpaces", true);
             hasCustomErrors = true;
         }
 
-        if (userService.doPasswordsMatch(profileForm.getPassword(), profileForm.getConfirmPassword()) == false) {
-            model.addAttribute("passwordMismatch", true);
-            hasCustomErrors = true;
-        }
-
         if (result.hasErrors() || hasCustomErrors) {
+            log.warn("Profile form failed validation");
             return "profile";
         }
 
-        if (userService.changePassword(profileForm) == false) {
+        if (!userService.changePassword(profileForm)) {
+            log.warn("Password change failed");
             model.addAttribute("passwordChangeFailed", true);
             return "profile";
         }

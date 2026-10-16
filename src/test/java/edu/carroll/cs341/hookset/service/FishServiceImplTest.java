@@ -23,16 +23,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for {@link edu.carroll.cs341.hookset.service.impl.FishServiceImpl}.
- * <p>
- * Each service method is tested against a happy path, a crappy path, and one or more
+ *
+ * <p>Each service method is tested against a happy path, a crappy path, and one or more
  * crazy paths. Happy paths cover valid input with an expected result. Crappy paths cover
  * failures the service is designed to handle, such as a water body with no fish. Crazy
- * paths cover unusual input such as null and negative ids, many fish across several
- * water bodies, and a fish linked to more than one water body.
- * <p>
- * Tests run against the H2 test database and each test is rolled back by
+ * paths cover unusual input such as null and negative IDs, many fish across several
+ * water bodies, and a fish linked to more than one water body.</p>
+ *
+ * <p>Tests run against the H2 test database and each test is rolled back by
  * {@link Transactional}. Count assertions are measured against a baseline so the tests
- * do not depend on the database starting empty.
+ * do not depend on the database starting empty.</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -66,6 +66,7 @@ public class FishServiceImplTest {
      */
     @BeforeEach
     public void checkDatabase() throws SQLException {
+        // guards against a wrong profile pointing these tests at the real MySQL database
         try (Connection connection = dataSource.getConnection()) {
             assertTrue(connection.getMetaData().getURL().startsWith("jdbc:h2:"),
                     "Tests must use the H2 database");
@@ -79,6 +80,7 @@ public class FishServiceImplTest {
      */
     @Test
     public void testGetAllFishHappyPath() {
+        // baseline instead of a hardcoded count, so seed data doesn't break the test
         int before = fishService.getAllFish().size();
         Fish testFish = createTestFish("test-species");
         fishRepository.save(testFish);
@@ -89,6 +91,7 @@ public class FishServiceImplTest {
         assertEquals(before + 1, fish.size(),
                 "List size should grow by one after saving a fish");
 
+        // compare by species since the returned objects may not be the same instances that were saved
         List<String> returnedSpecies = new ArrayList<>();
         for (Fish returnedFish : fish) {
             returnedSpecies.add(returnedFish.getFishSpecies());
@@ -103,6 +106,7 @@ public class FishServiceImplTest {
      */
     @Test
     public void testGetAllFishCrappyPath() {
+        // read straight from the repository so the baseline doesn't go through the method under test
         int before = fishRepository.findAll().size();
 
         List<Fish> fish = fishService.getAllFish();
@@ -137,6 +141,7 @@ public class FishServiceImplTest {
             returnedSpecies.add(returnedFish.getFishSpecies());
         }
 
+        // the count alone could pass with the wrong fish, so check each one is actually there
         for (Fish savedFish : testFish) {
             assertTrue(returnedSpecies.contains(savedFish.getFishSpecies()),
                     "Missing fish with species: " + savedFish.getFishSpecies());
@@ -159,6 +164,8 @@ public class FishServiceImplTest {
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertEquals(1, fish.size(),
                 "Water body should have exactly one linked fish");
+
+        // check every field so a query that joins the wrong columns can't slip through
         assertEquals(savedFish.getFishId(), fish.getFirst().getFishId(),
                 "Returned fish ID should match the linked fish");
         assertEquals("test-species", fish.getFirst().getFishSpecies(),
@@ -193,6 +200,7 @@ public class FishServiceImplTest {
         WaterBody emptyWaterBody = waterBodyRepository.save(createTestWaterBody("empty-river"));
         linkFishToWaterBody(savedFish, linkedWaterBody);
 
+        // asks about the empty water body, so a query that ignores the ID would fail here
         List<Fish> fish = fishService.getAllFishForWaterBody(emptyWaterBody.getWaterBodyId());
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
@@ -201,22 +209,24 @@ public class FishServiceImplTest {
     }
 
     /**
-     * Crappy path: a water body id that does not exist returns an empty list.
+     * Crappy path: a water body ID that does not exist returns an empty list.
      */
     @Test
     public void testGetAllFishForWaterBodyCrappyPathMissingWaterBody() {
+        // far above any ID H2 will hand out during a test run
         List<Fish> fish = fishService.getAllFishForWaterBody(999999L);
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
-                "A water body id that does not exist should return an empty list");
+                "A water body ID that does not exist should return an empty list");
     }
 
     /**
-     * Crazy path: a null water body id returns an empty list.
+     * Crazy path: a null water body ID returns an empty list.
      */
     @Test
     public void testGetAllFishForWaterBodyCrazyPathNull() {
+        // a real link exists so a null that matched everything would return it and fail
         Fish savedFish = fishRepository.save(createTestFish("test-species"));
         WaterBody savedWaterBody = waterBodyRepository.save(createTestWaterBody("test-river"));
         linkFishToWaterBody(savedFish, savedWaterBody);
@@ -225,11 +235,11 @@ public class FishServiceImplTest {
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
-                "A null water body id should return an empty list");
+                "A null water body ID should return an empty list");
     }
 
     /**
-     * Crazy path: a negative water body id returns an empty list.
+     * Crazy path: a negative water body ID returns an empty list.
      */
     @Test
     public void testGetAllFishForWaterBodyCrazyPathNegativeId() {
@@ -237,7 +247,7 @@ public class FishServiceImplTest {
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
-                "A negative water body id should return an empty list");
+                "A negative water body ID should return an empty list");
     }
 
     /**
@@ -255,6 +265,7 @@ public class FishServiceImplTest {
             targetFish.add(temp);
         }
 
+        // different counts on each side so a mixed-up result can't accidentally have the right size
         List<Fish> otherFish = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
             Fish temp = fishRepository.save(createTestFish("other-species-" + i));
@@ -298,6 +309,7 @@ public class FishServiceImplTest {
         List<Fish> firstFish = fishService.getAllFishForWaterBody(firstWaterBody.getWaterBodyId());
         List<Fish> secondFish = fishService.getAllFishForWaterBody(secondWaterBody.getWaterBodyId());
 
+        // size 1 on each side catches a bad join that returns the shared fish twice
         assertEquals(1, firstFish.size(),
                 "Shared fish should be returned once for the first water body");
         assertEquals(sharedFish.getFishId(), firstFish.getFirst().getFishId(),
@@ -339,6 +351,8 @@ public class FishServiceImplTest {
         waterBody.setWaterBodyType("River");
         waterBody.setWaterBodyState("Montana");
         waterBody.setWaterBodyDescription("A river used for testing.");
+
+        // slug is the unique value, so callers pass a different one per water body
         waterBody.setWaterBodySlug(slug);
 
         return waterBody;
@@ -353,6 +367,7 @@ public class FishServiceImplTest {
     private void linkFishToWaterBody(Fish fish, WaterBody waterBody) {
         FishWaterBody fishWaterBody = new FishWaterBody();
 
+        // both must already be saved so their generated IDs exist
         fishWaterBody.setFishId(fish.getFishId());
         fishWaterBody.setWaterBodyId(waterBody.getWaterBodyId());
 

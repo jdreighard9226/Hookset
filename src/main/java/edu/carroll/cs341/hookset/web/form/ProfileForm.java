@@ -9,7 +9,7 @@ public class ProfileForm {
     private String username;
     /** The password entered into the signup form. */
     @NotBlank(message = "Password is required.")
-    @Size(min = 6, max = 20, message = "Password must be between 6 and 20 characters.")
+    @Size(min = 8, max = 20, message = "Password must be between 8 and 20 characters.")
     private String password;
 
     /** The password confirmation entered into the signup form. */

@@ -38,11 +38,12 @@ import java.util.List;
 @Controller
 @RequestMapping("/catches")
 public class CatchController {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(CatchController.class);
 
     /** The format the datetime-local input expects for its max attribute. */
-    private static final DateTimeFormatter DATE_INPUT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    private static final DateTimeFormatter DATE_INPUT_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     /** The service used to look up, save, and validate catches. */
     private final CatchService catchService;
@@ -108,6 +109,9 @@ public class CatchController {
 
     /**
      * Handles GET requests for a single catch's details page.
+     *
+     * <p>Any logged-in user can view any catch. The edit button only shows
+     * for the user who logged it.</p>
      *
      * @param catchId the ID of the catch to show
      * @param model the model used to pass the catch and ownership to the view
@@ -180,7 +184,7 @@ public class CatchController {
             return "catches/add";
         }
 
-        if (catchService.addNewCatch(catchForm) == false) {
+        if (!catchService.addNewCatch(catchForm)) {
             log.warn("Add catch failed");
             model.addAttribute("addCatchFailed", true);
             addFormOptions(model, catchForm);
@@ -204,6 +208,7 @@ public class CatchController {
     public String getEditCatch(@PathVariable Long catchId, Model model) {
         log.info("Loading edit catch page for catch ID: {}", catchId);
 
+        // returns null for catches that don't exist or belong to someone else
         CatchForm catchForm = catchService.getCatchFormByCatchId(catchId);
 
         if (catchForm == null) {
@@ -221,9 +226,10 @@ public class CatchController {
     /**
      * Handles POST requests from the edit catch form.
      *
-     * <p>If the form fails validation or any of the selected fly, fish, or water
-     * body are invalid, the edit page is shown again with the errors. Otherwise
-     * the catch is updated and the user is redirected to their catches.</p>
+     * <p>Ownership is checked first. If the form fails validation or any of the
+     * selected fly, fish, or water body are invalid, the edit page is shown
+     * again with the errors. Otherwise the catch is updated and the user is
+     * redirected to their catches.</p>
      *
      * @param catchId the ID of the catch being edited
      * @param catchForm the submitted catch form
@@ -241,7 +247,7 @@ public class CatchController {
         log.info("Edit catch form submitted for catch ID: {}", catchId);
 
         // checked before validation so someone can't probe other users' catches through error messages
-        if (catchService.isCatchOwner(catchId) == false) {
+        if (!catchService.isCatchOwner(catchId)) {
             log.warn("Catch ID {} not found or not owned by the current user", catchId);
             return "redirect:/catches/mine";
         }
@@ -255,7 +261,7 @@ public class CatchController {
             return "catches/edit";
         }
 
-        if (catchService.updateCatch(catchId, catchForm) == false) {
+        if (!catchService.updateCatch(catchId, catchForm)) {
             log.warn("Edit catch failed for catch ID: {}", catchId);
             model.addAttribute("catchId", catchId);
             model.addAttribute("editCatchFailed", true);
@@ -288,6 +294,7 @@ public class CatchController {
 
         model.addAttribute("fish", fish);
 
+        // only the fragment is rendered, htmx drops it straight into the fish dropdown
         return "catches/fish-options :: options";
     }
 
@@ -295,8 +302,9 @@ public class CatchController {
      * Runs the catch checks the form annotations can't do and adds a flag to
      * the model for each one that fails.
      *
-     * <p>Length, date, and notes are left out because the form annotations
-     * already show messages for them.</p>
+     * <p>Empty fields are skipped because {@code @NotNull} on the form already
+     * reports them. Length, date, and notes are left out entirely because the
+     * form annotations show messages for them.</p>
      *
      * @param catchForm the submitted catch form
      * @param model the model to add the error flags to
@@ -306,26 +314,29 @@ public class CatchController {
         boolean hasCustomErrors = false;
 
         // null IDs are already reported by @NotNull on the form, so only check IDs that were sent
-        if (catchForm.getFlyId() != null && catchService.isFlyValid(catchForm.getFlyId()) == false) {
+        if (catchForm.getFlyId() != null
+                && !catchService.isFlyValid(catchForm.getFlyId())) {
             model.addAttribute("flyInvalid", true);
             hasCustomErrors = true;
         }
 
-        if (catchForm.getFishId() != null && catchService.isFishValid(catchForm.getFishId()) == false) {
+        if (catchForm.getFishId() != null
+                && !catchService.isFishValid(catchForm.getFishId())) {
             model.addAttribute("fishInvalid", true);
             hasCustomErrors = true;
         }
 
-        if (catchForm.getWaterBodyId() != null && catchService.isWaterBodyValid(catchForm.getWaterBodyId()) == false) {
+        if (catchForm.getWaterBodyId() != null
+                && !catchService.isWaterBodyValid(catchForm.getWaterBodyId())) {
             model.addAttribute("waterBodyInvalid", true);
             hasCustomErrors = true;
         }
 
         // only worth checking once both were picked and exist, otherwise the user gets two errors for one bad pick
-        if (hasCustomErrors == false
+        if (!hasCustomErrors
                 && catchForm.getFishId() != null
                 && catchForm.getWaterBodyId() != null
-                && catchService.isFishInWaterBody(catchForm.getFishId(), catchForm.getWaterBodyId()) == false) {
+                && !catchService.isFishInWaterBody(catchForm.getFishId(), catchForm.getWaterBodyId())) {
             model.addAttribute("fishNotInWaterBody", true);
             hasCustomErrors = true;
         }
@@ -355,6 +366,7 @@ public class CatchController {
 
         model.addAttribute("fish", fish);
 
+        // seconds are dropped because the picker only works in minutes
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
         model.addAttribute("maxDateCaught", now.format(DATE_INPUT_FORMAT));
     }

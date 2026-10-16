@@ -9,7 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,21 +30,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for {@link edu.carroll.cs341.hookset.service.impl.FlyServiceImpl}.
- * <p>
- * Each service method is tested against a happy path, a crappy path, and one or more
+ *
+ * <p>Each service method is tested against a happy path, a crappy path, and one or more
  * crazy paths. Happy paths cover valid input with an expected result. Crappy paths cover
  * failures the service is designed to handle, such as missing flies or duplicate names.
  * Crazy paths cover unusual input and ownership edge cases, such as two users sharing a
  * slug, one user trying to read or change another user's fly, and attempts to change
- * default Hookset flies.
- * <p>
- * Two users are saved before each test, and the first one is logged in by loading their
+ * default Hookset flies.</p>
+ *
+ * <p>Two users are saved before each test, and the first one is logged in by loading their
  * real {@link HooksetUserDetails} through the application's {@link UserDetailsService}.
- * Tests that need the other user, or no user, change the security context directly.
- * <p>
- * Tests run against the H2 test database and each test is rolled back by
+ * Tests that need the other user, or no user, change the security context directly.</p>
+ *
+ * <p>Tests run against the H2 test database and each test is rolled back by
  * {@link Transactional}. Count assertions are measured against a baseline so the tests
- * do not depend on the database starting empty.
+ * do not depend on the database starting empty.</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -89,6 +88,7 @@ public class FlyServiceImplTest {
      */
     @BeforeEach
     public void checkDatabase() throws SQLException {
+        // guards against a wrong profile pointing these tests at the real MySQL database
         try (Connection connection = dataSource.getConnection()) {
             assertTrue(connection.getMetaData().getURL().startsWith("jdbc:h2:"),
                     "Tests must use the H2 database");
@@ -121,6 +121,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testGetAllFliesHappyPath() {
+        // baseline instead of a hardcoded count, so seed data doesn't break the test
         int before = flyService.getAllFlies().size();
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
@@ -144,6 +145,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testGetAllFliesCrappyPath() {
+        // read straight from the repository so the baseline doesn't go through the method under test
         int before = flyRepository.findByUserIdIsNullOrUserId(testUser.getUserId()).size();
 
         List<Fly> flies = flyService.getAllFlies();
@@ -175,6 +177,8 @@ public class FlyServiceImplTest {
     public void testGetAllFliesCrazyPathNoUser() {
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
+
+        // log out after saving, so the custom fly exists but nobody owns the session
         SecurityContextHolder.clearContext();
 
         List<Fly> flies = flyService.getAllFlies();
@@ -226,6 +230,8 @@ public class FlyServiceImplTest {
     @Test
     public void testGetAllHooksetFliesCrazyPathCustomFliesExcluded() {
         int before = flyService.getAllHooksetFlies().size();
+
+        // one fly from each user, so the test catches a filter on the wrong user as well as a missing filter
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
         flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getUserId()));
 
@@ -252,6 +258,7 @@ public class FlyServiceImplTest {
 
         List<Fly> flies = flyService.getAllUserFlies();
 
+        // an exact count is safe here, since seed data only contains default flies
         assertNotNull(flies, "getAllUserFlies should never return null");
         assertEquals(1, flies.size(),
                 "Current user should have exactly one custom fly");
@@ -297,6 +304,7 @@ public class FlyServiceImplTest {
 
         Fly result = flyService.getFlyFromSlug("custom-fly");
 
+        // check every field so a lookup that returns the wrong row can't slip through
         assertNotNull(result, "Fly should be found for an existing slug");
         assertEquals(saved.getFlyId(), result.getFlyId(),
                 "Returned fly ID should match the saved fly");
@@ -304,7 +312,7 @@ public class FlyServiceImplTest {
                 "Returned fly name should match the saved name");
         assertEquals("custom-fly", result.getFlySlug(),
                 "Returned fly slug should match the requested slug");
-        assertEquals("Dry Fly", result.getFlyType(),
+        assertEquals("Dry", result.getFlyType(),
                 "Returned fly type should match the saved type");
         assertEquals("Olive", result.getColor(),
                 "Returned fly color should match the saved color");
@@ -335,6 +343,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testGetFlyFromSlugCrappyPath() {
+        // a real fly exists so a lookup that ignores the slug would return it and fail
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
 
         Fly result = flyService.getFlyFromSlug("does-not-exist");
@@ -383,6 +392,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testGetFlyFromSlugCrazyPathSharedSlug() {
+        // saved straight through the repository, since addFly would never create a shared slug for one user
         Fly testUserFly = flyRepository.save(
                 createTestFly("Woolly Bugger", "woolly-bugger", testUser.getUserId()));
         Fly otherUserFly = flyRepository.save(
@@ -390,6 +400,7 @@ public class FlyServiceImplTest {
 
         Fly testUserResult = flyService.getFlyFromSlug("woolly-bugger");
 
+        // switch users mid-test to check the same slug resolves differently per login
         loginAs(otherUser);
         Fly otherUserResult = flyService.getFlyFromSlug("woolly-bugger");
 
@@ -411,6 +422,7 @@ public class FlyServiceImplTest {
 
         Fly result = flyService.getFlyFromSlug("parachute-adams");
 
+        // the service checks default flies first, so this pins down that order
         assertNotNull(result, "A fly should be found when a default and custom fly share a slug");
         assertEquals(defaultFly.getFlyId(), result.getFlyId(),
                 "The default fly should be returned before the user's custom fly");
@@ -423,6 +435,8 @@ public class FlyServiceImplTest {
     public void testGetFlyFromSlugCrazyPathNoUser() {
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
+
+        // with no user, a null user ID must not turn into an IS NULL query that matches default flies
         SecurityContextHolder.clearContext();
 
         Fly defaultResult = flyService.getFlyFromSlug("default-fly");
@@ -469,21 +483,21 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testGetFlyByIdCrappyPath() {
+        // far above any ID H2 will hand out during a test run
         Fly result = flyService.getFlyById(999999L);
 
         assertNull(result, "No fly should be returned for an ID that does not exist");
     }
 
     /**
-     * Crazy path: a null ID is rejected by the repository.
+     * Crazy path: a null ID returns null.
      */
     @Test
     public void testGetFlyByIdCrazyPathNull() {
-        assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> flyService.getFlyById(null),
-                "Looking up a null fly ID should throw");
-    }
+        Fly result = flyService.getFlyById(null);
 
+        assertNull(result, "No fly should be returned for a null ID");
+    }
     /**
      * Crazy path: another user's custom fly cannot be loaded by ID.
      */
@@ -503,7 +517,8 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testAddFlyHappyPath() {
-        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry Fly");
+        // "Dry" is the form's option value, not the "Dry Fly" display text
+        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry");
 
         flyService.addFly(flyForm);
 
@@ -520,7 +535,7 @@ public class FlyServiceImplTest {
                 "Added fly name should match the form");
         assertEquals("parachute-adams", saved.getFlySlug(),
                 "Added fly slug should be generated from the name");
-        assertEquals("Dry Fly", saved.getFlyType(),
+        assertEquals("Dry", saved.getFlyType(),
                 "Added fly type should match the form");
         assertEquals("dry.png", saved.getFlyImage(),
                 "A dry fly should use the dry fly image");
@@ -548,28 +563,43 @@ public class FlyServiceImplTest {
     }
 
     /**
-     * Crappy path: a form missing a required color is rejected by the database.
+     * Crappy path: a form missing a color is rejected and nothing is saved.
      */
     @Test
     public void testAddFlyCrappyPathMissingColor() {
-        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry");
         flyForm.setFlyColor(null);
 
-        assertThrows(DataIntegrityViolationException.class,
-                () -> flyService.addFly(flyForm),
-                "Saving a fly with no color should violate the NOT NULL constraint");
+        int before = flyRepository.findAll().size();
+
+        boolean result = flyService.addFly(flyForm);
+
+        List<Fly> flyList = flyRepository.findAll();
+        int after = flyList.size();
+
+        // the service catches it before the database's NOT NULL constraint ever runs
+        assertFalse(result, "A fly with no color should not be saved");
+        assertEquals(before, after);
     }
 
     /**
-     * Crappy path: adding a second fly with the same slug for the same user is rejected by the database.
+     * Crappy path: adding a second fly with the same name for the same user is rejected.
      */
     @Test
-    public void testAddFlyCrappyPathDuplicateSlug() {
-        flyService.addFly(createTestFlyForm("Woolly Bugger", "Streamer"));
+    public void testAddFlyCrappyPathDuplicateName() {
+        // a name that can't collide with a default fly, so the first add is guaranteed to work
+        boolean firstResult = flyService.addFly(createTestFlyForm("Test Bugger", "Streamer"));
 
-        assertThrows(DataIntegrityViolationException.class,
-                () -> flyService.addFly(createTestFlyForm("Woolly Bugger", "Streamer")),
-                "Saving a second fly with the same slug for the same user should violate the unique constraint");
+        int before = flyRepository.findAll().size();
+
+        boolean secondResult = flyService.addFly(createTestFlyForm("Test Bugger", "Streamer"));
+
+        List<Fly> flyList = flyRepository.findAll();
+        int after = flyList.size();
+
+        assertTrue(firstResult, "The first fly with a new name should be saved");
+        assertFalse(secondResult, "A second fly with the same name for the same user should be rejected");
+        assertEquals(before, after);
     }
 
     /**
@@ -577,6 +607,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testAddFlyCrazyPathUnknownType() {
+        // a type the form can't send, so this only reaches the service through a direct call
         FlyForm flyForm = createTestFlyForm("Soft Hackle", "Wet Fly");
 
         flyService.addFly(flyForm);
@@ -592,7 +623,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testAddFlyCrazyPathWhitespaceName() {
-        FlyForm flyForm = createTestFlyForm("  Parachute    Adams  ", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("  Parachute    Adams  ", "Dry");
 
         flyService.addFly(flyForm);
 
@@ -610,6 +641,8 @@ public class FlyServiceImplTest {
     @Test
     public void testUpdateFlyHappyPath() {
         Fly saved = flyRepository.save(createTestFly("Old Name", "old-name", testUser.getUserId()));
+
+        // every field changes from the saved values so a skipped setter would show up
         FlyForm flyForm = createTestFlyForm("New Name", "Streamer");
         flyForm.setFlyColor("Black");
         flyForm.setMinSize(4);
@@ -617,6 +650,7 @@ public class FlyServiceImplTest {
 
         boolean result = flyService.updateFly(saved.getFlyId(), flyForm);
 
+        // reload from the repository so the asserts check what was saved, not the object in memory
         Fly updated = flyRepository.findById(saved.getFlyId()).orElse(null);
 
         assertTrue(result, "updateFly should return true for a successful update");
@@ -642,7 +676,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testUpdateFlyCrappyPath() {
-        FlyForm flyForm = createTestFlyForm("New Name", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("New Name", "Dry");
 
         boolean result = flyService.updateFly(999999L, flyForm);
 
@@ -655,12 +689,13 @@ public class FlyServiceImplTest {
     @Test
     public void testUpdateFlyCrazyPathOtherUser() {
         Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getUserId()));
-        FlyForm flyForm = createTestFlyForm("Hijacked Name", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Hijacked Name", "Dry");
 
         assertThrows(AccessDeniedException.class,
                 () -> flyService.updateFly(otherFly.getFlyId(), flyForm),
                 "Updating another user's fly should be denied");
 
+        // the exception alone doesn't prove nothing changed, so check the saved row too
         Fly unchanged = flyRepository.findById(otherFly.getFlyId()).orElse(null);
 
         assertNotNull(unchanged, "Another user's fly should still exist after a denied update");
@@ -674,7 +709,7 @@ public class FlyServiceImplTest {
     @Test
     public void testUpdateFlyCrazyPathDefaultFly() {
         Fly defaultFly = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
-        FlyForm flyForm = createTestFlyForm("Hijacked Name", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Hijacked Name", "Dry");
 
         assertThrows(AccessDeniedException.class,
                 () -> flyService.updateFly(defaultFly.getFlyId(), flyForm),
@@ -740,13 +775,17 @@ public class FlyServiceImplTest {
     }
 
     /**
-     * Crazy path: a null ID is rejected by the repository.
+     * Crazy path: a null ID does nothing and does not throw.
      */
     @Test
     public void testDeleteFlyCrazyPathNull() {
-        assertThrows(InvalidDataAccessApiUsageException.class,
-                () -> flyService.deleteFly(null),
-                "Deleting a null fly ID should throw");
+        // a real fly exists so a null that matched something would delete it
+        Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
+
+        assertDoesNotThrow(() -> flyService.deleteFly(null),
+                "Deleting a null fly ID should not throw");
+        assertTrue(flyRepository.findById(saved.getFlyId()).isPresent(),
+                "No fly should be deleted for a null ID");
     }
 
     // ---------- isSizeRangeValid ----------
@@ -756,7 +795,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsSizeRangeValidHappyPath() {
-        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry");
         flyForm.setMinSize(12);
         flyForm.setMaxSize(18);
 
@@ -770,7 +809,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsSizeRangeValidCrappyPath() {
-        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry");
         flyForm.setMinSize(18);
         flyForm.setMaxSize(12);
 
@@ -784,7 +823,8 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsSizeRangeValidCrazyPathEqualSizes() {
-        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry Fly");
+        // boundary case, catches a > that should have been >= or the other way around
+        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry");
         flyForm.setMinSize(14);
         flyForm.setMaxSize(14);
 
@@ -798,7 +838,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsSizeRangeValidCrazyPathNullSize() {
-        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Test Fly", "Dry");
         flyForm.setMinSize(null);
         flyForm.setMaxSize(12);
 
@@ -814,7 +854,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsFlyNameUniqueHappyPath() {
-        FlyForm flyForm = createTestFlyForm("Brand New Fly", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Brand New Fly", "Dry");
 
         boolean result = flyService.isFlyNameUnique(flyForm);
 
@@ -852,7 +892,8 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsFlyNameUniqueCrazyPathBlank() {
-        FlyForm flyForm = createTestFlyForm("   ", "Dry Fly");
+        // strict on bad input, blank is never treated as a usable name
+        FlyForm flyForm = createTestFlyForm("   ", "Dry");
 
         boolean result = flyService.isFlyNameUnique(flyForm);
 
@@ -864,7 +905,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsFlyNameUniqueCrazyPathNull() {
-        FlyForm flyForm = createTestFlyForm(null, "Dry Fly");
+        FlyForm flyForm = createTestFlyForm(null, "Dry");
 
         boolean result = flyService.isFlyNameUnique(flyForm);
 
@@ -876,6 +917,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsFlyNameUniqueCrazyPathOtherUserName() {
+        // custom flies are private, so another user's names shouldn't block this user
         flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", otherUser.getUserId()));
         FlyForm flyForm = createTestFlyForm("Woolly Bugger", "Streamer");
 
@@ -889,8 +931,9 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsFlyNameUniqueCrazyPathDefaultFlyName() {
+        // default flies are visible to everyone, so their names are taken for everyone
         flyRepository.save(createTestFly("Parachute Adams", "parachute-adams", null));
-        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry");
 
         boolean result = flyService.isFlyNameUnique(flyForm);
 
@@ -904,6 +947,7 @@ public class FlyServiceImplTest {
      */
     @Test
     public void testIsFlyNameUniqueForEditHappyPath() {
+        // without the keep-your-own-name rule, editing only the color would fail as a duplicate
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getUserId()));
         FlyForm flyForm = createTestFlyForm("Woolly Bugger", "Streamer");
 
@@ -919,7 +963,7 @@ public class FlyServiceImplTest {
     public void testIsFlyNameUniqueForEditCrappyPath() {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getUserId()));
         flyRepository.save(createTestFly("Parachute Adams", "parachute-adams", testUser.getUserId()));
-        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry");
 
         boolean result = flyService.isFlyNameUniqueForEdit(saved.getFlyId(), flyForm);
 
@@ -946,7 +990,7 @@ public class FlyServiceImplTest {
     public void testIsFlyNameUniqueForEditCrazyPathDefaultFlyName() {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getUserId()));
         flyRepository.save(createTestFly("Parachute Adams", "parachute-adams", null));
-        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry Fly");
+        FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry");
 
         boolean result = flyService.isFlyNameUniqueForEdit(saved.getFlyId(), flyForm);
 
@@ -986,9 +1030,11 @@ public class FlyServiceImplTest {
      * @param user the saved user to log in
      */
     private void loginAs(User user) {
+        // loads through the real UserDetailsService so the test login matches what the app does
         HooksetUserDetails userDetails =
                 (HooksetUserDetails) userDetailsService.loadUserByUsername(user.getUsername());
 
+        // skips the password check, since these tests are about what a logged-in user can do
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
@@ -1024,10 +1070,11 @@ public class FlyServiceImplTest {
     private Fly createTestFly(String name, String slug, Long userId) {
         Fly fly = new Fly();
 
+        // slug is passed in rather than generated, so tests can set up collisions on purpose
         fly.setFlyName(name);
         fly.setFlySlug(slug);
         fly.setUserId(userId);
-        fly.setFlyType("Dry Fly");
+        fly.setFlyType("Dry");
         fly.setColor("Olive");
         fly.setMinSize(12);
         fly.setMaxSize(18);

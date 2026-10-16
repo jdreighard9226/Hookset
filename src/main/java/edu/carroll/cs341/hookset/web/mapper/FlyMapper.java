@@ -59,16 +59,22 @@ public class FlyMapper {
         return fly;
     }
 
-
-    public FlyForm toForm(FlyDto flydto) {
+    /**
+     * Converts a fly into a form so it can be edited.
+     *
+     * @param flyDto the fly to convert
+     * @return a fly form filled with the fly's values
+     */
+    public FlyForm toForm(FlyDto flyDto) {
         FlyForm flyForm = new FlyForm();
 
-        flyForm.setFlyId(flydto.getFlyId());
-        flyForm.setFlyName(flydto.getFlyName());
-        flyForm.setFlyType(flydto.getFlyType());
-        flyForm.setFlyColor(flydto.getColor());
-        flyForm.setMinSize(flydto.getMinSize());
-        flyForm.setMaxSize(flydto.getMaxSize());
+        flyForm.setFlyId(flyDto.getFlyId());
+        flyForm.setFlyName(flyDto.getFlyName());
+        flyForm.setFlyType(flyDto.getFlyType());
+        flyForm.setFlyColor(flyDto.getColor());
+        flyForm.setMinSize(flyDto.getMinSize());
+        flyForm.setMaxSize(flyDto.getMaxSize());
+
         return flyForm;
     }
 }

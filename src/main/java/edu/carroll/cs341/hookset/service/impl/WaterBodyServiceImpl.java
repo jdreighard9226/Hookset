@@ -2,34 +2,30 @@ package edu.carroll.cs341.hookset.service.impl;
 
 import edu.carroll.cs341.hookset.jpa.repo.WaterBodyRepository;
 import edu.carroll.cs341.hookset.service.WaterBodyService;
-import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
-import edu.carroll.cs341.hookset.web.mapper.WaterBodyMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import shared.jpa.entity.WaterBody;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Service for looking up water bodies.
+ * Service implementation for looking up water bodies.
  *
- * <p>This service reads water body records from the database and converts
- * them into DTOs for the web layer. Water bodies can be looked up as a full
- * list or individually by their URL slug.</p>
+ * <p>Water bodies can be looked up as a full list or individually by their
+ * URL slug. Water bodies are read-only here, since they come from the
+ * importer rather than from users.</p>
  */
 @Service
 public class WaterBodyServiceImpl implements WaterBodyService {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(WaterBodyServiceImpl.class);
 
     /** The repository used to look up water bodies. */
     private final WaterBodyRepository waterBodyRepository;
 
-
     /**
-     * Creates the water body service with the repository and mapper it depends on.
+     * Creates the water body service with the repository it depends on.
      *
      * @param waterBodyRepository the repository used to look up water bodies
      */
@@ -38,37 +34,36 @@ public class WaterBodyServiceImpl implements WaterBodyService {
     }
 
     /**
-     * Gets every water body in the database.
+     * Returns every water body in the database.
      *
-     * @return the water bodies as DTOs, or an empty list if none exist
+     * @return the list of water bodies, or an empty list if none exist
      */
     @Override
     public List<WaterBody> getAllWaterBodies() {
         log.info("Loading all water bodies");
 
-        List<WaterBody> waterBodyEntities = waterBodyRepository.findAll();
+        List<WaterBody> waterBodies = waterBodyRepository.findAll();
 
         // an empty water body table usually means the importer has not been run
-        if (waterBodyEntities.size() < 1) {
-            log.warn("No water bodies found in the database. Size: {}", waterBodyEntities.size());
+        if (waterBodies.size() < 1) {
+            log.warn("No water bodies found in the database");
         }
 
-        log.info("Loaded {} water bodies", waterBodyEntities.size());
+        log.info("Loaded {} water bodies", waterBodies.size());
 
-        return waterBodyEntities;
+        return waterBodies;
     }
 
     /**
-     * Gets a water body by its URL slug.
+     * Returns a single water body by its URL slug.
      *
      * @param waterBodySlug the slug used in the water body's URL
-     * @return the matching water body as a DTO
+     * @return the matching water body, or {@code null} if the slug is blank or no water body matches
      */
     @Override
     public WaterBody getWaterBodyFromSlug(String waterBodySlug) {
-
         if (waterBodySlug == null || waterBodySlug.isBlank()) {
-            log.warn("getWaterBodyFromSlug called with null or blank slug");
+            log.warn("Water body lookup failed. Slug is blank");
             return null;
         }
 

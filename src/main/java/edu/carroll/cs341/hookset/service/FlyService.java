@@ -50,7 +50,7 @@ public interface FlyService {
      *
      * @param flyForm the form containing the custom fly details
      */
-    void addFly(FlyForm flyForm);
+    boolean addFly(FlyForm flyForm);
 
 
     /**
