@@ -32,8 +32,7 @@ public class ProfileController {
 
     /**
      * Creates the profile controller with the service it depends on.
-     *
-     * @param profileService the service used to update the logged-in user's profile
+
      */
     public ProfileController(UserService userService) {
         this.userService = userService;
@@ -97,7 +96,7 @@ public class ProfileController {
             hasCustomErrors = true;
         }
 
-        if (userService.doPasswordsMatch(profileForm) == false) {
+        if (userService.doPasswordsMatch(profileForm.getPassword(), profileForm.getConfirmPassword()) == false) {
             model.addAttribute("passwordMismatch", true);
             hasCustomErrors = true;
         }

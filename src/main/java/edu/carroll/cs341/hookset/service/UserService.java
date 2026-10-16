@@ -29,7 +29,7 @@ public interface UserService {
     boolean isUsernameTaken(String username);
 
 
-    boolean doPasswordsMatch(ProfileForm profileForm);
+    boolean doPasswordsMatch(String password, String confirmPassword);
 
     boolean isPasswordBlank(String password);
 

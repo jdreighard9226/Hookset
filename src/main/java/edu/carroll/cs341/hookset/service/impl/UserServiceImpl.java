@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        if (doPasswordsMatch(profileForm) == false) {
+        if (doPasswordsMatch(profileForm.getPassword(), profileForm.getConfirmPassword()) == false) {
             return false;
         }
 
@@ -94,12 +94,14 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
+        if(!doPasswordsMatch(signupForm.getPassword(), signupForm.getConfirmPassword())) {
+            return false;
+        }
+
         User newUser = new User();
-        newUser.setUsername(signupForm.getUsername());
+        newUser.setUsername(signupForm.getUsername().toLowerCase());
         newUser.setIsAdmin(false);
-        newUser.setHashPassword(
-                passwordEncoder.encode(signupForm.getPassword())
-        );
+        newUser.setHashPassword(passwordEncoder.encode(signupForm.getPassword()));
 
         userRepository.save(newUser);
 
@@ -129,7 +131,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean isUsernameTaken(String username) {
-        User user = userRepository.findByUsername(username);
+        if (isUsernameBlank(username)) {
+            return false;
+        }
+
+        User user = userRepository.findByUsername(username.toLowerCase());
 
         if (user != null) {
             log.warn("Username already taken: {}", username);
@@ -182,10 +188,8 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public boolean doPasswordsMatch(ProfileForm profileForm) {
-        if (profileForm.getPassword() == null ||
-                !profileForm.getPassword().equals(profileForm.getConfirmPassword())) {
-
+    public boolean doPasswordsMatch(String password, String confirmPassword) {
+        if (password == null || !password.equals(confirmPassword)) {
             log.warn("Password validation failed. Passwords do not match");
             return false;
         }
