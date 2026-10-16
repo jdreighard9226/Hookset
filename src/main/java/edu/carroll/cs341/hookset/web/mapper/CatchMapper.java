@@ -33,6 +33,7 @@ public class CatchMapper {
         catchDto.setCatchId(catchRecord.getCatchId());
         catchDto.setUserId(catchRecord.getUserId());
         catchDto.setFish(fishDto);
+        catchDto.setFly(flyDto);
         catchDto.setWaterBody(waterBodyDto);
         catchDto.setFishLength(catchRecord.getFishLength());
         catchDto.setDateCaught(catchRecord.getDateCaught());

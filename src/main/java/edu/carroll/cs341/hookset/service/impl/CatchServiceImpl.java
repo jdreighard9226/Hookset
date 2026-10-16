@@ -351,29 +351,6 @@ public class CatchServiceImpl implements CatchService {
         return null;
     }
 
-    @Override
-    public boolean addNewCatch(CatchForm catchForm) {
-        Long userId = getCurrentUserId();
-
-        if (userId == null) {
-            log.warn("Catch not saved. No user logged in");
-            return false;
-        }
-
-        if (isCatchFormValid(catchForm) == false) {
-            return false;
-        }
-
-        Catch catchRecord = new Catch();
-
-        catchRecord.setUserId(userId);
-        copyFormToCatch(catchForm, catchRecord);
-
-        catchRepository.save(catchRecord);
-
-        log.info("Catch saved for user ID: {}", userId);
-        return true;
-    }
 
     @Override
     public boolean isCatchOwner(Long catchId) {

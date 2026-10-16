@@ -186,8 +186,9 @@ public class FlyServiceImpl implements FlyService {
      */
     @Override
     public boolean isFlyNameUnique(FlyForm flyForm) {
+        // blank names are reported by @NotBlank on the form, they aren't duplicates
         if (flyForm.getFlyName() == null || flyForm.getFlyName().isBlank()) {
-            return false;
+            return true;
         }
 
         Long userId = getCurrentUserId();

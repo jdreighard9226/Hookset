@@ -110,7 +110,7 @@ public class CatchController {
      * Handles GET requests for a single catch's details page.
      *
      * @param catchId the ID of the catch to show
-     * @param model the model used to pass the catch to the view
+     * @param model the model used to pass the catch and ownership to the view
      * @return the name of the catch details view, or a redirect to the catch list if the catch does not exist
      */
     @GetMapping("/details/{catchId}")
@@ -124,7 +124,8 @@ public class CatchController {
             return "redirect:/catches";
         }
 
-        model.addAttribute("catch", catchDto);
+        model.addAttribute("catchRecord", catchDto);
+        model.addAttribute("isOwner", catchService.isCatchOwner(catchId));
 
         return "catches/details";
     }
@@ -203,7 +204,7 @@ public class CatchController {
     public String getEditCatch(@PathVariable Long catchId, Model model) {
         log.info("Loading edit catch page for catch ID: {}", catchId);
 
-        CatchForm catchForm = catchService.getCatchByCatchId(catchId);
+        CatchForm catchForm = catchService.getCatchFormByCatchId(catchId);
 
         if (catchForm == null) {
             log.warn("Catch ID {} not found or not owned by the current user", catchId);
@@ -304,23 +305,26 @@ public class CatchController {
     private boolean addCustomErrors(CatchForm catchForm, Model model) {
         boolean hasCustomErrors = false;
 
-        if (catchService.isFlyValid(catchForm.getFlyId()) == false) {
+        // null IDs are already reported by @NotNull on the form, so only check IDs that were sent
+        if (catchForm.getFlyId() != null && catchService.isFlyValid(catchForm.getFlyId()) == false) {
             model.addAttribute("flyInvalid", true);
             hasCustomErrors = true;
         }
 
-        if (catchService.isFishValid(catchForm.getFishId()) == false) {
+        if (catchForm.getFishId() != null && catchService.isFishValid(catchForm.getFishId()) == false) {
             model.addAttribute("fishInvalid", true);
             hasCustomErrors = true;
         }
 
-        if (catchService.isWaterBodyValid(catchForm.getWaterBodyId()) == false) {
+        if (catchForm.getWaterBodyId() != null && catchService.isWaterBodyValid(catchForm.getWaterBodyId()) == false) {
             model.addAttribute("waterBodyInvalid", true);
             hasCustomErrors = true;
         }
 
-        // only worth checking once both exist, otherwise the user gets two errors for one bad pick
+        // only worth checking once both were picked and exist, otherwise the user gets two errors for one bad pick
         if (hasCustomErrors == false
+                && catchForm.getFishId() != null
+                && catchForm.getWaterBodyId() != null
                 && catchService.isFishInWaterBody(catchForm.getFishId(), catchForm.getWaterBodyId()) == false) {
             model.addAttribute("fishNotInWaterBody", true);
             hasCustomErrors = true;

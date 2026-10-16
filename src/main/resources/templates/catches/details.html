@@ -1,0 +1,80 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org"
+      lang="en"
+      th:replace="~{layout :: layout(~{::title}, ~{::main})}">
+<!--/* the title and main below are inserted into layout.html, which adds the navbar, footer, and shared head */-->
+<head>
+    <meta charset="UTF-8"/>
+    <title>Catch Details</title>
+</head>
+
+<main>
+    <div class="container py-5 mt-5">
+
+        <h1 class="text-center mb-4" th:text="${catchRecord.fish.fishSpecies}"></h1>
+
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-8">
+
+                <div class="card shadow-sm fly-card-gold">
+                    <div class="card-body p-4">
+
+                        <!--/* image sits beside the details on medium screens and up, above them on phones */-->
+                        <div class="row align-items-center">
+
+                            <div class="col-12 col-md-5 text-center mb-4 mb-md-0">
+                                <img class="img-fluid fly-details-image"
+                                     th:src="@{'/images/fish/' + ${catchRecord.fish.fishImage}}"
+                                     th:alt="${catchRecord.fish.fishSpecies}">
+                            </div>
+
+                            <div class="col-12 col-md-7">
+                                <h3 th:text="${catchRecord.waterBody.waterBodyName}"></h3>
+
+                                <hr>
+
+                                <p>
+                                    <strong>Date Caught:</strong>
+                                    <span th:text="${#temporals.format(catchRecord.dateCaught, 'MMM d, yyyy h:mm a')}"></span>
+                                </p>
+
+                                <p>
+                                    <strong>Fly Used:</strong>
+                                    <span th:text="${catchRecord.fly.flyName}"></span>
+                                </p>
+
+                                <!--/* length is optional on the form, so it can be missing */-->
+                                <p>
+                                    <strong>Length:</strong>
+                                    <span th:text="${catchRecord.fishLength != null ? catchRecord.fishLength + ' in' : 'Not recorded'}"></span>
+                                </p>
+
+                                <p>
+                                    <strong>Notes:</strong>
+                                    <span th:text="${#strings.isEmpty(catchRecord.notes) ? 'No notes' : catchRecord.notes}"></span>
+                                </p>
+
+                                <!--/* isOwner comes from the controller so only the person who logged it sees the edit button */-->
+                                <a th:if="${isOwner}"
+                                   th:href="@{/catches/edit/{catchId}(catchId=${catchRecord.catchId})}"
+                                   class="secondary-button">
+                                    Edit Catch
+                                </a>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <a th:href="@{/catches}" class="secondary-button">
+                        Back to All Catches
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</main>
+</html>
