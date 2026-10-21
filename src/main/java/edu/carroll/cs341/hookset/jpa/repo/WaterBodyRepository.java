@@ -6,10 +6,10 @@ import shared.jpa.entity.WaterBody;
 /**
  * Repository for reading and writing water body records.
  *
- * <p>Water bodies are loaded into the database by the importers
- * application. Besides the standard Spring Data JPA methods, this
- * repository provides a lookup by URL slug so pages can find a water
- * body from its address.</p>
+ * <p>Water bodies are loaded into the database by the
+ * fish-waterbody-importer.sql script. Besides the standard Spring Data JPA
+ * methods, this repository provides a lookup by URL slug so pages can find a
+ * water body from its address.</p>
  */
 public interface WaterBodyRepository extends JpaRepository<WaterBody, Long> {
 

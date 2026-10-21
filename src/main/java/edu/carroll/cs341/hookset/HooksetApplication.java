@@ -11,9 +11,8 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
  * login, and signup pages, and handles authentication through Spring
  * Security.</p>
  *
- * <p>Entities are shared with the importers application through the
- * shared module, so entity scanning is pointed at that package.</p>
  */
+
 @SpringBootApplication
 // entities live in the shared module, outside this application's base package
 @EntityScan(basePackages = "shared.jpa.entity")

@@ -6,9 +6,9 @@ import shared.jpa.entity.Fish;
 /**
  * Repository for reading and writing fish species records.
  *
- * <p>Fish records are loaded into the database by the importers
- * application. This repository gives the web application access to
- * them through the standard Spring Data JPA methods.</p>
+ * <p>Fish records are loaded into the database by the
+ * fish-waterbody-importer.sql script. This repository gives the web
+ * application access to them through the standard Spring Data JPA methods.</p>
  */
 public interface FishRepository extends JpaRepository<Fish, Long> {
 }
