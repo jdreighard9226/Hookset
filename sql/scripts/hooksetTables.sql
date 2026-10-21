@@ -34,15 +34,6 @@ CREATE TABLE Flies (
 	UNIQUE (userId, flySlug)
 );
 
-
-CREATE TABLE FlyMaterials (
-    materialId BIGINT AUTO_INCREMENT PRIMARY KEY,
-    materialName VARCHAR(250),
-    materialColor VARCHAR(100) NULL,
-    materialType VARCHAR(100)
-);
-
-
 CREATE TABLE WaterBodies (
     waterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
     waterBodyName VARCHAR(250) NOT NULL,
