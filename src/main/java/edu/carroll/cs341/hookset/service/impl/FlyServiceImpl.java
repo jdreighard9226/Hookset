@@ -201,8 +201,9 @@ public class FlyServiceImpl implements FlyService {
      * Checks that a new fly name is not already used by a default fly or one of
      * the current user's custom flies.
      *
-     * <p>The comparison ignores case and surrounding whitespace. A blank name
-     * returns false so nothing treats it as a valid name.</p>
+     * <p>Names are compared by their generated slug, so differences in case or
+     * spacing don't count as a different name. A blank name returns false so
+     * nothing treats it as a valid name.</p>
      *
      * @param flyForm the form containing the fly name to check
      * @return {@code true} if the name is unique, otherwise {@code false}
@@ -215,14 +216,14 @@ public class FlyServiceImpl implements FlyService {
         }
 
         Long userId = getCurrentUserId();
-        String newName = flyForm.getFlyName().trim();
+        String newSlug = generateFlySlug(flyForm.getFlyName());
 
         List<Fly> visibleFlies = flyRepository.findByUserIdIsNullOrUserId(userId);
 
-        // compare against every fly this user can see
+        // two names with the same slug would collide in the URL
         for (Fly fly : visibleFlies) {
-            if (fly.getFlyName().trim().equalsIgnoreCase(newName)) {
-                log.warn("Fly validation failed. Duplicate fly name: {} for user ID: {}", newName, userId);
+            if (fly.getFlySlug().equals(newSlug)) {
+                log.warn("Fly validation failed. Duplicate fly slug: {} for user ID: {}", newSlug, userId);
                 return false;
             }
         }
@@ -234,8 +235,9 @@ public class FlyServiceImpl implements FlyService {
      * Checks that an edited fly name is not already used by a default fly or
      * another of the current user's custom flies.
      *
-     * <p>Keeping the fly's current name is always allowed. The comparison
-     * ignores case and surrounding whitespace.</p>
+     * <p>Names are compared by their generated slug, so differences in case or
+     * spacing don't count as a different name. Keeping the fly's current name
+     * is always allowed.</p>
      *
      * @param flyId the ID of the fly being edited
      * @param flyForm the form containing the new fly name
@@ -255,10 +257,11 @@ public class FlyServiceImpl implements FlyService {
             return false;
         }
 
-        String newName = flyForm.getFlyName().trim();
+        // built after the blank check, since generateFlySlug can't handle a null name
+        String newSlug = generateFlySlug(flyForm.getFlyName());
 
         // the fly keeping its own name isn't a duplicate
-        if (flyBeingEdited.getFlyName().trim().equalsIgnoreCase(newName)) {
+        if (newSlug.equals(flyBeingEdited.getFlySlug())) {
             return true;
         }
 
@@ -266,10 +269,10 @@ public class FlyServiceImpl implements FlyService {
 
         List<Fly> userAndDefaultFlies = flyRepository.findByUserIdIsNullOrUserId(userId);
 
-        // compare against every fly this user can see
+        // two names with the same slug would collide in the URL
         for (Fly fly : userAndDefaultFlies) {
-            if (fly.getFlyName().trim().equalsIgnoreCase(newName)) {
-                log.warn("Fly edit validation failed. Duplicate fly name: {} for user ID: {}", newName, userId);
+            if (newSlug.equals(fly.getFlySlug())) {
+                log.warn("Fly edit validation failed. Duplicate fly slug: {} for user ID: {}", newSlug, userId);
                 return false;
             }
         }
