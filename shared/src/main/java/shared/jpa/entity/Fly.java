@@ -2,8 +2,6 @@ package shared.jpa.entity;
 
 import jakarta.persistence.*;
 
-import java.time.Instant;
-
 /**
  * Represents a fly stored in the Hookset database.
  *
@@ -18,7 +16,7 @@ public class Fly {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long flyId;
+    private Long id;
 
     /** The identifier of the user who entered the fly. May be null. */
     @Column(name = "userId")
@@ -26,11 +24,11 @@ public class Fly {
 
     /** The type of fly, such as dry, nymph, or streamer. */
     @Column(name = "type")
-    private String flyType;
+    private String type;
 
     /** The name of the fly. */
     @Column(name = "name")
-    private String flyName;
+    private String name;
 
     /** The color of the fly. */
     @Column(name = "color")
@@ -44,18 +42,18 @@ public class Fly {
 
 
     @Column(name = "image")
-    private String flyImage;
+    private String image;
 
     @Column(name ="slug")
-    private String flySlug;
+    private String slug;
 
     /**
      * Returns the unique identifier for the fly.
      *
      * @return the fly identifier
      */
-    public Long getFlyId() {
-        return flyId;
+    public Long getId() {
+        return id;
     }
 
     /**
@@ -72,8 +70,8 @@ public class Fly {
      *
      * @return the fly type
      */
-    public String getFlyType() {
-        return flyType;
+    public String getType() {
+        return type;
     }
 
     /**
@@ -81,8 +79,8 @@ public class Fly {
      *
      * @return the fly name
      */
-    public String getFlyName() {
-        return flyName;
+    public String getName() {
+        return name;
     }
 
     /**
@@ -106,19 +104,19 @@ public class Fly {
     /**
      * Sets the type of fly.
      *
-     * @param flyType the fly type
+     * @param type the fly type
      */
-    public void setFlyType(String flyType) {
-        this.flyType = flyType;
+    public void setType(String type) {
+        this.type = type;
     }
 
     /**
      * Sets the name of the fly.
      *
-     * @param flyName the fly name
+     * @param name the fly name
      */
-    public void setFlyName(String flyName) {
-        this.flyName = flyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     /**
@@ -147,19 +145,19 @@ public class Fly {
         this.maxSize = maxSize;
     }
 
-    public String getFlyImage() {
-        return flyImage;
+    public String getImage() {
+        return image;
     }
 
-    public void setFlyImage(String flyImage) {
-        this.flyImage = flyImage;
+    public void setImage(String image) {
+        this.image = image;
     }
 
-    public String getFlySlug() {
-        return flySlug;
+    public String getSlug() {
+        return slug;
     }
 
-    public void setFlySlug(String flySlug) {
-        this.flySlug = flySlug;
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 }

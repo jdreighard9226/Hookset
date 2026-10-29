@@ -24,15 +24,15 @@ public class FlyMapper {
     public FlyDto toDto(Fly fly) {
         FlyDto flyDto = new FlyDto();
 
-        flyDto.setFlyId(fly.getFlyId());
+        flyDto.setId(fly.getId());
         flyDto.setUserId(fly.getUserId());
-        flyDto.setFlyType(fly.getFlyType());
-        flyDto.setFlyName(fly.getFlyName());
+        flyDto.setType(fly.getType());
+        flyDto.setName(fly.getName());
         flyDto.setColor(fly.getColor());
         flyDto.setMinSize(fly.getMinSize());
         flyDto.setMaxSize(fly.getMaxSize());
-        flyDto.setFlyImage(fly.getFlyImage());
-        flyDto.setFlySlug(fly.getFlySlug());
+        flyDto.setImage(fly.getImage());
+        flyDto.setSlug(fly.getSlug());
 
         return flyDto;
     }
@@ -50,9 +50,9 @@ public class FlyMapper {
         Fly fly = new Fly();
 
         // trim so "Adams " and "Adams" don't save as different flies
-        fly.setFlyName(flyForm.getFlyName().trim());
-        fly.setFlyType(flyForm.getFlyType());
-        fly.setColor(flyForm.getFlyColor());
+        fly.setName(flyForm.getName().trim());
+        fly.setType(flyForm.getType());
+        fly.setColor(flyForm.getColor());
         fly.setMinSize(flyForm.getMinSize());
         fly.setMaxSize(flyForm.getMaxSize());
 
@@ -68,10 +68,10 @@ public class FlyMapper {
     public FlyForm toForm(FlyDto flyDto) {
         FlyForm flyForm = new FlyForm();
 
-        flyForm.setFlyId(flyDto.getFlyId());
-        flyForm.setFlyName(flyDto.getFlyName());
-        flyForm.setFlyType(flyDto.getFlyType());
-        flyForm.setFlyColor(flyDto.getColor());
+        flyForm.setId(flyDto.getId());
+        flyForm.setName(flyDto.getName());
+        flyForm.setType(flyDto.getType());
+        flyForm.setColor(flyDto.getColor());
         flyForm.setMinSize(flyDto.getMinSize());
         flyForm.setMaxSize(flyDto.getMaxSize());
 

@@ -129,7 +129,7 @@ public class FlyController {
      * @return a redirect to the fly list on success, or the add fly view if there are errors
      */
     @PostMapping("/add")
-    public String addFly(@Valid @ModelAttribute FlyForm flyForm, BindingResult result, Model model) {
+    public String postAddFly(@Valid @ModelAttribute FlyForm flyForm, BindingResult result, Model model) {
 
         boolean hasCustomErrors = false;
 
@@ -140,7 +140,7 @@ public class FlyController {
 
         if (!flyService.isFlyNameUnique(flyForm)) {
             // only display to user if they didn't type a blank name. Blank names will be caught by form
-            if (!flyService.isFlyNameBlank(flyForm.getFlyName())) {
+            if (!flyService.isFlyNameBlank(flyForm.getName())) {
                 model.addAttribute("duplicateFlyName", true);
                 hasCustomErrors = true;
             }
@@ -159,9 +159,9 @@ public class FlyController {
         return "redirect:/flies";
     }
 
-    @GetMapping("/edit/{flyId}")
-    public String getEditFly(@PathVariable Long flyId, Model model) {
-        Fly fly = flyService.getFlyById(flyId);
+    @GetMapping("/edit/{id}")
+    public String getEditFly(@PathVariable Long id, Model model) {
+        Fly fly = flyService.getFlyById(id);
 
         FlyDto flyDto = flyMapper.toDto(fly);
 
@@ -172,9 +172,9 @@ public class FlyController {
         return "flies/edit";
     }
 
-    @PostMapping("/edit/{flyId}")
+    @PostMapping("/edit/{id}")
     public String postEditFly(
-            @PathVariable Long flyId,
+            @PathVariable Long id,
             @Valid @ModelAttribute FlyForm flyForm,
             BindingResult result,
             Model model) {
@@ -186,19 +186,19 @@ public class FlyController {
             hasCustomErrors = true;
         }
 
-        if (!flyService.isFlyNameUniqueForEdit(flyId, flyForm)) {
-            if (!flyService.isFlyNameBlank(flyForm.getFlyName())) {
+        if (!flyService.isFlyNameUniqueForEdit(id, flyForm)) {
+            if (!flyService.isFlyNameBlank(flyForm.getName())) {
                 model.addAttribute("duplicateFlyName", true);
                 hasCustomErrors = true;
             }
         }
 
         if (result.hasErrors() || hasCustomErrors) {
-            model.addAttribute("flyId", flyId);
+            model.addAttribute("id", id);
             return "flies/edit";
         }
 
-        flyService.updateFly(flyId, flyForm);
+        flyService.updateFly(id, flyForm);
 
         return "redirect:/flies";
     }
@@ -206,14 +206,14 @@ public class FlyController {
     /**
      * Handles POST requests to delete a custom fly.
      *
-     * @param flyId the ID of the fly to delete
+     * @param id the ID of the fly to delete
      * @return a redirect to the fly list
      */
-    @PostMapping("/delete/{flyId}")
-    public String postDeleteFly(@PathVariable Long flyId) {
-        log.info("Delete fly request for fly ID: {}", flyId);
+    @PostMapping("/delete/{id}")
+    public String postDeleteFly(@PathVariable Long id) {
+        log.info("Delete fly request for fly ID: {}", id);
 
-        flyService.deleteFly(flyId);
+        flyService.deleteFly(id);
 
         return "redirect:/flies";
     }

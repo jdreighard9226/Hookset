@@ -11,16 +11,16 @@ package edu.carroll.cs341.hookset.web.dto;
 public class FlyDto {
 
     /** The database identifier of the fly. */
-    private Long flyId;
+    private Long id;
 
     /** The ID of the user who created the fly, or null for default flies. */
     private Long userId;
 
     /** The type of fly, such as dry fly, nymph, or streamer. */
-    private String flyType;
+    private String type;
 
     /** The name of the fly. */
-    private String flyName;
+    private String name;
 
     /** The color of the fly. */
     private String color;
@@ -32,27 +32,27 @@ public class FlyDto {
     private Integer maxSize;
 
     /** The image shown for the fly. */
-    private String flyImage;
+    private String image;
 
     /** The URL slug used to look up the fly. */
-    private String flySlug;
+    private String slug;
 
     /**
      * Returns the database identifier of the fly.
      *
      * @return the fly identifier
      */
-    public Long getFlyId() {
-        return flyId;
+    public Long getId() {
+        return id;
     }
 
     /**
      * Sets the database identifier of the fly.
      *
-     * @param flyId the fly identifier
+     * @param id the fly identifier
      */
-    public void setFlyId(Long flyId) {
-        this.flyId = flyId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     /**
@@ -78,17 +78,17 @@ public class FlyDto {
      *
      * @return the fly type
      */
-    public String getFlyType() {
-        return flyType;
+    public String getType() {
+        return type;
     }
 
     /**
      * Sets the type of fly.
      *
-     * @param flyType the fly type
+     * @param type the fly type
      */
-    public void setFlyType(String flyType) {
-        this.flyType = flyType;
+    public void setType(String type) {
+        this.type = type;
     }
 
     /**
@@ -96,17 +96,17 @@ public class FlyDto {
      *
      * @return the fly name
      */
-    public String getFlyName() {
-        return flyName;
+    public String getName() {
+        return name;
     }
 
     /**
      * Sets the name of the fly.
      *
-     * @param flyName the fly name
+     * @param name the fly name
      */
-    public void setFlyName(String flyName) {
-        this.flyName = flyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     /**
@@ -168,17 +168,17 @@ public class FlyDto {
      *
      * @return the fly image
      */
-    public String getFlyImage() {
-        return flyImage;
+    public String getImage() {
+        return image;
     }
 
     /**
      * Sets the image shown for the fly.
      *
-     * @param flyImage the fly image
+     * @param image the fly image
      */
-    public void setFlyImage(String flyImage) {
-        this.flyImage = flyImage;
+    public void setImage(String image) {
+        this.image = image;
     }
 
     /**
@@ -186,17 +186,17 @@ public class FlyDto {
      *
      * @return the fly slug
      */
-    public String getFlySlug() {
-        return flySlug;
+    public String getSlug() {
+        return slug;
     }
 
     /**
      * Sets the URL slug used to look up the fly.
      *
-     * @param flySlug the fly slug
+     * @param slug the fly slug
      */
-    public void setFlySlug(String flySlug) {
-        this.flySlug = flySlug;
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 
     /**

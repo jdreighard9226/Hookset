@@ -261,7 +261,7 @@ public class FlyServiceImplTest {
         assertNotNull(flies, "getAllUserFlies should never return null");
         assertEquals(1, flies.size(),
                 "Current user should have exactly one custom fly");
-        assertEquals("Custom Fly", flies.getFirst().getFlyName(),
+        assertEquals("Custom Fly", flies.getFirst().getName(),
                 "Returned fly should be the current user's custom fly");
     }
 
@@ -305,13 +305,13 @@ public class FlyServiceImplTest {
 
         // check every field so a lookup that returns the wrong row can't slip through
         assertNotNull(result, "Fly should be found for an existing slug");
-        assertEquals(saved.getFlyId(), result.getFlyId(),
+        assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved fly");
-        assertEquals("Custom Fly", result.getFlyName(),
+        assertEquals("Custom Fly", result.getName(),
                 "Returned fly name should match the saved name");
-        assertEquals("custom-fly", result.getFlySlug(),
+        assertEquals("custom-fly", result.getSlug(),
                 "Returned fly slug should match the requested slug");
-        assertEquals("Dry", result.getFlyType(),
+        assertEquals("Dry", result.getType(),
                 "Returned fly type should match the saved type");
         assertEquals("Olive", result.getColor(),
                 "Returned fly color should match the saved color");
@@ -333,7 +333,7 @@ public class FlyServiceImplTest {
         Fly result = flyService.getFlyFromSlug("default-fly");
 
         assertNotNull(result, "Default fly should be found by its slug");
-        assertEquals(saved.getFlyId(), result.getFlyId(),
+        assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved default fly");
     }
 
@@ -404,10 +404,10 @@ public class FlyServiceImplTest {
         Fly otherUserResult = flyService.getFlyFromSlug("woolly-bugger");
 
         assertNotNull(testUserResult, "Test user should find their own fly by slug");
-        assertEquals(testUserFly.getFlyId(), testUserResult.getFlyId(),
+        assertEquals(testUserFly.getId(), testUserResult.getId(),
                 "Test user should get their own fly, not the other user's");
         assertNotNull(otherUserResult, "Other user should find their own fly by slug");
-        assertEquals(otherUserFly.getFlyId(), otherUserResult.getFlyId(),
+        assertEquals(otherUserFly.getId(), otherUserResult.getId(),
                 "Other user should get their own fly, not the test user's");
     }
 
@@ -423,7 +423,7 @@ public class FlyServiceImplTest {
 
         // the service checks default flies first, so this pins down that order
         assertNotNull(result, "A fly should be found when a default and custom fly share a slug");
-        assertEquals(defaultFly.getFlyId(), result.getFlyId(),
+        assertEquals(defaultFly.getId(), result.getId(),
                 "The default fly should be returned before the user's custom fly");
     }
 
@@ -454,12 +454,12 @@ public class FlyServiceImplTest {
     public void testGetFlyByIdHappyPath() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
 
-        Fly result = flyService.getFlyById(saved.getFlyId());
+        Fly result = flyService.getFlyById(saved.getId());
 
         assertNotNull(result, "Fly should be found for an existing ID");
-        assertEquals(saved.getFlyId(), result.getFlyId(),
+        assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved fly");
-        assertEquals("Custom Fly", result.getFlyName(),
+        assertEquals("Custom Fly", result.getName(),
                 "Returned fly name should match the saved fly");
     }
 
@@ -470,10 +470,10 @@ public class FlyServiceImplTest {
     public void testGetFlyByIdHappyPathDefaultFly() {
         Fly saved = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
-        Fly result = flyService.getFlyById(saved.getFlyId());
+        Fly result = flyService.getFlyById(saved.getId());
 
         assertNotNull(result, "Default fly should be found by its ID");
-        assertEquals(saved.getFlyId(), result.getFlyId(),
+        assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved default fly");
     }
 
@@ -505,7 +505,7 @@ public class FlyServiceImplTest {
         Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getUserId()));
 
         assertThrows(AccessDeniedException.class,
-                () -> flyService.getFlyById(otherFly.getFlyId()),
+                () -> flyService.getFlyById(otherFly.getId()),
                 "Loading another user's fly by ID should be denied");
     }
 
@@ -530,13 +530,13 @@ public class FlyServiceImplTest {
 
         assertEquals(testUser.getUserId(), saved.getUserId(),
                 "Added fly should belong to the current user");
-        assertEquals("Parachute Adams", saved.getFlyName(),
+        assertEquals("Parachute Adams", saved.getName(),
                 "Added fly name should match the form");
-        assertEquals("parachute-adams", saved.getFlySlug(),
+        assertEquals("parachute-adams", saved.getSlug(),
                 "Added fly slug should be generated from the name");
-        assertEquals("Dry", saved.getFlyType(),
+        assertEquals("Dry", saved.getType(),
                 "Added fly type should match the form");
-        assertEquals("dry.png", saved.getFlyImage(),
+        assertEquals("dry.png", saved.getImage(),
                 "A dry fly should use the dry fly image");
         assertEquals("Olive", saved.getColor(),
                 "Added fly color should match the form");
@@ -557,7 +557,7 @@ public class FlyServiceImplTest {
 
         Fly saved = flyService.getAllUserFlies().getFirst();
 
-        assertEquals("streamer.png", saved.getFlyImage(),
+        assertEquals("streamer.png", saved.getImage(),
                 "A streamer should use the streamer image");
     }
 
@@ -567,7 +567,7 @@ public class FlyServiceImplTest {
     @Test
     public void testAddFlyCrappyPathMissingColor() {
         FlyForm flyForm = createTestFlyForm("Test Fly", "Dry");
-        flyForm.setFlyColor(null);
+        flyForm.setColor(null);
 
         int before = flyRepository.findAll().size();
 
@@ -613,7 +613,7 @@ public class FlyServiceImplTest {
 
         Fly saved = flyService.getAllUserFlies().getFirst();
 
-        assertEquals("nymph.png", saved.getFlyImage(),
+        assertEquals("nymph.png", saved.getImage(),
                 "An unknown fly type should fall back to the nymph image");
     }
 
@@ -628,7 +628,7 @@ public class FlyServiceImplTest {
 
         Fly saved = flyService.getAllUserFlies().getFirst();
 
-        assertEquals("parachute-adams", saved.getFlySlug(),
+        assertEquals("parachute-adams", saved.getSlug(),
                 "Slug should trim the name and collapse inner whitespace to one hyphen");
     }
 
@@ -643,24 +643,24 @@ public class FlyServiceImplTest {
 
         // every field changes from the saved values so a skipped setter would show up
         FlyForm flyForm = createTestFlyForm("New Name", "Streamer");
-        flyForm.setFlyColor("Black");
+        flyForm.setColor("Black");
         flyForm.setMinSize(4);
         flyForm.setMaxSize(8);
 
-        boolean result = flyService.updateFly(saved.getFlyId(), flyForm);
+        boolean result = flyService.updateFly(saved.getId(), flyForm);
 
         // reload from the repository so the asserts check what was saved, not the object in memory
-        Fly updated = flyRepository.findById(saved.getFlyId()).orElse(null);
+        Fly updated = flyRepository.findById(saved.getId()).orElse(null);
 
         assertTrue(result, "updateFly should return true for a successful update");
         assertNotNull(updated, "Updated fly should still exist");
-        assertEquals("New Name", updated.getFlyName(),
+        assertEquals("New Name", updated.getName(),
                 "Fly name should be updated");
-        assertEquals("new-name", updated.getFlySlug(),
+        assertEquals("new-name", updated.getSlug(),
                 "Fly slug should be regenerated from the new name");
-        assertEquals("Streamer", updated.getFlyType(),
+        assertEquals("Streamer", updated.getType(),
                 "Fly type should be updated");
-        assertEquals("streamer.png", updated.getFlyImage(),
+        assertEquals("streamer.png", updated.getImage(),
                 "Fly image should be updated to match the new type");
         assertEquals("Black", updated.getColor(),
                 "Fly color should be updated");
@@ -691,14 +691,14 @@ public class FlyServiceImplTest {
         FlyForm flyForm = createTestFlyForm("Hijacked Name", "Dry");
 
         assertThrows(AccessDeniedException.class,
-                () -> flyService.updateFly(otherFly.getFlyId(), flyForm),
+                () -> flyService.updateFly(otherFly.getId(), flyForm),
                 "Updating another user's fly should be denied");
 
         // the exception alone doesn't prove nothing changed, so check the saved row too
-        Fly unchanged = flyRepository.findById(otherFly.getFlyId()).orElse(null);
+        Fly unchanged = flyRepository.findById(otherFly.getId()).orElse(null);
 
         assertNotNull(unchanged, "Another user's fly should still exist after a denied update");
-        assertEquals("Other Fly", unchanged.getFlyName(),
+        assertEquals("Other Fly", unchanged.getName(),
                 "Another user's fly should not be changed after a denied update");
     }
 
@@ -711,13 +711,13 @@ public class FlyServiceImplTest {
         FlyForm flyForm = createTestFlyForm("Hijacked Name", "Dry");
 
         assertThrows(AccessDeniedException.class,
-                () -> flyService.updateFly(defaultFly.getFlyId(), flyForm),
+                () -> flyService.updateFly(defaultFly.getId(), flyForm),
                 "Updating a default fly should be denied");
 
-        Fly unchanged = flyRepository.findById(defaultFly.getFlyId()).orElse(null);
+        Fly unchanged = flyRepository.findById(defaultFly.getId()).orElse(null);
 
         assertNotNull(unchanged, "Default fly should still exist after a denied update");
-        assertEquals("Default Fly", unchanged.getFlyName(),
+        assertEquals("Default Fly", unchanged.getName(),
                 "Default fly should not be changed after a denied update");
     }
 
@@ -730,9 +730,9 @@ public class FlyServiceImplTest {
     public void testDeleteFlyHappyPath() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getUserId()));
 
-        flyService.deleteFly(saved.getFlyId());
+        flyService.deleteFly(saved.getId());
 
-        assertTrue(flyRepository.findById(saved.getFlyId()).isEmpty(),
+        assertTrue(flyRepository.findById(saved.getId()).isEmpty(),
                 "Deleted fly should no longer exist");
     }
 
@@ -753,9 +753,9 @@ public class FlyServiceImplTest {
         Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getUserId()));
 
         assertThrows(AccessDeniedException.class,
-                () -> flyService.deleteFly(otherFly.getFlyId()),
+                () -> flyService.deleteFly(otherFly.getId()),
                 "Deleting another user's fly should be denied");
-        assertTrue(flyRepository.findById(otherFly.getFlyId()).isPresent(),
+        assertTrue(flyRepository.findById(otherFly.getId()).isPresent(),
                 "Another user's fly should still exist after a denied delete");
     }
 
@@ -767,9 +767,9 @@ public class FlyServiceImplTest {
         Fly defaultFly = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
         assertThrows(AccessDeniedException.class,
-                () -> flyService.deleteFly(defaultFly.getFlyId()),
+                () -> flyService.deleteFly(defaultFly.getId()),
                 "Deleting a default fly should be denied");
-        assertTrue(flyRepository.findById(defaultFly.getFlyId()).isPresent(),
+        assertTrue(flyRepository.findById(defaultFly.getId()).isPresent(),
                 "Default fly should still exist after a denied delete");
     }
 
@@ -783,7 +783,7 @@ public class FlyServiceImplTest {
 
         assertDoesNotThrow(() -> flyService.deleteFly(null),
                 "Deleting a null fly ID should not throw");
-        assertTrue(flyRepository.findById(saved.getFlyId()).isPresent(),
+        assertTrue(flyRepository.findById(saved.getId()).isPresent(),
                 "No fly should be deleted for a null ID");
     }
 
@@ -950,7 +950,7 @@ public class FlyServiceImplTest {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getUserId()));
         FlyForm flyForm = createTestFlyForm("Woolly Bugger", "Streamer");
 
-        boolean result = flyService.isFlyNameUniqueForEdit(saved.getFlyId(), flyForm);
+        boolean result = flyService.isFlyNameUniqueForEdit(saved.getId(), flyForm);
 
         assertTrue(result, "Keeping a fly's current name should be allowed");
     }
@@ -964,7 +964,7 @@ public class FlyServiceImplTest {
         flyRepository.save(createTestFly("Parachute Adams", "parachute-adams", testUser.getUserId()));
         FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry");
 
-        boolean result = flyService.isFlyNameUniqueForEdit(saved.getFlyId(), flyForm);
+        boolean result = flyService.isFlyNameUniqueForEdit(saved.getId(), flyForm);
 
         assertFalse(result, "Renaming to another of the user's fly names should not be allowed");
     }
@@ -977,7 +977,7 @@ public class FlyServiceImplTest {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getUserId()));
         FlyForm flyForm = createTestFlyForm("  woolly bugger  ", "Streamer");
 
-        boolean result = flyService.isFlyNameUniqueForEdit(saved.getFlyId(), flyForm);
+        boolean result = flyService.isFlyNameUniqueForEdit(saved.getId(), flyForm);
 
         assertTrue(result, "Keeping the current name with different case or whitespace should be allowed");
     }
@@ -991,7 +991,7 @@ public class FlyServiceImplTest {
         flyRepository.save(createTestFly("Parachute Adams", "parachute-adams", null));
         FlyForm flyForm = createTestFlyForm("Parachute Adams", "Dry");
 
-        boolean result = flyService.isFlyNameUniqueForEdit(saved.getFlyId(), flyForm);
+        boolean result = flyService.isFlyNameUniqueForEdit(saved.getId(), flyForm);
 
         assertFalse(result, "Renaming to a default fly's name should not be allowed");
     }
@@ -1004,7 +1004,7 @@ public class FlyServiceImplTest {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getUserId()));
         FlyForm flyForm = createTestFlyForm("   ", "Streamer");
 
-        boolean result = flyService.isFlyNameUniqueForEdit(saved.getFlyId(), flyForm);
+        boolean result = flyService.isFlyNameUniqueForEdit(saved.getId(), flyForm);
 
         assertFalse(result, "A blank name should not be allowed");
     }
@@ -1070,14 +1070,14 @@ public class FlyServiceImplTest {
         Fly fly = new Fly();
 
         // slug is passed in rather than generated, so tests can set up collisions on purpose
-        fly.setFlyName(name);
-        fly.setFlySlug(slug);
+        fly.setName(name);
+        fly.setSlug(slug);
         fly.setUserId(userId);
-        fly.setFlyType("Dry");
+        fly.setType("Dry");
         fly.setColor("Olive");
         fly.setMinSize(12);
         fly.setMaxSize(18);
-        fly.setFlyImage("dry.png");
+        fly.setImage("dry.png");
 
         return fly;
     }
@@ -1092,9 +1092,9 @@ public class FlyServiceImplTest {
     private FlyForm createTestFlyForm(String name, String type) {
         FlyForm flyForm = new FlyForm();
 
-        flyForm.setFlyName(name);
-        flyForm.setFlyType(type);
-        flyForm.setFlyColor("Olive");
+        flyForm.setName(name);
+        flyForm.setType(type);
+        flyForm.setColor("Olive");
         flyForm.setMinSize(12);
         flyForm.setMaxSize(18);
 
@@ -1111,7 +1111,7 @@ public class FlyServiceImplTest {
         List<String> names = new ArrayList<>();
 
         for (Fly fly : flies) {
-            names.add(fly.getFlyName());
+            names.add(fly.getName());
         }
 
         return names;
