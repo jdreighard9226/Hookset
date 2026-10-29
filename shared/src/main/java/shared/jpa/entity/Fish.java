@@ -21,14 +21,14 @@ public class Fish {
 
     /** The biological family of the fish. */
     @Column(name = "family")
-    private String fishFamily;
+    private String family;
 
     /** The species name of the fish. */
     @Column(name = "species")
-    private String fishSpecies;
+    private String species;
 
     @Column(name = "image")
-    private String fishImage;
+    private String image;
 
     /**
      * Returns the unique identifier for the fish record.
@@ -45,8 +45,8 @@ public class Fish {
      *
      * @return the fish family
      */
-    public String getFishFamily() {
-        return fishFamily;
+    public String getFamily() {
+        return family;
     }
 
     /**
@@ -54,33 +54,33 @@ public class Fish {
      *
      * @return the fish species
      */
-    public String getFishSpecies() {
-        return fishSpecies;
+    public String getSpecies() {
+        return species;
     }
 
     /**
      * Sets the biological family of the fish.
      *
-     * @param fishFamily the fish family
+     * @param family the fish family
      */
-    public void setFishFamily(String fishFamily) {
-        this.fishFamily = fishFamily;
+    public void setFamily(String family) {
+        this.family = family;
     }
 
     /**
      * Sets the species name of the fish.
      *
-     * @param fishSpecies the fish species
+     * @param species the fish species
      */
-    public void setFishSpecies(String fishSpecies) {
-        this.fishSpecies = fishSpecies;
+    public void setSpecies(String species) {
+        this.species = species;
     }
 
-    public String getFishImage() {
-        return fishImage;
+    public String getImage() {
+        return image;
     }
 
-    public void setFishImage(String fishImage) {
-        this.fishImage = fishImage;
+    public void setImage(String image) {
+        this.image = image;
     }
 }
