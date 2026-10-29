@@ -1,5 +1,6 @@
 package edu.carroll.cs341.hookset.web.mapper;
 
+import edu.carroll.cs341.hookset.service.input.CatchInput;
 import edu.carroll.cs341.hookset.web.dto.CatchDto;
 import edu.carroll.cs341.hookset.web.dto.FishDto;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
@@ -82,5 +83,10 @@ public class CatchMapper {
         catchForm.setNotes(catchRecord.getNotes());
 
         return catchForm;
+    }
+
+    public CatchInput toInput(CatchForm catchForm) {
+        return new CatchInput(catchForm.getFlyId(), catchForm.getFishId(), catchForm.getWaterBodyId(),
+                catchForm.getFishLength(), catchForm.getDateCaught(), catchForm.getNotes());
     }
 }
