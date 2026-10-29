@@ -9,30 +9,30 @@ package edu.carroll.cs341.hookset.web.dto;
 public class WaterBodyDto {
 
     /** The database identifier of the water body. */
-    private Long waterBodyId;
+    private Long id;
 
     /** The name of the water body. */
-    private String waterBodyName;
+    private String name;
 
     /** The type of water body, such as a stream or lake. */
-    private String waterBodyType;
+    private String type;
 
     /** The state the water body is located in. */
-    private String waterBodyState;
+    private String state;
 
     /** The description of the water body. */
-    private String waterBodyDescription;
+    private String description;
 
     /** The slug used in the water body's URL. */
-    private String waterBodySlug;
+    private String slug;
 
     /**
      * Returns the database identifier of the water body.
      *
      * @return the water body identifier
      */
-    public Long getWaterBodyId() {
-        return waterBodyId;
+    public Long getId() {
+        return id;
     }
 
     /**
@@ -40,8 +40,8 @@ public class WaterBodyDto {
      *
      * @return the water body name
      */
-    public String getWaterBodyName() {
-        return waterBodyName;
+    public String getName() {
+        return name;
     }
 
     /**
@@ -49,8 +49,8 @@ public class WaterBodyDto {
      *
      * @return the water body type
      */
-    public String getWaterBodyType() {
-        return waterBodyType;
+    public String getType() {
+        return type;
     }
 
     /**
@@ -58,8 +58,8 @@ public class WaterBodyDto {
      *
      * @return the water body state
      */
-    public String getWaterBodyState() {
-        return waterBodyState;
+    public String getState() {
+        return state;
     }
 
     /**
@@ -67,8 +67,8 @@ public class WaterBodyDto {
      *
      * @return the water body description
      */
-    public String getWaterBodyDescription() {
-        return waterBodyDescription;
+    public String getDescription() {
+        return description;
     }
 
     /**
@@ -76,61 +76,61 @@ public class WaterBodyDto {
      *
      * @return the water body slug
      */
-    public String getWaterBodySlug() {
-        return waterBodySlug;
+    public String getSlug() {
+        return slug;
     }
 
     /**
      * Sets the name of the water body.
      *
-     * @param waterBodyName the water body name
+     * @param name the water body name
      */
-    public void setWaterBodyName(String waterBodyName) {
-        this.waterBodyName = waterBodyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     /**
      * Sets the database identifier of the water body.
      *
-     * @param waterBodyId the water body identifier
+     * @param id the water body identifier
      */
-    public void setWaterBodyId(Long waterBodyId) {
-        this.waterBodyId = waterBodyId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     /**
      * Sets the type of water body.
      *
-     * @param waterBodyType the water body type
+     * @param type the water body type
      */
-    public void setWaterBodyType(String waterBodyType) {
-        this.waterBodyType = waterBodyType;
+    public void setType(String type) {
+        this.type = type;
     }
 
     /**
      * Sets the state the water body is located in.
      *
-     * @param waterBodyState the water body state
+     * @param state the water body state
      */
-    public void setWaterBodyState(String waterBodyState) {
-        this.waterBodyState = waterBodyState;
+    public void setState(String state) {
+        this.state = state;
     }
 
     /**
      * Sets the description of the water body.
      *
-     * @param waterBodyDescription the water body description
+     * @param description the water body description
      */
-    public void setWaterBodyDescription(String waterBodyDescription) {
-        this.waterBodyDescription = waterBodyDescription;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     /**
      * Sets the slug used in the water body's URL.
      *
-     * @param waterBodySlug the water body slug
+     * @param slug the water body slug
      */
-    public void setWaterBodySlug(String waterBodySlug) {
-        this.waterBodySlug = waterBodySlug;
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
 }

@@ -81,7 +81,7 @@ public class WaterBodyServiceImplTest {
         // checks by slug instead of position, since the list order isn't guaranteed
         List<String> returnedSlugs = getWaterBodySlugs(waterBodies);
 
-        assertTrue(returnedSlugs.contains(testWaterBody.getWaterBodySlug()),
+        assertTrue(returnedSlugs.contains(testWaterBody.getSlug()),
                 "Saved water body should be in the returned list");
     }
 
@@ -124,8 +124,8 @@ public class WaterBodyServiceImplTest {
 
         // the count alone could pass with the wrong water bodies, so check each one is actually there
         for (WaterBody testWaterBody : testWaterBodies) {
-            assertTrue(returnedSlugs.contains(testWaterBody.getWaterBodySlug()),
-                    "Missing water body with slug: " + testWaterBody.getWaterBodySlug());
+            assertTrue(returnedSlugs.contains(testWaterBody.getSlug()),
+                    "Missing water body with slug: " + testWaterBody.getSlug());
         }
     }
 
@@ -142,15 +142,15 @@ public class WaterBodyServiceImplTest {
 
         // check every field so a lookup that returns the wrong row can't slip through
         assertNotNull(result, "Water body should be found for an existing slug");
-        assertEquals(saved.getWaterBodyId(), result.getWaterBodyId(),
+        assertEquals(saved.getId(), result.getId(),
                 "Returned water body ID should match the saved water body");
-        assertEquals("Test River", result.getWaterBodyName(),
+        assertEquals("Test River", result.getName(),
                 "Returned water body name should match the saved name");
-        assertEquals("test-river", result.getWaterBodySlug(),
+        assertEquals("test-river", result.getSlug(),
                 "Returned water body slug should match the requested slug");
-        assertEquals("Montana", result.getWaterBodyState(),
+        assertEquals("Montana", result.getState(),
                 "Returned water body state should match the saved state");
-        assertEquals("River", result.getWaterBodyType(),
+        assertEquals("River", result.getType(),
                 "Returned water body type should match the saved type");
     }
 
@@ -227,13 +227,13 @@ public class WaterBodyServiceImplTest {
     private WaterBody createTestWaterBody(String slug) {
         WaterBody waterBody = new WaterBody();
 
-        waterBody.setWaterBodyName("Test River");
-        waterBody.setWaterBodyType("River");
-        waterBody.setWaterBodyState("Montana");
-        waterBody.setWaterBodyDescription("A river used for testing.");
+        waterBody.setName("Test River");
+        waterBody.setType("River");
+        waterBody.setState("Montana");
+        waterBody.setDescription("A river used for testing.");
 
         // slug is the value lookups use, so callers pass a different one per water body
-        waterBody.setWaterBodySlug(slug);
+        waterBody.setSlug(slug);
 
         return waterBody;
     }
@@ -248,7 +248,7 @@ public class WaterBodyServiceImplTest {
         List<String> slugs = new ArrayList<>();
 
         for (WaterBody waterBody : waterBodies) {
-            slugs.add(waterBody.getWaterBodySlug());
+            slugs.add(waterBody.getSlug());
         }
 
         return slugs;

@@ -106,7 +106,7 @@ public class WaterBodyController {
 
         WaterBodyDto waterBody = waterBodyMapper.toDto(waterBodyEntity);
 
-        List<Fish> fishEntities = fishService.getAllFishForWaterBody(waterBody.getWaterBodyId());
+        List<Fish> fishEntities = fishService.getAllFishForWaterBody(waterBody.getId());
 
         List<FishDto> fishDtos = new ArrayList<>();
 

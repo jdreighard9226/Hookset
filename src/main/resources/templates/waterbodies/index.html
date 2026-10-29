@@ -19,22 +19,22 @@
                     <div class="card-body">
 
                         <!--/* water bodies don't have their own images, so the image is picked by type */-->
-                        <img class="water-body-image" th:if="${waterBody.waterBodyType == 'River'}"
+                        <img class="water-body-image" th:if="${waterBody.type == 'River'}"
                              th:src="@{/images/river.png}"
                              alt="River">
 
-                        <img class="water-body-image" th:if="${waterBody.waterBodyType == 'Lake'}"
+                        <img class="water-body-image" th:if="${waterBody.type == 'Lake'}"
                              th:src="@{/images/lake.png}"
                              alt="Lake">
 
-                        <img class="water-body-image" th:if="${waterBody.waterBodyType == 'Stream'}"
+                        <img class="water-body-image" th:if="${waterBody.type == 'Stream'}"
                              th:src="@{/images/stream.png}"
                              alt="Stream">
 
-                        <h3 class="mt-t" th:text="${waterBody.waterBodyName}"></h3>
-                        <p th:text="${waterBody.waterBodyType}"></p>
+                        <h3 class="mt-3" th:text="${waterBody.name}"></h3>
+                        <p th:text="${waterBody.type}"></p>
 
-                        <a th:href="@{/waterbodies/details/{slug}(slug=${waterBody.waterBodySlug})}"
+                        <a th:href="@{/waterbodies/details/{slug}(slug=${waterBody.slug})}"
                            class="secondary-button">
                             See details
                         </a>

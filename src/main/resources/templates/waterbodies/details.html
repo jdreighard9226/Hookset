@@ -12,24 +12,24 @@
     <div class="container py-5 mt-5">
 
         <div class="text-center">
-            <h1 th:text="${waterBody.waterBodyName}"></h1>
-            <h3 th:text="'Location: ' + ${waterBody.waterBodyState}"></h3>
-            <p class="w-75 mx-auto" th:text="${waterBody.waterBodyDescription}"></p>
+            <h1 th:text="${waterBody.name}"></h1>
+            <h3 th:text="'Location: ' + ${waterBody.state}"></h3>
+            <p class="w-75 mx-auto" th:text="${waterBody.description}"></p>
         </div>
 
         <div class="row justify-content-center">
 
-            <h2 class="text-center" th:text="'Fish Species at ' + ${waterBody.waterBodyName}"></h2>
+            <h2 class="text-center" th:text="'Fish Species at ' + ${waterBody.name}"></h2>
 
             <!--/* one card per species, two across on medium screens and up, one on phones */-->
             <div th:each="fish : ${fishes}" class="col-12 col-md-6 my-3 d-flex justify-content-center">
                 <div class="card shadow-sm text-center fish-card-green">
                     <div class="card-body">
                         <img class="fish-image"
-                             th:src="@{'/images/fish/' + ${fish.fishImage}}"
-                             th:alt="${fish.fishSpecies}">
-                        <h3 th:text="${fish.fishSpecies}"></h3>
-                        <p th:text="'Family: ' + ${fish.fishFamily}"></p>
+                             th:src="@{'/images/fish/' + ${fish.image}}"
+                             th:alt="${fish.species}">
+                        <h3 th:text="${fish.species}"></h3>
+                        <p th:text="'Family: ' + ${fish.family}"></p>
                     </div>
                 </div>
             </div>

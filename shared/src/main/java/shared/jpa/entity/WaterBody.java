@@ -15,48 +15,48 @@ public class WaterBody {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private long waterBodyId;
+    private long id;
 
     /** The name of the water body. */
     @Column(name = "name")
-    private String waterBodyName;
+    private String name;
 
     @Column(name = "state")
-    private String waterBodyState;
+    private String state;
 
     @Column(name = "type")
-    private String waterBodyType;
+    private String type;
 
     @Column(name = "description")
-    private String waterBodyDescription;
+    private String description;
 
-    public String getWaterBodyDescription() {
-        return waterBodyDescription;
+    @Column(name = "slug")
+    private String slug;
+
+
+    public String getDescription() {
+        return description;
     }
 
-    public void setWaterBodyDescription(String waterBodyDescription) {
-        this.waterBodyDescription = waterBodyDescription;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public String getWaterBodySlug() {
-        return waterBodySlug;
+    public String getSlug() {
+        return slug;
     }
 
-    public void setWaterBodySlug(String waterBodySlug) {
-        this.waterBodySlug = waterBodySlug;
+    public void setSlug(String slug) {
+        this.slug = slug;
     }
-
-    @Column(name = "waterBodySlug")
-    private String waterBodySlug;
-
 
     /**
      * Returns the unique identifier for the water body.
      *
      * @return the water body identifier
      */
-    public long getWaterBodyId() {
-        return this.waterBodyId;
+    public long getId() {
+        return this.id;
     }
 
 
@@ -65,32 +65,32 @@ public class WaterBody {
      *
      * @return the water body name
      */
-    public String getWaterBodyName() {
-        return this.waterBodyName;
+    public String getName() {
+        return this.name;
     }
 
-    public String getWaterBodyType() {
-        return this.waterBodyType;
+    public String getType() {
+        return this.type;
     }
 
     /**
      * Sets the name of the water body.
      *
-     * @param waterBodyName the water body name
+     * @param name the water body namea
      */
-    public void setWaterBodyName(String waterBodyName) {
-        this.waterBodyName = waterBodyName;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void setWaterBodyType(String waterBodyType) {
-        this.waterBodyType = waterBodyType;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public String getWaterBodyState() {
-        return waterBodyState;
+    public String getState() {
+        return state;
     }
 
-    public void setWaterBodyState(String waterBodyState) {
-        this.waterBodyState = waterBodyState;
+    public void setState(String state) {
+        this.state = state;
     }
 }

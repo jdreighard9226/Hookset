@@ -16,8 +16,8 @@ public interface WaterBodyRepository extends JpaRepository<WaterBody, Long> {
     /**
      * Finds a water body by its URL slug.
      *
-     * @param waterBodySlug the slug used in the water body's URL
+     * @param slug the slug used in the water body's URL
      * @return the matching water body, or {@code null} if none exists
      */
-    WaterBody getWaterBodyByWaterBodySlug(String waterBodySlug);
+    WaterBody getWaterBodyBySlug(String slug);
 }

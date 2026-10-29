@@ -1,5 +1,6 @@
 USE hookset;
 
+-- Old plural names (remove after this runs once)
 DROP TABLE IF EXISTS FishWaterBodies;
 DROP TABLE IF EXISTS FlySizes;
 DROP TABLE IF EXISTS Catches;
@@ -7,6 +8,13 @@ DROP TABLE IF EXISTS Flies;
 DROP TABLE IF EXISTS FlyMaterials;
 DROP TABLE IF EXISTS Fishes;
 DROP TABLE IF EXISTS WaterBodies;
+
+-- New names, children first
+DROP TABLE IF EXISTS FishWaterBody;
+DROP TABLE IF EXISTS `Catch`;
+DROP TABLE IF EXISTS Fly;
+DROP TABLE IF EXISTS Fish;
+DROP TABLE IF EXISTS WaterBody;
 DROP TABLE IF EXISTS Users;
 
 
@@ -31,7 +39,7 @@ CREATE TABLE Fly (
     
     FOREIGN KEY (userId)
         REFERENCES Users(id),
-	UNIQUE (userId, flySlug)
+	UNIQUE (userId, slug)
 );
 
 CREATE TABLE WaterBody (
@@ -54,20 +62,20 @@ CREATE TABLE Fish (
 
 
 CREATE TABLE FishWaterBody (
-    fishWaterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     fishId BIGINT NOT NULL,
     waterBodyId BIGINT NOT NULL,
 
     UNIQUE (fishId, waterBodyId),
 
     FOREIGN KEY (fishId)
-        REFERENCES Fishes(id),
+        REFERENCES Fish(id),
 
     FOREIGN KEY (waterBodyId)
-        REFERENCES WaterBodies(id)
+        REFERENCES WaterBody(id)
 );
 
-CREATE TABLE Catches (
+CREATE TABLE Catch (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     userId BIGINT NOT NULL,
     flyId BIGINT NOT NULL,
@@ -81,13 +89,13 @@ CREATE TABLE Catches (
         REFERENCES Users(id),
 
     FOREIGN KEY (flyId)
-        REFERENCES Flies(id),
+        REFERENCES Fly(id),
 
     FOREIGN KEY (fishId)
-        REFERENCES Fishes(id),
+        REFERENCES Fish(id),
 
     FOREIGN KEY (waterBodyId)
-        REFERENCES WaterBodies(id),
+        REFERENCES WaterBody(id),
 
     CHECK (fishLength > 0)
 );

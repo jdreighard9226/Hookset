@@ -22,12 +22,12 @@ public class WaterBodyMapper {
     public WaterBodyDto toDto(WaterBody waterBody) {
         WaterBodyDto waterBodyDto = new WaterBodyDto();
 
-        waterBodyDto.setWaterBodyId(waterBody.getWaterBodyId());
-        waterBodyDto.setWaterBodyName(waterBody.getWaterBodyName());
-        waterBodyDto.setWaterBodyType(waterBody.getWaterBodyType());
-        waterBodyDto.setWaterBodyState(waterBody.getWaterBodyState());
-        waterBodyDto.setWaterBodyDescription(waterBody.getWaterBodyDescription());
-        waterBodyDto.setWaterBodySlug(waterBody.getWaterBodySlug());
+        waterBodyDto.setId(waterBody.getId());
+        waterBodyDto.setName(waterBody.getName());
+        waterBodyDto.setType(waterBody.getType());
+        waterBodyDto.setState(waterBody.getState());
+        waterBodyDto.setDescription(waterBody.getDescription());
+        waterBodyDto.setSlug(waterBody.getSlug());
 
         return waterBodyDto;
     }

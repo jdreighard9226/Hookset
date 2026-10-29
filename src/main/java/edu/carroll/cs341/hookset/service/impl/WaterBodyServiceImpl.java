@@ -69,7 +69,7 @@ public class WaterBodyServiceImpl implements WaterBodyService {
 
         log.info("Loading water body for slug: {}", waterBodySlug);
 
-        WaterBody waterBody = waterBodyRepository.getWaterBodyByWaterBodySlug(waterBodySlug);
+        WaterBody waterBody = waterBodyRepository.getWaterBodyBySlug(waterBodySlug);
 
         if (waterBody == null) {
             log.warn("No water body found for slug: {}", waterBodySlug);

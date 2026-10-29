@@ -159,7 +159,7 @@ public class FishServiceImplTest {
         WaterBody savedWaterBody = waterBodyRepository.save(createTestWaterBody("test-river"));
         linkFishToWaterBody(savedFish, savedWaterBody);
 
-        List<Fish> fish = fishService.getAllFishForWaterBody(savedWaterBody.getWaterBodyId());
+        List<Fish> fish = fishService.getAllFishForWaterBody(savedWaterBody.getId());
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertEquals(1, fish.size(),
@@ -183,7 +183,7 @@ public class FishServiceImplTest {
     public void testGetAllFishForWaterBodyCrappyPathNoFish() {
         WaterBody savedWaterBody = waterBodyRepository.save(createTestWaterBody("test-river"));
 
-        List<Fish> fish = fishService.getAllFishForWaterBody(savedWaterBody.getWaterBodyId());
+        List<Fish> fish = fishService.getAllFishForWaterBody(savedWaterBody.getId());
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
@@ -201,7 +201,7 @@ public class FishServiceImplTest {
         linkFishToWaterBody(savedFish, linkedWaterBody);
 
         // asks about the empty water body, so a query that ignores the ID would fail here
-        List<Fish> fish = fishService.getAllFishForWaterBody(emptyWaterBody.getWaterBodyId());
+        List<Fish> fish = fishService.getAllFishForWaterBody(emptyWaterBody.getId());
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
@@ -273,7 +273,7 @@ public class FishServiceImplTest {
             otherFish.add(temp);
         }
 
-        List<Fish> fish = fishService.getAllFishForWaterBody(targetWaterBody.getWaterBodyId());
+        List<Fish> fish = fishService.getAllFishForWaterBody(targetWaterBody.getId());
 
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertEquals(25, fish.size(),
@@ -306,8 +306,8 @@ public class FishServiceImplTest {
         linkFishToWaterBody(sharedFish, firstWaterBody);
         linkFishToWaterBody(sharedFish, secondWaterBody);
 
-        List<Fish> firstFish = fishService.getAllFishForWaterBody(firstWaterBody.getWaterBodyId());
-        List<Fish> secondFish = fishService.getAllFishForWaterBody(secondWaterBody.getWaterBodyId());
+        List<Fish> firstFish = fishService.getAllFishForWaterBody(firstWaterBody.getId());
+        List<Fish> secondFish = fishService.getAllFishForWaterBody(secondWaterBody.getId());
 
         // size 1 on each side catches a bad join that returns the shared fish twice
         assertEquals(1, firstFish.size(),
@@ -347,13 +347,13 @@ public class FishServiceImplTest {
     private WaterBody createTestWaterBody(String slug) {
         WaterBody waterBody = new WaterBody();
 
-        waterBody.setWaterBodyName("Test River");
-        waterBody.setWaterBodyType("River");
-        waterBody.setWaterBodyState("Montana");
-        waterBody.setWaterBodyDescription("A river used for testing.");
+        waterBody.setName("Test River");
+        waterBody.setType("River");
+        waterBody.setState("Montana");
+        waterBody.setDescription("A river used for testing.");
 
         // slug is the unique value, so callers pass a different one per water body
-        waterBody.setWaterBodySlug(slug);
+        waterBody.setSlug(slug);
 
         return waterBody;
     }
@@ -369,7 +369,7 @@ public class FishServiceImplTest {
 
         // both must already be saved so their generated IDs exist
         fishWaterBody.setFishId(fish.getFishId());
-        fishWaterBody.setWaterBodyId(waterBody.getWaterBodyId());
+        fishWaterBody.setWaterBodyId(waterBody.getId());
 
         fishWaterBodyRepository.save(fishWaterBody);
     }
