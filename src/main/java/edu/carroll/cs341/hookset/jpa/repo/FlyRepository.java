@@ -44,17 +44,6 @@ public interface FlyRepository extends JpaRepository<Fly, Long> {
      * @return the matching fly, or {@code null} if none exists
      */
     Fly findBySlugAndUserId(String flySlug, Long userId);
-    Fly findBySlugAndUserIdIsNull(String slug);
 
-    /**
-     * Checks whether the given user already has a custom fly with the given name.
-     *
-     * <p>The name comparison ignores case so duplicates like "Adams" and
-     * "adams" are caught.</p>
-     *
-     * @param userId the ID of the user who owns the fly
-     * @param flyName the fly name to check
-     * @return {@code true} if a matching fly exists, otherwise {@code false}
-     */
-    boolean existsByUserIdAndNameIgnoreCase(Long userId, String name);
+    Fly findBySlugAndUserIdIsNull(String slug);
 }
