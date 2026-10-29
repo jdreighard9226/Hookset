@@ -5,8 +5,10 @@ import edu.carroll.cs341.hookset.service.WaterBodyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import shared.jpa.entity.Fish;
 import shared.jpa.entity.WaterBody;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -76,5 +78,45 @@ public class WaterBodyServiceImpl implements WaterBodyService {
         }
 
         return waterBody;
+    }
+
+    /**
+     * Returns every fish species found in a water body.
+     *
+     * <p>The fish are loaded through the water body's {@code @ManyToMany}
+     * relationship, which reads the FishWaterBody join table.</p>
+     *
+     * @param waterBodyId the ID of the water body
+     * @return the list of fish species in the water body, or an empty list if the water body does not exist or has no fish
+     */
+    /**
+     * Returns every fish species found in a water body.
+     *
+     * <p>The fish are loaded through the water body's {@code @ManyToMany}
+     * relationship, which reads the FishWaterBody join table.</p>
+     *
+     * @param waterBodyId the ID of the water body
+     * @return the list of fish species in the water body, or an empty list if the water body does not exist or has no fish
+     */
+    @Override
+    public List<Fish> getAllFishForWaterBody(Long waterBodyId) {
+        log.info("Loading fish for water body ID: {}", waterBodyId);
+
+        WaterBody waterBody = waterBodyRepository.findById(waterBodyId).orElse(null);
+
+        if (waterBody == null) {
+            log.warn("Water body not found for ID: {}", waterBodyId);
+            return new ArrayList<>();
+        }
+
+        List<Fish> fish = new ArrayList<>(waterBody.getFishes());
+
+        if (fish.size() < 1) {
+            log.warn("No fish found for water body ID: {}", waterBodyId);
+        }
+
+        log.info("Loaded {} fish for water body ID: {}", fish.size(), waterBodyId);
+
+        return fish;
     }
 }

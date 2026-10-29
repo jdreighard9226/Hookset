@@ -5,7 +5,7 @@
         Select Fish Species
     </option>
     <option th:each="fishOption : ${fish}"
-            th:value="${fishOption.fishId}"
-            th:text="${fishOption.fishSpecies}">
+            th:value="${fishOption.id}"
+            th:text="${fishOption.species}">
     </option>
 </th:block>

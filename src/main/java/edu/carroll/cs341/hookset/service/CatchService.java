@@ -1,7 +1,7 @@
 package edu.carroll.cs341.hookset.service;
 
-import edu.carroll.cs341.hookset.web.dto.CatchDto;
 import edu.carroll.cs341.hookset.web.form.CatchForm;
+import shared.jpa.entity.Catch;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,35 +12,36 @@ import java.util.List;
  *
  * <p>This interface defines the catch operations used by the web layer,
  * including looking up all catches, looking up the logged-in user's catches,
- * and saving new catches for the logged-in user.</p>
+ * and saving or editing catches for the logged-in user.</p>
  *
  * <p>The validation methods are public so the controller can call each one
- * and show a specific error message. {@link #addNewCatch(CatchForm)} runs
- * them again so bad data can't be saved no matter who calls it.</p>
+ * and show a specific error message. {@link #addCatch(CatchForm)} and
+ * {@link #updateCatch(Long, CatchForm)} run them again so bad data can't be
+ * saved no matter who calls them.</p>
  */
 public interface CatchService {
 
     /**
      * Returns every catch logged in Hookset.
      *
-     * @return the list of all catches as DTOs, or an empty list if none exist
+     * @return the list of all catches, or an empty list if none exist
      */
-    List<CatchDto> getAllCatches();
+    List<Catch> getAllCatches();
 
     /**
      * Returns every catch logged by the current user.
      *
-     * @return the list of the user's catches as DTOs, or an empty list if none exist
+     * @return the list of the user's catches, or an empty list if none exist
      */
-    List<CatchDto> getAllUserCatches();
+    List<Catch> getAllUserCatches();
 
     /**
      * Returns a single catch by its ID.
      *
      * @param catchId the ID of the catch to look up
-     * @return the matching catch as a DTO, or {@code null} if none exists
+     * @return the matching catch, or {@code null} if none exists
      */
-    CatchDto getCatchByCatchId(Long catchId);
+    Catch getCatchById(Long catchId);
 
     /**
      * Saves a new catch for the current user.
@@ -48,7 +49,24 @@ public interface CatchService {
      * @param catchForm the form containing the catch details
      * @return {@code true} if the catch was saved, otherwise {@code false}
      */
-    boolean addNewCatch(CatchForm catchForm);
+    boolean addCatch(CatchForm catchForm);
+
+    /**
+     * Updates an existing catch owned by the current user.
+     *
+     * @param catchId the ID of the catch to update
+     * @param catchForm the form containing the new catch details
+     * @return {@code true} if the catch was updated, otherwise {@code false}
+     */
+    boolean updateCatch(Long catchId, CatchForm catchForm);
+
+    /**
+     * Checks whether a catch exists and belongs to the current user.
+     *
+     * @param catchId the ID of the catch to check
+     * @return {@code true} if the catch exists and the current user logged it, otherwise {@code false}
+     */
+    boolean isCatchOwner(Long catchId);
 
     /**
      * Checks whether a fly exists and can be used by the current user.
@@ -110,29 +128,4 @@ public interface CatchService {
      * @return {@code true} if the notes are missing or 1000 characters or fewer, otherwise {@code false}
      */
     boolean isNotesValid(String notes);
-
-    /**
-     * Checks whether a catch exists and belongs to the current user.
-     *
-     * @param catchId the ID of the catch to check
-     * @return {@code true} if the catch exists and the current user logged it, otherwise {@code false}
-     */
-    boolean isCatchOwner(Long catchId);
-
-    /**
-     * Returns a catch as a form so it can be edited.
-     *
-     * @param catchId the ID of the catch to load
-     * @return the catch as a form, or {@code null} if it doesn't exist or belongs to another user
-     */
-    CatchForm getCatchFormByCatchId(Long catchId);
-
-    /**
-     * Updates an existing catch owned by the current user.
-     *
-     * @param catchId the ID of the catch to update
-     * @param catchForm the form containing the new catch details
-     * @return {@code true} if the catch was updated, otherwise {@code false}
-     */
-    boolean updateCatch(Long catchId, CatchForm catchForm);
 }

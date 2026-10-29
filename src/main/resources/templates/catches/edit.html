@@ -50,8 +50,8 @@
                                         hx-target="#fishId">
                                     <option value="">Select Water Body</option>
                                     <option th:each="waterBody : ${waterBodies}"
-                                            th:value="${waterBody.waterBodyId}"
-                                            th:text="${waterBody.waterBodyName}">
+                                            th:value="${waterBody.id}"
+                                            th:text="${waterBody.name}">
                                     </option>
                                 </select>
 
@@ -104,8 +104,8 @@
                                         th:field="*{flyId}">
                                     <option value="">Select Fly</option>
                                     <option th:each="fly : ${flies}"
-                                            th:value="${fly.flyId}"
-                                            th:text="${fly.flyName}">
+                                            th:value="${fly.id}"
+                                            th:text="${fly.name}">
                                     </option>
                                 </select>
 

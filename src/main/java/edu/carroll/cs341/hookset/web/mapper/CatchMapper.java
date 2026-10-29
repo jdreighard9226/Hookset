@@ -9,31 +9,54 @@ import org.springframework.stereotype.Component;
 import shared.jpa.entity.Catch;
 
 /**
- * Maps catch entities to catch DTOs.
+ * Maps catch entities to catch DTOs and catch forms.
  *
- * <p>A catch entity only stores the IDs of its fly, fish, and water body.
- * This mapper takes those related records as already-built DTOs and combines
- * them with the catch details into a single {@link CatchDto}.</p>
+ * <p>A catch entity holds its fly, fish, and water body as full entities.
+ * This mapper converts each of those with its own mapper and combines them
+ * with the catch details into a single {@link CatchDto}.</p>
  */
 @Component
 public class CatchMapper {
 
+    /** The mapper used to build the fly DTO for a catch. */
+    private final FlyMapper flyMapper;
+
+    /** The mapper used to build the fish DTO for a catch. */
+    private final FishMapper fishMapper;
+
+    /** The mapper used to build the water body DTO for a catch. */
+    private final WaterBodyMapper waterBodyMapper;
+
     /**
-     * Converts a catch entity and its related DTOs into a catch DTO.
+     * Creates the catch mapper with the mappers it uses for related records.
+     *
+     * @param flyMapper the mapper used to build the fly DTO for a catch
+     * @param fishMapper the mapper used to build the fish DTO for a catch
+     * @param waterBodyMapper the mapper used to build the water body DTO for a catch
+     */
+    public CatchMapper(FlyMapper flyMapper, FishMapper fishMapper, WaterBodyMapper waterBodyMapper) {
+        this.flyMapper = flyMapper;
+        this.fishMapper = fishMapper;
+        this.waterBodyMapper = waterBodyMapper;
+    }
+
+    /**
+     * Converts a catch entity into a catch DTO with its fly, fish, and water body.
      *
      * @param catchRecord the catch entity to convert
-     * @param flyDto the fly used for the catch
-     * @param fishDto the fish that was caught
-     * @param waterBodyDto the water body the catch was made on
-     * @return the catch DTO built from the entity and related DTOs
+     * @return the catch DTO built from the entity
      */
-    public CatchDto toDto(Catch catchRecord, FlyDto flyDto, FishDto fishDto, WaterBodyDto waterBodyDto) {
+    public CatchDto toDto(Catch catchRecord) {
+        FlyDto flyDto = flyMapper.toDto(catchRecord.getFly());
+        FishDto fishDto = fishMapper.toDto(catchRecord.getFish());
+        WaterBodyDto waterBodyDto = waterBodyMapper.toDto(catchRecord.getWaterBody());
+
         CatchDto catchDto = new CatchDto();
 
-        catchDto.setCatchId(catchRecord.getCatchId());
+        catchDto.setId(catchRecord.getId());
         catchDto.setUserId(catchRecord.getUserId());
-        catchDto.setFish(fishDto);
         catchDto.setFly(flyDto);
+        catchDto.setFish(fishDto);
         catchDto.setWaterBody(waterBodyDto);
         catchDto.setFishLength(catchRecord.getFishLength());
         catchDto.setDateCaught(catchRecord.getDateCaught());
@@ -51,9 +74,9 @@ public class CatchMapper {
     public CatchForm toForm(Catch catchRecord) {
         CatchForm catchForm = new CatchForm();
 
-        catchForm.setFlyId(catchRecord.getFlyId());
-        catchForm.setFishId(catchRecord.getFishId());
-        catchForm.setWaterBodyId(catchRecord.getWaterBodyId());
+        catchForm.setFlyId(catchRecord.getFly().getId());
+        catchForm.setFishId(catchRecord.getFish().getId());
+        catchForm.setWaterBodyId(catchRecord.getWaterBody().getId());
         catchForm.setFishLength(catchRecord.getFishLength());
         catchForm.setDateCaught(catchRecord.getDateCaught());
         catchForm.setNotes(catchRecord.getNotes());

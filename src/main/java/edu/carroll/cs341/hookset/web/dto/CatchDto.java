@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class CatchDto {
 
     /** The unique ID of the catch. */
-    private Long catchId;
+    private Long id;
 
     /** The ID of the user who logged the catch. */
     private Long userId;
@@ -42,17 +42,17 @@ public class CatchDto {
      *
      * @return the catch ID
      */
-    public Long getCatchId() {
-        return catchId;
+    public Long getId() {
+        return id;
     }
 
     /**
      * Sets the unique ID of the catch.
      *
-     * @param catchId the catch ID
+     * @param id the catch ID
      */
-    public void setCatchId(Long catchId) {
-        this.catchId = catchId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     /**

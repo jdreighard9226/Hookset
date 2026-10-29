@@ -3,9 +3,7 @@ package edu.carroll.cs341.hookset.service.impl;
 import edu.carroll.cs341.hookset.jpa.repo.*;
 import edu.carroll.cs341.hookset.service.CatchService;
 import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
-import edu.carroll.cs341.hookset.web.dto.*;
 import edu.carroll.cs341.hookset.web.form.CatchForm;
-import edu.carroll.cs341.hookset.web.mapper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -26,9 +24,8 @@ import java.util.List;
  * checked to make sure the user is allowed to use it, and the fish is checked
  * to make sure it actually lives in the chosen water body.</p>
  *
- * <p>Catches are returned as DTOs that include the full fly, fish, and water
- * body instead of just their IDs, so the views can show names without doing
- * their own lookups.</p>
+ * <p>Catches are returned as entities. The fly, fish, and water body are
+ * mapped on the catch itself, so callers can read them straight off it.</p>
  *
  * <p>Sources Used:</p>
  * <ul>
@@ -41,7 +38,7 @@ public class CatchServiceImpl implements CatchService {
     /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(CatchServiceImpl.class);
 
-    /** The largest fish length the Catches table can store, from DECIMAL(5,2). */
+    /** The largest fish length the Catch table can store, from DECIMAL(5,2). */
     private static final BigDecimal MAX_FISH_LENGTH = new BigDecimal("999.99");
 
     /** The most characters the notes column can store. */
@@ -59,77 +56,46 @@ public class CatchServiceImpl implements CatchService {
     /** The repository used to look up water bodies. */
     private final WaterBodyRepository waterBodyRepository;
 
-    /** The repository used to look up which fish live in which water bodies. */
-    private final FishWaterBodyRepository fishWaterBodyRepository;
-
-    /** The mapper used to build catch DTOs. */
-    private final CatchMapper catchMapper;
-
-    /** The mapper used to build fish DTOs. */
-    private final FishMapper fishMapper;
-
-    /** The mapper used to build fly DTOs. */
-    private final FlyMapper flyMapper;
-
-    /** The mapper used to build water body DTOs. */
-    private final WaterBodyMapper waterBodyMapper;
-
     /**
-     * Creates the catch service with the repositories and mappers it needs.
+     * Creates the catch service with the repositories it needs.
      *
      * @param catchRepository the repository used to look up and save catches
      * @param fishRepository the repository used to look up fish species
      * @param flyRepository the repository used to look up flies
      * @param waterBodyRepository the repository used to look up water bodies
-     * @param fishWaterBodyRepository the repository used to look up which fish live in which water bodies
-     * @param catchMapper the mapper used to build catch DTOs
-     * @param fishMapper the mapper used to build fish DTOs
-     * @param flyMapper the mapper used to build fly DTOs
-     * @param waterBodyMapper the mapper used to build water body DTOs
      */
     public CatchServiceImpl(CatchRepository catchRepository,
                             FishRepository fishRepository,
                             FlyRepository flyRepository,
-                            WaterBodyRepository waterBodyRepository,
-                            FishWaterBodyRepository fishWaterBodyRepository,
-                            CatchMapper catchMapper,
-                            FishMapper fishMapper,
-                            FlyMapper flyMapper,
-                            WaterBodyMapper waterBodyMapper) {
+                            WaterBodyRepository waterBodyRepository) {
 
         this.catchRepository = catchRepository;
         this.fishRepository = fishRepository;
         this.flyRepository = flyRepository;
         this.waterBodyRepository = waterBodyRepository;
-        this.fishWaterBodyRepository = fishWaterBodyRepository;
-
-        this.catchMapper = catchMapper;
-        this.fishMapper = fishMapper;
-        this.flyMapper = flyMapper;
-        this.waterBodyMapper = waterBodyMapper;
     }
 
     /**
      * Loads every catch from every user.
      *
-     * @return the list of all catch DTOs, or an empty list if there are none
+     * @return the list of all catches, or an empty list if there are none
      */
     @Override
-    public List<CatchDto> getAllCatches() {
+    public List<Catch> getAllCatches() {
         List<Catch> catches = catchRepository.findAll();
 
         log.info("Loaded {} catches", catches.size());
 
-        return mapAllCatchDtos(catches);
+        return catches;
     }
 
     /**
      * Loads every catch that belongs to the logged-in user.
      *
-     * @return the list of the user's catch DTOs, or an empty list if no user is logged in
+     * @return the list of the user's catches, or an empty list if no user is logged in
      */
     @Override
-    public List<CatchDto> getAllUserCatches() {
+    public List<Catch> getAllUserCatches() {
         Long userId = getCurrentUserId();
 
         // nobody logged in means there are no catches to show
@@ -142,17 +108,17 @@ public class CatchServiceImpl implements CatchService {
 
         log.info("Loaded {} catches for user ID: {}", catches.size(), userId);
 
-        return mapAllCatchDtos(catches);
+        return catches;
     }
 
     /**
      * Loads a single catch by its ID.
      *
      * @param catchId the ID of the catch to load
-     * @return the catch DTO, or {@code null} if the ID is null or no catch was found
+     * @return the catch, or {@code null} if the ID is null or no catch was found
      */
     @Override
-    public CatchDto getCatchByCatchId(Long catchId) {
+    public Catch getCatchById(Long catchId) {
         if (catchId == null) {
             log.warn("Catch lookup failed. Catch ID is null");
             return null;
@@ -167,7 +133,7 @@ public class CatchServiceImpl implements CatchService {
 
         log.info("Loaded catch ID: {}", catchId);
 
-        return mapCatchDto(catchRecord);
+        return catchRecord;
     }
 
     /**
@@ -180,7 +146,7 @@ public class CatchServiceImpl implements CatchService {
      * @return {@code true} if the catch was saved, otherwise {@code false}
      */
     @Override
-    public boolean addNewCatch(CatchForm catchForm) {
+    public boolean addCatch(CatchForm catchForm) {
         Long userId = getCurrentUserId();
 
         // a catch has to belong to someone
@@ -197,16 +163,70 @@ public class CatchServiceImpl implements CatchService {
 
         // user ID comes from the login, not the form, so nobody can save a catch as someone else
         catchRecord.setUserId(userId);
-        catchRecord.setFlyId(catchForm.getFlyId());
-        catchRecord.setFishId(catchForm.getFishId());
-        catchRecord.setWaterBodyId(catchForm.getWaterBodyId());
-        catchRecord.setFishLength(catchForm.getFishLength());
-        catchRecord.setDateCaught(catchForm.getDateCaught());
-        catchRecord.setNotes(catchForm.getNotes());
+        copyFormToCatch(catchForm, catchRecord);
 
         catchRepository.save(catchRecord);
 
         log.info("Catch saved for user ID: {}", userId);
+        return true;
+    }
+
+    /**
+     * Updates a catch that belongs to the logged-in user.
+     *
+     * @param catchId the ID of the catch to update
+     * @param catchForm the form holding the new values
+     * @return {@code true} if the catch was updated, otherwise {@code false}
+     */
+    @Override
+    public boolean updateCatch(Long catchId, CatchForm catchForm) {
+        // ownership first, so a bad form can't tell someone whether another user's catch exists
+        if (!isCatchOwner(catchId)) {
+            return false;
+        }
+
+        if (!isCatchFormValid(catchForm)) {
+            return false;
+        }
+
+        // the ownership check already confirmed this catch exists
+        Catch catchRecord = catchRepository.findById(catchId).orElse(null);
+
+        copyFormToCatch(catchForm, catchRecord);
+
+        catchRepository.save(catchRecord);
+
+        log.info("Catch ID {} updated", catchId);
+        return true;
+    }
+
+    /**
+     * Checks that a catch exists and belongs to the logged-in user.
+     *
+     * @param catchId the ID of the catch to check
+     * @return {@code true} if the catch belongs to the logged-in user, otherwise {@code false}
+     */
+    @Override
+    public boolean isCatchOwner(Long catchId) {
+        if (catchId == null) {
+            log.warn("Catch ownership check failed. Catch ID is null");
+            return false;
+        }
+
+        Catch catchRecord = catchRepository.findById(catchId).orElse(null);
+
+        if (catchRecord == null) {
+            log.warn("Catch not found for catch ID: {}", catchId);
+            return false;
+        }
+
+        Long userId = getCurrentUserId();
+
+        if (userId == null || !userId.equals(catchRecord.getUserId())) {
+            log.warn("Catch ID {} does not belong to the current user", catchId);
+            return false;
+        }
+
         return true;
     }
 
@@ -282,6 +302,9 @@ public class CatchServiceImpl implements CatchService {
     /**
      * Checks that a fish species lives in a water body.
      *
+     * <p>The fish are loaded through the water body's {@code @ManyToMany}
+     * relationship, which reads the FishWaterBody join table.</p>
+     *
      * @param fishId the ID of the fish to check
      * @param waterBodyId the ID of the water body to check
      * @return {@code true} if the fish lives in the water body, otherwise {@code false}
@@ -293,11 +316,16 @@ public class CatchServiceImpl implements CatchService {
             return false;
         }
 
-        List<Fish> fishInWaterBody = fishWaterBodyRepository.findFishByWaterBodyId(waterBodyId);
+        WaterBody waterBody = waterBodyRepository.findById(waterBodyId).orElse(null);
+
+        if (waterBody == null) {
+            log.warn("Catch validation failed. Water body not found for water body ID: {}", waterBodyId);
+            return false;
+        }
 
         // look through every fish in the water body for a matching ID
-        for (Fish fish : fishInWaterBody) {
-            if (fish.getFishId().equals(fishId)) {
+        for (Fish fish : waterBody.getFishes()) {
+            if (fishId.equals(fish.getId())) {
                 return true;
             }
         }
@@ -307,7 +335,7 @@ public class CatchServiceImpl implements CatchService {
     }
 
     /**
-     * Checks that a fish length fits in the Catches table.
+     * Checks that a fish length fits in the Catch table.
      *
      * <p>Length is optional. If one is given it has to be greater than zero,
      * no more than {@link #MAX_FISH_LENGTH}, and have at most two decimal places.</p>
@@ -384,143 +412,6 @@ public class CatchServiceImpl implements CatchService {
     }
 
     /**
-     * Converts a list of catches into catch DTOs.
-     *
-     * @param catches the catches to convert
-     * @return the list of catch DTOs
-     */
-    private List<CatchDto> mapAllCatchDtos(List<Catch> catches) {
-        List<CatchDto> catchDtos = new ArrayList<>();
-
-        for (Catch catchRecord : catches) {
-            catchDtos.add(mapCatchDto(catchRecord));
-        }
-
-        return catchDtos;
-    }
-
-    /**
-     * Converts a catch into a catch DTO with its fly, fish, and water body.
-     *
-     * @param catchRecord the catch to convert
-     * @return the catch DTO
-     */
-    private CatchDto mapCatchDto(Catch catchRecord) {
-        // the foreign keys on Catches guarantee these rows exist
-        Fly fly = flyRepository.findById(catchRecord.getFlyId()).orElseThrow();
-        Fish fish = fishRepository.findById(catchRecord.getFishId()).orElseThrow();
-        WaterBody waterBody = waterBodyRepository.findById(catchRecord.getWaterBodyId()).orElseThrow();
-
-        FlyDto flyDto = flyMapper.toDto(fly);
-        FishDto fishDto = fishMapper.toDto(fish);
-        WaterBodyDto waterBodyDto = waterBodyMapper.toDto(waterBody);
-
-        return catchMapper.toDto(
-                catchRecord,
-                flyDto,
-                fishDto,
-                waterBodyDto
-        );
-    }
-
-    /**
-     * Returns the ID of the logged-in user.
-     *
-     * @return the ID of the logged-in user, or {@code null} if no user is logged in
-     */
-    private Long getCurrentUserId() {
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        // anonymous users have a String principal, not HooksetUserDetails
-        if (authentication != null
-                && authentication.getPrincipal() instanceof HooksetUserDetails userDetails) {
-            return userDetails.getUserId();
-        }
-
-        return null;
-    }
-
-    /**
-     * Checks that a catch exists and belongs to the logged-in user.
-     *
-     * @param catchId the ID of the catch to check
-     * @return {@code true} if the catch belongs to the logged-in user, otherwise {@code false}
-     */
-    @Override
-    public boolean isCatchOwner(Long catchId) {
-        if (catchId == null) {
-            log.warn("Catch ownership check failed. Catch ID is null");
-            return false;
-        }
-
-        Catch catchRecord = catchRepository.findById(catchId).orElse(null);
-
-        if (catchRecord == null) {
-            log.warn("Catch not found for catch ID: {}", catchId);
-            return false;
-        }
-
-        Long userId = getCurrentUserId();
-
-        if (userId == null || !userId.equals(catchRecord.getUserId())) {
-            log.warn("Catch ID {} does not belong to the current user", catchId);
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Loads a catch as a form so it can be edited.
-     *
-     * @param catchId the ID of the catch to load
-     * @return the filled catch form, or {@code null} if the catch doesn't belong to the logged-in user
-     */
-    @Override
-    public CatchForm getCatchFormByCatchId(Long catchId) {
-        if (!isCatchOwner(catchId)) {
-            return null;
-        }
-
-        // the ownership check already confirmed this catch exists
-        Catch catchRecord = catchRepository.findById(catchId).orElse(null);
-
-        log.info("Loaded catch ID {} for editing", catchId);
-
-        return catchMapper.toForm(catchRecord);
-    }
-
-    /**
-     * Updates a catch that belongs to the logged-in user.
-     *
-     * @param catchId the ID of the catch to update
-     * @param catchForm the form holding the new values
-     * @return {@code true} if the catch was updated, otherwise {@code false}
-     */
-    @Override
-    public boolean updateCatch(Long catchId, CatchForm catchForm) {
-        // ownership first, so a bad form can't tell someone whether another user's catch exists
-        if (!isCatchOwner(catchId)) {
-            return false;
-        }
-
-        if (!isCatchFormValid(catchForm)) {
-            return false;
-        }
-
-        // the ownership check already confirmed this catch exists
-        Catch catchRecord = catchRepository.findById(catchId).orElse(null);
-
-        copyFormToCatch(catchForm, catchRecord);
-
-        catchRepository.save(catchRecord);
-
-        log.info("Catch ID {} updated", catchId);
-        return true;
-    }
-
-    /**
      * Runs every catch check against a form.
      *
      * @param catchForm the form to check
@@ -561,17 +452,37 @@ public class CatchServiceImpl implements CatchService {
     /**
      * Copies the editable fields from a form onto a catch.
      *
-     * <p>The user ID is not copied, so an edit can't move a catch to another user.</p>
+     * <p>The user ID is not copied, so an edit can't move a catch to another user.
+     * The fly, fish, and water body are set as references by ID, which gives
+     * Hibernate the foreign keys without loading each one from the database.</p>
      *
      * @param catchForm the form to copy from
      * @param catchRecord the catch to copy onto
      */
     private void copyFormToCatch(CatchForm catchForm, Catch catchRecord) {
-        catchRecord.setFlyId(catchForm.getFlyId());
-        catchRecord.setFishId(catchForm.getFishId());
-        catchRecord.setWaterBodyId(catchForm.getWaterBodyId());
+        catchRecord.setFly(flyRepository.getReferenceById(catchForm.getFlyId()));
+        catchRecord.setFish(fishRepository.getReferenceById(catchForm.getFishId()));
+        catchRecord.setWaterBody(waterBodyRepository.getReferenceById(catchForm.getWaterBodyId()));
         catchRecord.setFishLength(catchForm.getFishLength());
         catchRecord.setDateCaught(catchForm.getDateCaught());
         catchRecord.setNotes(catchForm.getNotes());
+    }
+
+    /**
+     * Returns the ID of the logged-in user.
+     *
+     * @return the ID of the logged-in user, or {@code null} if no user is logged in
+     */
+    private Long getCurrentUserId() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        // anonymous users have a String principal, not HooksetUserDetails
+        if (authentication != null
+                && authentication.getPrincipal() instanceof HooksetUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+
+        return null;
     }
 }

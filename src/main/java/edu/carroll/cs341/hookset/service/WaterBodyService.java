@@ -1,5 +1,6 @@
 package edu.carroll.cs341.hookset.service;
 
+import shared.jpa.entity.Fish;
 import shared.jpa.entity.WaterBody;
 
 import java.util.List;
@@ -26,4 +27,12 @@ public interface WaterBodyService {
      * @return the matching water body, or {@code null} if the slug is blank or no water body matches
      */
     WaterBody getWaterBodyFromSlug(String waterBodySlug);
+
+    /**
+     * Returns every fish species found in a water body.
+     *
+     * @param waterBodyId the ID of the water body
+     * @return the list of fish species in the water body, or an empty list if the water body does not exist or has no fish
+     */
+    List<Fish> getAllFishForWaterBody(Long waterBodyId);
 }

@@ -17,7 +17,7 @@ public class Fish {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long fishId;
+    private Long id;
 
     /** The biological family of the fish. */
     @Column(name = "family")
@@ -35,8 +35,8 @@ public class Fish {
      *
      * @return the fish identifier
      */
-    public Long getFishId() {
-        return fishId;
+    public Long getId() {
+        return id;
     }
 
 

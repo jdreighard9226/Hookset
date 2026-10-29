@@ -1,11 +1,11 @@
 package edu.carroll.cs341.hookset.web.controller;
 
 import edu.carroll.cs341.hookset.service.CatchService;
-import edu.carroll.cs341.hookset.service.FishService;
 import edu.carroll.cs341.hookset.service.FlyService;
 import edu.carroll.cs341.hookset.service.WaterBodyService;
 import edu.carroll.cs341.hookset.web.dto.CatchDto;
 import edu.carroll.cs341.hookset.web.form.CatchForm;
+import edu.carroll.cs341.hookset.web.mapper.CatchMapper;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import shared.jpa.entity.Catch;
 import shared.jpa.entity.Fish;
 
 import java.time.LocalDateTime;
@@ -51,28 +52,25 @@ public class CatchController {
     /** The service used to load the fly dropdown options. */
     private final FlyService flyService;
 
-    /** The service used to load the fish dropdown options. */
-    private final FishService fishService;
-
     /** The service used to load the water body dropdown options. */
     private final WaterBodyService waterBodyService;
+
+    private final CatchMapper catchMapper;
 
     /**
      * Creates the catch controller with the services it depends on.
      *
      * @param catchService the service used to look up, save, and validate catches
      * @param flyService the service used to load the fly dropdown options
-     * @param fishService the service used to load the fish dropdown options
      * @param waterBodyService the service used to load the water body dropdown options
      */
     public CatchController(CatchService catchService,
                            FlyService flyService,
-                           FishService fishService,
-                           WaterBodyService waterBodyService) {
+                           WaterBodyService waterBodyService, CatchMapper catchMapper) {
         this.catchService = catchService;
         this.flyService = flyService;
-        this.fishService = fishService;
         this.waterBodyService = waterBodyService;
+        this.catchMapper = catchMapper;
     }
 
     /**
@@ -85,7 +83,8 @@ public class CatchController {
     public String index(Model model) {
         log.info("Loading all catches page");
 
-        List<CatchDto> catchDtos = catchService.getAllCatches();
+        List<Catch> catches = catchService.getAllCatches();
+        List<CatchDto> catchDtos = mapAllCatchDtos(catches);
         model.addAttribute("catches", catchDtos);
 
         return "catches/index";
@@ -101,7 +100,8 @@ public class CatchController {
     public String getUserCatches(Model model) {
         log.info("Loading user catches page");
 
-        List<CatchDto> catchDtos = catchService.getAllUserCatches();
+        List<Catch> catches = catchService.getAllUserCatches();
+        List<CatchDto> catchDtos = mapAllCatchDtos(catches);
         model.addAttribute("catches", catchDtos);
 
         return "catches/user-catches";
@@ -121,7 +121,9 @@ public class CatchController {
     public String getCatchDetails(@PathVariable Long catchId, Model model) {
         log.info("Loading catch details page for catch ID: {}", catchId);
 
-        CatchDto catchDto = catchService.getCatchByCatchId(catchId);
+        Catch catchRecord = catchService.getCatchById(catchId);
+
+        CatchDto catchDto = catchMapper.toDto(catchRecord);
 
         if (catchDto == null) {
             log.warn("Catch details not found for catch ID: {}", catchId);
@@ -184,7 +186,7 @@ public class CatchController {
             return "catches/add";
         }
 
-        if (!catchService.addNewCatch(catchForm)) {
+        if (!catchService.addCatch(catchForm)) {
             log.warn("Add catch failed");
             model.addAttribute("addCatchFailed", true);
             addFormOptions(model, catchForm);
@@ -208,13 +210,16 @@ public class CatchController {
     public String getEditCatch(@PathVariable Long catchId, Model model) {
         log.info("Loading edit catch page for catch ID: {}", catchId);
 
-        // returns null for catches that don't exist or belong to someone else
-        CatchForm catchForm = catchService.getCatchFormByCatchId(catchId);
-
-        if (catchForm == null) {
+        // false for catches that don't exist or belong to someone else
+        if (!catchService.isCatchOwner(catchId)) {
             log.warn("Catch ID {} not found or not owned by the current user", catchId);
             return "redirect:/catches/mine";
         }
+
+        // the ownership check already confirmed this catch exists
+        Catch catchRecord = catchService.getCatchById(catchId);
+
+        CatchForm catchForm = catchMapper.toForm(catchRecord);
 
         model.addAttribute("catchId", catchId);
         model.addAttribute("catchForm", catchForm);
@@ -289,7 +294,7 @@ public class CatchController {
         List<Fish> fish = new ArrayList<>();
 
         if (waterBodyId != null) {
-            fish = fishService.getAllFishForWaterBody(waterBodyId);
+            fish = waterBodyService.getAllFishForWaterBody(waterBodyId);
         }
 
         model.addAttribute("fish", fish);
@@ -361,7 +366,7 @@ public class CatchController {
         List<Fish> fish = new ArrayList<>();
 
         if (catchForm.getWaterBodyId() != null) {
-            fish = fishService.getAllFishForWaterBody(catchForm.getWaterBodyId());
+            fish = waterBodyService.getAllFishForWaterBody(catchForm.getWaterBodyId());
         }
 
         model.addAttribute("fish", fish);
@@ -369,5 +374,28 @@ public class CatchController {
         // seconds are dropped because the picker only works in minutes
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
         model.addAttribute("maxDateCaught", now.format(DATE_INPUT_FORMAT));
+    }
+
+
+    /**
+     * Converts a list of catch entities into catch DTOs.
+     *
+     * @param catches the catch entities to convert
+     * @return the list of catch DTOs
+     */
+    private List<CatchDto> mapAllCatchDtos(List<Catch> catches) {
+        if (catches.isEmpty()) {
+            log.info("No catches found");
+        } else {
+            log.info("Found {} catches", catches.size());
+        }
+
+        List<CatchDto> catchDtos = new ArrayList<>();
+
+        for (Catch catchEntity : catches) {
+            catchDtos.add(catchMapper.toDto(catchEntity));
+        }
+
+        return catchDtos;
     }
 }
