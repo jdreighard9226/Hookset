@@ -22,10 +22,10 @@ public class FishMapper {
     public FishDto toDto(Fish fish) {
         FishDto fishDto = new FishDto();
 
-        fishDto.setFishId(fish.getFishId());
-        fishDto.setFishFamily(fish.getFishFamily());
-        fishDto.setFishSpecies(fish.getFishSpecies());
-        fishDto.setFishImage(fish.getFishImage());
+        fishDto.setId(fish.getFishId());
+        fishDto.setFamily(fish.getFishFamily());
+        fishDto.setSpecies(fish.getFishSpecies());
+        fishDto.setImage(fish.getFishImage());
 
         return fishDto;
     }

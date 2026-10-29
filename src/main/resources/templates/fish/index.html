@@ -19,10 +19,10 @@
                     <div class="card shadow-sm text-center fish-card">
                         <div class="card-body">
                             <img class="fish-image"
-                                 th:src="@{'/images/fish/' + ${fish.fishImage}}"
-                                 th:alt="${fish.fishSpecies}">
-                            <h3 th:text="${fish.fishSpecies}"></h3>
-                            <p th:text="'Family: ' + ${fish.fishFamily}"></p>
+                                 th:src="@{'/images/fish/' + ${fish.image}}"
+                                 th:alt="${fish.species}">
+                            <h3 th:text="${fish.species}"></h3>
+                            <p th:text="'Family: ' + ${fish.family}"></p>
                         </div>
                     </div>
                 </div>

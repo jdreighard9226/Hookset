@@ -9,33 +9,33 @@ package edu.carroll.cs341.hookset.web.dto;
 public class FishDto {
 
     /** The database identifier of the fish species. */
-    private Long fishId;
+    private Long id;
 
     /** The family the fish species belongs to. */
-    private String fishFamily;
+    private String family;
 
     /** The name of the fish species. */
-    private String fishSpecies;
+    private String species;
 
     /** The image shown for the fish species. */
-    private String fishImage;
+    private String image;
 
     /**
      * Returns the database identifier of the fish species.
      *
      * @return the fish identifier
      */
-    public Long getFishId() {
-        return fishId;
+    public Long getId() {
+        return id;
     }
 
     /**
      * Sets the database identifier of the fish species.
      *
-     * @param fishId the fish identifier
+     * @param id the fish identifier
      */
-    public void setFishId(Long fishId) {
-        this.fishId = fishId;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     /**
@@ -43,17 +43,17 @@ public class FishDto {
      *
      * @return the fish family
      */
-    public String getFishFamily() {
-        return fishFamily;
+    public String getFamily() {
+        return family;
     }
 
     /**
      * Sets the family the fish species belongs to.
      *
-     * @param fishFamily the fish family
+     * @param family the fish family
      */
-    public void setFishFamily(String fishFamily) {
-        this.fishFamily = fishFamily;
+    public void setFamily(String family) {
+        this.family = family;
     }
 
     /**
@@ -61,17 +61,17 @@ public class FishDto {
      *
      * @return the fish species name
      */
-    public String getFishSpecies() {
-        return fishSpecies;
+    public String getSpecies() {
+        return species;
     }
 
     /**
      * Sets the name of the fish species.
      *
-     * @param fishSpecies the fish species name
+     * @param species the fish species name
      */
-    public void setFishSpecies(String fishSpecies) {
-        this.fishSpecies = fishSpecies;
+    public void setSpecies(String species) {
+        this.species = species;
     }
 
     /**
@@ -79,16 +79,16 @@ public class FishDto {
      *
      * @return the fish image
      */
-    public String getFishImage() {
-        return fishImage;
+    public String getImage() {
+        return image;
     }
 
     /**
      * Sets the image shown for the fish species.
      *
-     * @param fishImage the fish image
+     * @param image the fish image
      */
-    public void setFishImage(String fishImage) {
-        this.fishImage = fishImage;
+    public void setImage(String image) {
+        this.image = image;
     }
 }
