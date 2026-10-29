@@ -10,13 +10,13 @@ import jakarta.persistence.*;
  * reports them.</p>
  */
 @Entity
-@Table(name = "FishWaterBodies")
+@Table(name = "WaterBody")
 public class FishWaterBody {
 
     /** The unique database identifier for the fish water body record. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "fishWaterBodyId")
+    @Column(name = "id")
     private Long fishWaterBodyId;
 
     /** The database identifier of the fish. */

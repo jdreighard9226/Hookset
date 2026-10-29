@@ -11,49 +11,49 @@ DROP TABLE IF EXISTS Users;
 
 
 CREATE TABLE Users (
-    userId BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(20),
     hashPassword TEXT,
     isAdmin BOOLEAN
 );
 
 
-CREATE TABLE Flies (
-    flyId BIGINT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE Fly (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     userId BIGINT NULL,
-    flyType VARCHAR(50) NOT NULL,
-    flyName VARCHAR(100) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
     color VARCHAR(40) NOT NULL,
     minSize INT NOT NULL,
     maxSize INT NOT NULL,
-    flyImage VARCHAR(100) NOT NULL,
-    flySlug VARCHAR(125) NOT NULL,
+    image VARCHAR(100) NOT NULL,
+    slug VARCHAR(125) NOT NULL,
     
     FOREIGN KEY (userId)
-        REFERENCES Users(userId),
+        REFERENCES Users(id),
 	UNIQUE (userId, flySlug)
 );
 
-CREATE TABLE WaterBodies (
-    waterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
-    waterBodyName VARCHAR(250) NOT NULL,
-    waterBodyType VARCHAR(100) NOT NULL,
-    waterBodyState VARCHAR(100) NOT NULL,
-    waterBodyDescription varchar(1000) NOT NULL,
-    waterBodySlug varchar(100) NOT NULL UNIQUE,
-       CHECK (waterBodyType IN ('River', 'Lake', 'Stream'))
+CREATE TABLE WaterBody (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(250) NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    description varchar(1000) NOT NULL,
+    slug varchar(100) NOT NULL UNIQUE,
+       CHECK (type IN ('River', 'Lake', 'Stream'))
 );
 
 
-CREATE TABLE Fishes (
-    fishId BIGINT AUTO_INCREMENT PRIMARY KEY,
-    fishFamily VARCHAR(200) NOT NULL,
-    fishSpecies VARCHAR(200) NOT NULL,
-    fishImage VARCHAR(100) NOT NULL
+CREATE TABLE Fish (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    family VARCHAR(200) NOT NULL,
+    species VARCHAR(200) NOT NULL,
+    image VARCHAR(100) NOT NULL
 );
 
 
-CREATE TABLE FishWaterBodies (
+CREATE TABLE FishWaterBody (
     fishWaterBodyId BIGINT AUTO_INCREMENT PRIMARY KEY,
     fishId BIGINT NOT NULL,
     waterBodyId BIGINT NOT NULL,
@@ -61,14 +61,14 @@ CREATE TABLE FishWaterBodies (
     UNIQUE (fishId, waterBodyId),
 
     FOREIGN KEY (fishId)
-        REFERENCES Fishes(fishId),
+        REFERENCES Fishes(id),
 
     FOREIGN KEY (waterBodyId)
-        REFERENCES WaterBodies(waterBodyId)
+        REFERENCES WaterBodies(id)
 );
 
 CREATE TABLE Catches (
-    catchId BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     userId BIGINT NOT NULL,
     flyId BIGINT NOT NULL,
     fishId BIGINT NOT NULL,
@@ -78,16 +78,16 @@ CREATE TABLE Catches (
     notes VARCHAR(1000),
 
     FOREIGN KEY (userId)
-        REFERENCES Users(userId),
+        REFERENCES Users(id),
 
     FOREIGN KEY (flyId)
-        REFERENCES Flies(flyId),
+        REFERENCES Flies(id),
 
     FOREIGN KEY (fishId)
-        REFERENCES Fishes(fishId),
+        REFERENCES Fishes(id),
 
     FOREIGN KEY (waterBodyId)
-        REFERENCES WaterBodies(waterBodyId),
+        REFERENCES WaterBodies(id),
 
     CHECK (fishLength > 0)
 );

@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
  * fish length, date caught, and any additional notes.</p>
  */
 @Entity
-@Table(name = "Catches")
+@Table(name = "Catch")
 public class Catch {
 
     /** The unique database identifier for the catch record. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "catchId")
+    @Column(name = "id")
     private Long catchId;
 
     /** The identifier of the user who recorded the catch. */

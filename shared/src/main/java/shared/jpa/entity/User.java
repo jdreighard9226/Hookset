@@ -22,8 +22,8 @@ public class User {
     /** The unique database identifier for the user. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "userId")
-    private long userId;
+    @Column(name = "id")
+    private long id;
 
     /** The username associated with the user account. */
     @Column(name = "username")
@@ -42,8 +42,8 @@ public class User {
      *
      * @return the user identifier
      */
-    public long getUserId() {
-        return userId;
+    public long getId() {
+        return id;
     }
 
     /**

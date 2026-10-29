@@ -164,11 +164,10 @@ public class FlyController {
         Fly fly = flyService.getFlyById(flyId);
 
         FlyDto flyDto = flyMapper.toDto(fly);
+
         FlyForm flyForm = flyMapper.toForm(flyDto);
 
         model.addAttribute("flyForm", flyForm);
-
-        model.addAttribute("fly", flyDto);
 
         return "flies/edit";
     }

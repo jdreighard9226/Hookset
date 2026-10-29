@@ -10,24 +10,24 @@ import jakarta.persistence.*;
  * water bodies and catch records throughout Hookset.</p>
  */
 @Entity
-@Table(name = "Fishes")
+@Table(name = "Fish")
 public class Fish {
 
     /** The unique database identifier for the fish record. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "fishId")
+    @Column(name = "id")
     private Long fishId;
 
     /** The biological family of the fish. */
-    @Column(name = "fishFamily")
+    @Column(name = "family")
     private String fishFamily;
 
     /** The species name of the fish. */
-    @Column(name = "fishSpecies")
+    @Column(name = "species")
     private String fishSpecies;
 
-    @Column(name = "fishImage")
+    @Column(name = "image")
     private String fishImage;
 
     /**

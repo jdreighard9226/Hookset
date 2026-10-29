@@ -11,13 +11,13 @@ import java.time.Instant;
  * the user who entered it and when it was created or last modified.</p>
  */
 @Entity
-@Table (name = "Flies")
+@Table (name = "Fly")
 public class Fly {
 
     /** The unique database identifier for the fly. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "flyId")
+    @Column(name = "id")
     private Long flyId;
 
     /** The identifier of the user who entered the fly. May be null. */
@@ -25,11 +25,11 @@ public class Fly {
     private Long userId;
 
     /** The type of fly, such as dry, nymph, or streamer. */
-    @Column(name = "flyType")
+    @Column(name = "type")
     private String flyType;
 
     /** The name of the fly. */
-    @Column(name = "flyName")
+    @Column(name = "name")
     private String flyName;
 
     /** The color of the fly. */
@@ -43,10 +43,10 @@ public class Fly {
     private Integer maxSize;
 
 
-    @Column(name = "flyImage")
+    @Column(name = "image")
     private String flyImage;
 
-    @Column(name ="flySlug")
+    @Column(name ="slug")
     private String flySlug;
 
     /**

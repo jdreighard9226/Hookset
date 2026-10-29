@@ -8,26 +8,26 @@ import jakarta.persistence.*;
  * <p>Each water body record stores the name of the water body.</p>
  */
 @Entity
-@Table(name = "WaterBodies")
+@Table(name = "WaterBody")
 public class WaterBody {
 
     /** The unique database identifier for the water body. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "waterBodyId")
+    @Column(name = "id")
     private long waterBodyId;
 
     /** The name of the water body. */
-    @Column(name = "waterBodyName")
+    @Column(name = "name")
     private String waterBodyName;
 
-    @Column(name = "waterBodyState")
+    @Column(name = "state")
     private String waterBodyState;
 
-    @Column(name = "waterBodyType")
+    @Column(name = "type")
     private String waterBodyType;
 
-    @Column(name = "waterBodyDescription")
+    @Column(name = "description")
     private String waterBodyDescription;
 
     public String getWaterBodyDescription() {
