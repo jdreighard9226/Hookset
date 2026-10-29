@@ -2,6 +2,9 @@ package shared.jpa.entity;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Represents a water body stored in the Hookset database.
  *
@@ -32,6 +35,15 @@ public class WaterBody {
 
     @Column(name = "slug")
     private String slug;
+
+    @ManyToMany
+    @JoinTable(
+            name = "FishWaterBody",
+            joinColumns = @JoinColumn(name = "waterBodyId"),
+            inverseJoinColumns = @JoinColumn(name = "fishId")
+    )
+    @OrderBy("species")
+    private Set<Fish> fishes = new HashSet<>();
 
 
     public String getDescription() {
@@ -92,5 +104,13 @@ public class WaterBody {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public Set<Fish> getFishes() {
+        return fishes;
+    }
+
+    public void setFishes(Set<Fish> fishes) {
+        this.fishes = fishes;
     }
 }

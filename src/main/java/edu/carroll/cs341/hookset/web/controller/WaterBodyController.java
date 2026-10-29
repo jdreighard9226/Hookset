@@ -18,6 +18,7 @@ import shared.jpa.entity.WaterBody;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Handles requests for the water body pages.
@@ -106,7 +107,8 @@ public class WaterBodyController {
 
         WaterBodyDto waterBody = waterBodyMapper.toDto(waterBodyEntity);
 
-        List<Fish> fishEntities = fishService.getAllFishForWaterBody(waterBody.getId());
+        // fish come from the FishWaterBody join table through the water body's @ManyToMany
+        Set<Fish> fishEntities = waterBodyEntity.getFishes();
 
         List<FishDto> fishDtos = new ArrayList<>();
 

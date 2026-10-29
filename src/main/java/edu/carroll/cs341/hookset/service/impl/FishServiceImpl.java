@@ -1,7 +1,6 @@
 package edu.carroll.cs341.hookset.service.impl;
 
 import edu.carroll.cs341.hookset.jpa.repo.FishRepository;
-import edu.carroll.cs341.hookset.jpa.repo.FishWaterBodyRepository;
 import edu.carroll.cs341.hookset.service.FishService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,18 +24,13 @@ public class FishServiceImpl implements FishService {
     /** The repository used to look up fish species. */
     private final FishRepository fishRepository;
 
-    /** The repository used to look up which fish are in which water bodies. */
-    private final FishWaterBodyRepository fishWaterBodyRepository;
-
     /**
      * Creates the fish service with the repositories it depends on.
      *
      * @param fishRepository the repository used to look up fish species
-     * @param fishWaterBodyRepository the repository used to look up which fish are in which water bodies
      */
-    public FishServiceImpl(FishRepository fishRepository, FishWaterBodyRepository fishWaterBodyRepository) {
+    public FishServiceImpl(FishRepository fishRepository) {
         this.fishRepository = fishRepository;
-        this.fishWaterBodyRepository = fishWaterBodyRepository;
     }
 
     /**
@@ -60,24 +54,4 @@ public class FishServiceImpl implements FishService {
         return fish;
     }
 
-    /**
-     * Returns every fish species found in a water body.
-     *
-     * @param waterBodyId the ID of the water body
-     * @return the list of fish species in the water body, or an empty list if none exist
-     */
-    @Override
-    public List<Fish> getAllFishForWaterBody(Long waterBodyId) {
-        log.info("Loading fish for water body ID: {}", waterBodyId);
-
-        List<Fish> fish = fishWaterBodyRepository.findFishByWaterBodyId(waterBodyId);
-
-        if (fish.size() < 1) {
-            log.warn("No fish found for water body ID: {}", waterBodyId);
-        }
-
-        log.info("Loaded {} fish for water body ID: {}", fish.size(), waterBodyId);
-
-        return fish;
-    }
 }

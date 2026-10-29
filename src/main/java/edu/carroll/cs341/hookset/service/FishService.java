@@ -18,12 +18,4 @@ public interface FishService {
      * @return the list of fish species, or an empty list if none exist
      */
     List<Fish> getAllFish();
-
-    /**
-     * Returns every fish species found in a water body.
-     *
-     * @param waterBodyId the ID of the water body
-     * @return the list of fish species in the water body, or an empty list if none exist
-     */
-    List<Fish> getAllFishForWaterBody(Long waterBodyId);
 }
