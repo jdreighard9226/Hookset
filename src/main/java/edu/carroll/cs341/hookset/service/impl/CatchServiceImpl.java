@@ -2,6 +2,7 @@ package edu.carroll.cs341.hookset.service.impl;
 
 import edu.carroll.cs341.hookset.jpa.repo.*;
 import edu.carroll.cs341.hookset.service.CatchService;
+import edu.carroll.cs341.hookset.service.input.CatchInput;
 import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import edu.carroll.cs341.hookset.web.form.CatchForm;
 import org.slf4j.Logger;
@@ -95,9 +96,7 @@ public class CatchServiceImpl implements CatchService {
      * @return the list of the user's catches, or an empty list if no user is logged in
      */
     @Override
-    public List<Catch> getAllUserCatches() {
-        Long userId = getCurrentUserId();
-
+    public List<Catch> getAllUserCatches(Long userId) {
         // nobody logged in means there are no catches to show
         if (userId == null) {
             log.warn("Could not load user catches. No user logged in");
@@ -142,12 +141,10 @@ public class CatchServiceImpl implements CatchService {
      * <p>The catch is only saved if a user is logged in and every check on
      * the form passes.</p>
      *
-     * @param catchForm the form holding the new catch
      * @return {@code true} if the catch was saved, otherwise {@code false}
      */
     @Override
-    public boolean addCatch(CatchForm catchForm) {
-        Long userId = getCurrentUserId();
+    public boolean addCatch(CatchInput catchInput, Long userId) {
 
         // a catch has to belong to someone
         if (userId == null) {
@@ -155,7 +152,7 @@ public class CatchServiceImpl implements CatchService {
             return false;
         }
 
-        if (!isCatchFormValid(catchForm)) {
+        if (!isCatchInputValid(catchInput, userId)) {
             return false;
         }
 
@@ -163,7 +160,7 @@ public class CatchServiceImpl implements CatchService {
 
         // user ID comes from the login, not the form, so nobody can save a catch as someone else
         catchRecord.setUserId(userId);
-        copyFormToCatch(catchForm, catchRecord);
+        copyInputToCatch(catchInput, catchRecord);
 
         catchRepository.save(catchRecord);
 
@@ -171,28 +168,21 @@ public class CatchServiceImpl implements CatchService {
         return true;
     }
 
-    /**
-     * Updates a catch that belongs to the logged-in user.
-     *
-     * @param catchId the ID of the catch to update
-     * @param catchForm the form holding the new values
-     * @return {@code true} if the catch was updated, otherwise {@code false}
-     */
     @Override
-    public boolean updateCatch(Long catchId, CatchForm catchForm) {
+    public boolean updateCatch(Long catchId, CatchInput catchInput, Long userId) {
         // ownership first, so a bad form can't tell someone whether another user's catch exists
-        if (!isCatchOwner(catchId)) {
+        if (!isCatchOwner(catchId, userId)) {
             return false;
         }
 
-        if (!isCatchFormValid(catchForm)) {
+        if (!isCatchInputValid(catchInput, userId)) {
             return false;
         }
 
         // the ownership check already confirmed this catch exists
         Catch catchRecord = catchRepository.findById(catchId).orElse(null);
 
-        copyFormToCatch(catchForm, catchRecord);
+        copyInputToCatch(catchInput, catchRecord);
 
         catchRepository.save(catchRecord);
 
@@ -207,7 +197,7 @@ public class CatchServiceImpl implements CatchService {
      * @return {@code true} if the catch belongs to the logged-in user, otherwise {@code false}
      */
     @Override
-    public boolean isCatchOwner(Long catchId) {
+    public boolean isCatchOwner(Long catchId, Long userId) {
         if (catchId == null) {
             log.warn("Catch ownership check failed. Catch ID is null");
             return false;
@@ -219,8 +209,6 @@ public class CatchServiceImpl implements CatchService {
             log.warn("Catch not found for catch ID: {}", catchId);
             return false;
         }
-
-        Long userId = getCurrentUserId();
 
         if (userId == null || !userId.equals(catchRecord.getUserId())) {
             log.warn("Catch ID {} does not belong to the current user", catchId);
@@ -240,7 +228,7 @@ public class CatchServiceImpl implements CatchService {
      * @return {@code true} if the fly exists and the user can use it, otherwise {@code false}
      */
     @Override
-    public boolean isFlyValid(Long flyId) {
+    public boolean isFlyValid(Long flyId, Long userId) {
         if (flyId == null) {
             log.warn("Catch validation failed. Fly ID is null");
             return false;
@@ -259,7 +247,7 @@ public class CatchServiceImpl implements CatchService {
         }
 
         // custom flies can only be used by the user who made them
-        if (!fly.getUserId().equals(getCurrentUserId())) {
+        if (!fly.getUserId().equals(userId)) {
             log.warn("Catch validation failed. Fly ID {} belongs to another user", flyId);
             return false;
         }
@@ -411,78 +399,44 @@ public class CatchServiceImpl implements CatchService {
         return true;
     }
 
-    /**
-     * Runs every catch check against a form.
-     *
-     * @param catchForm the form to check
-     * @return {@code true} if every check passes, otherwise {@code false}
-     */
-    private boolean isCatchFormValid(CatchForm catchForm) {
-        if (!isFlyValid(catchForm.getFlyId())) {
+    private boolean isCatchInputValid(CatchInput catchInput, Long userId) {
+        if (!isFlyValid(catchInput.flyId(), userId)) {
             return false;
         }
 
-        if (!isFishValid(catchForm.getFishId())) {
+        if (!isFishValid(catchInput.fishId())) {
             return false;
         }
 
-        if (!isWaterBodyValid(catchForm.getWaterBodyId())) {
+        if (!isWaterBodyValid(catchInput.waterBodyId())) {
             return false;
         }
 
-        if (!isFishInWaterBody(catchForm.getFishId(), catchForm.getWaterBodyId())) {
+        if (!isFishInWaterBody(catchInput.fishId(), catchInput.waterBodyId())) {
             return false;
         }
 
-        if (!isFishLengthValid(catchForm.getFishLength())) {
+        if (!isFishLengthValid(catchInput.fishLengh())) {
             return false;
         }
 
-        if (!isDateCaughtValid(catchForm.getDateCaught())) {
+        if (!isDateCaughtValid(catchInput.dateCaught())) {
             return false;
         }
 
-        if (!isNotesValid(catchForm.getNotes())) {
+        if (!isNotesValid(catchInput.notes())) {
             return false;
         }
 
         return true;
     }
 
-    /**
-     * Copies the editable fields from a form onto a catch.
-     *
-     * <p>The user ID is not copied, so an edit can't move a catch to another user.
-     * The fly, fish, and water body are set as references by ID, which gives
-     * Hibernate the foreign keys without loading each one from the database.</p>
-     *
-     * @param catchForm the form to copy from
-     * @param catchRecord the catch to copy onto
-     */
-    private void copyFormToCatch(CatchForm catchForm, Catch catchRecord) {
-        catchRecord.setFly(flyRepository.getReferenceById(catchForm.getFlyId()));
-        catchRecord.setFish(fishRepository.getReferenceById(catchForm.getFishId()));
-        catchRecord.setWaterBody(waterBodyRepository.getReferenceById(catchForm.getWaterBodyId()));
-        catchRecord.setFishLength(catchForm.getFishLength());
-        catchRecord.setDateCaught(catchForm.getDateCaught());
-        catchRecord.setNotes(catchForm.getNotes());
-    }
-
-    /**
-     * Returns the ID of the logged-in user.
-     *
-     * @return the ID of the logged-in user, or {@code null} if no user is logged in
-     */
-    private Long getCurrentUserId() {
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        // anonymous users have a String principal, not HooksetUserDetails
-        if (authentication != null
-                && authentication.getPrincipal() instanceof HooksetUserDetails userDetails) {
-            return userDetails.getUserId();
-        }
-
-        return null;
+    private void copyInputToCatch(CatchInput catchInput, Catch catchRecord) {
+        catchRecord.setFly(flyRepository.findById(catchInput.flyId()).orElse(null));
+        catchRecord.setFish(fishRepository.findById(catchInput.fishId()).orElse(null));
+        catchRecord.setWaterBody(waterBodyRepository.findById(catchInput.waterBodyId()).orElse(null));
+        catchRecord.setFishLength(catchInput.fishLengh());
+        catchRecord.setDateCaught(catchInput.dateCaught());
+        catchRecord.setNotes(catchInput.notes());
     }
 }

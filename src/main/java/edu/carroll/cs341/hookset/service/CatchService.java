@@ -1,5 +1,6 @@
 package edu.carroll.cs341.hookset.service;
 
+import edu.carroll.cs341.hookset.service.input.CatchInput;
 import edu.carroll.cs341.hookset.web.form.CatchForm;
 import shared.jpa.entity.Catch;
 
@@ -33,7 +34,7 @@ public interface CatchService {
      *
      * @return the list of the user's catches, or an empty list if none exist
      */
-    List<Catch> getAllUserCatches();
+    List<Catch> getAllUserCatches(Long userId);
 
     /**
      * Returns a single catch by its ID.
@@ -43,22 +44,10 @@ public interface CatchService {
      */
     Catch getCatchById(Long catchId);
 
-    /**
-     * Saves a new catch for the current user.
-     *
-     * @param catchForm the form containing the catch details
-     * @return {@code true} if the catch was saved, otherwise {@code false}
-     */
-    boolean addCatch(CatchForm catchForm);
+     boolean addCatch(CatchInput catchInput, Long userId);
 
-    /**
-     * Updates an existing catch owned by the current user.
-     *
-     * @param catchId the ID of the catch to update
-     * @param catchForm the form containing the new catch details
-     * @return {@code true} if the catch was updated, otherwise {@code false}
-     */
-    boolean updateCatch(Long catchId, CatchForm catchForm);
+
+    boolean updateCatch(Long catchId, CatchInput catchInput, Long userId);
 
     /**
      * Checks whether a catch exists and belongs to the current user.
@@ -66,7 +55,7 @@ public interface CatchService {
      * @param catchId the ID of the catch to check
      * @return {@code true} if the catch exists and the current user logged it, otherwise {@code false}
      */
-    boolean isCatchOwner(Long catchId);
+     boolean isCatchOwner(Long catchId, Long userId);
 
     /**
      * Checks whether a fly exists and can be used by the current user.
@@ -74,7 +63,7 @@ public interface CatchService {
      * @param flyId the ID of the fly to check
      * @return {@code true} if the fly is a default fly or belongs to the current user, otherwise {@code false}
      */
-    boolean isFlyValid(Long flyId);
+     boolean isFlyValid(Long flyId, Long userId);
 
     /**
      * Checks whether a fish species exists.
