@@ -1,5 +1,6 @@
 package edu.carroll.cs341.hookset.web.mapper;
 
+import edu.carroll.cs341.hookset.service.input.FlyInput;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
 import edu.carroll.cs341.hookset.web.form.FlyForm;
 import org.springframework.stereotype.Component;
@@ -74,6 +75,29 @@ public class FlyMapper {
         flyForm.setColor(flyDto.getColor());
         flyForm.setMinSize(flyDto.getMinSize());
         flyForm.setMaxSize(flyDto.getMaxSize());
+
+        return flyForm;
+    }
+
+    public FlyInput toInput(FlyForm flyForm) {
+        return new FlyInput(flyForm.getName(), flyForm.getType(), flyForm.getColor(), flyForm.getMinSize(), flyForm.getMaxSize());
+    }
+
+    /**
+     * Converts a fly into a form so it can be edited.
+     *
+     * @param fly the fly to convert
+     * @return a fly form filled with the fly's values
+     */
+    public FlyForm toForm(Fly fly) {
+        FlyForm flyForm = new FlyForm();
+
+        flyForm.setId(fly.getId());
+        flyForm.setName(fly.getName());
+        flyForm.setType(fly.getType());
+        flyForm.setColor(fly.getColor());
+        flyForm.setMinSize(fly.getMinSize());
+        flyForm.setMaxSize(fly.getMaxSize());
 
         return flyForm;
     }
