@@ -23,9 +23,9 @@ public class FishMapper {
         FishDto fishDto = new FishDto();
 
         fishDto.setId(fish.getId());
-        fishDto.setFamily(fish.getFishFamily());
-        fishDto.setSpecies(fish.getFishSpecies());
-        fishDto.setImage(fish.getFishImage());
+        fishDto.setFamily(fish.getFamily());
+        fishDto.setSpecies(fish.getSpecies());
+        fishDto.setImage(fish.getImage());
 
         return fishDto;
     }
