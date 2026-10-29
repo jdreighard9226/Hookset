@@ -1,14 +1,5 @@
 USE hookset;
 
--- Old plural names (remove after this runs once)
-DROP TABLE IF EXISTS FishWaterBodies;
-DROP TABLE IF EXISTS FlySizes;
-DROP TABLE IF EXISTS Catches;
-DROP TABLE IF EXISTS Flies;
-DROP TABLE IF EXISTS FlyMaterials;
-DROP TABLE IF EXISTS Fishes;
-DROP TABLE IF EXISTS WaterBodies;
-
 -- New names, children first
 DROP TABLE IF EXISTS FishWaterBody;
 DROP TABLE IF EXISTS `Catch`;

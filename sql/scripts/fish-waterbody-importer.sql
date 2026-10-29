@@ -4,8 +4,8 @@ use hookset;
 -- WATER BODIES
 -- ============================================================
 
-INSERT INTO WaterBodies
-    (waterBodyName, waterBodyType, waterBodyState, waterBodyDescription, waterBodySlug)
+INSERT INTO WaterBody
+    (name, type, state, description, slug)
 VALUES
 
 (
@@ -103,8 +103,8 @@ VALUES
 -- All species below are members of Salmonidae.
 -- ============================================================
 
-INSERT INTO Fishes
-    (fishFamily, fishSpecies, fishImage)
+INSERT INTO Fish
+    (family, species, image)
 VALUES
     ('Salmonidae', 'Rainbow Trout', 'rainbow-trout.png'),
     ('Salmonidae', 'Brown Trout', 'brown-trout.png'),
@@ -127,12 +127,12 @@ VALUES
 -- Westslope Cutthroat Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'gallatin-river'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'gallatin-river'
+AND f.species IN (
     'Rainbow Trout',
     'Brown Trout',
     'Mountain Whitefish',
@@ -151,12 +151,12 @@ AND f.fishSpecies IN (
 -- Brook Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'madison-river'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'madison-river'
+AND f.species IN (
     'Rainbow Trout',
     'Brown Trout',
     'Mountain Whitefish',
@@ -177,12 +177,12 @@ AND f.fishSpecies IN (
 -- Brook Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'big-hole-river'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'big-hole-river'
+AND f.species IN (
     'Rainbow Trout',
     'Brown Trout',
     'Mountain Whitefish',
@@ -201,12 +201,12 @@ AND f.fishSpecies IN (
 -- Bull Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'blackfoot-river'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'blackfoot-river'
+AND f.species IN (
     'Westslope Cutthroat Trout',
     'Rainbow Trout',
     'Brown Trout',
@@ -222,12 +222,12 @@ AND f.fishSpecies IN (
 -- Mountain Whitefish
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'smith-river'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'smith-river'
+AND f.species IN (
     'Rainbow Trout',
     'Brown Trout',
     'Mountain Whitefish'
@@ -243,12 +243,12 @@ AND f.fishSpecies IN (
 -- directly characterizes it as a premier brown trout fishery.
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'beaverhead-river'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'beaverhead-river'
+AND f.species IN (
     'Brown Trout'
 );
 
@@ -264,12 +264,12 @@ AND f.fishSpecies IN (
 -- Bull Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'clark-fork-river'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'clark-fork-river'
+AND f.species IN (
     'Brown Trout',
     'Rainbow Trout',
     'Brook Trout',
@@ -289,12 +289,12 @@ AND f.fishSpecies IN (
 -- Westslope Cutthroat Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'rock-creek'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'rock-creek'
+AND f.species IN (
     'Brook Trout',
     'Brown Trout',
     'Mountain Whitefish',
@@ -312,12 +312,12 @@ AND f.fishSpecies IN (
 -- Westslope Cutthroat Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'belt-creek'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'belt-creek'
+AND f.species IN (
     'Rainbow Trout',
     'Brown Trout',
     'Mountain Whitefish',
@@ -337,12 +337,12 @@ AND f.fishSpecies IN (
 -- Brook Trout
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'flathead-lake'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'flathead-lake'
+AND f.species IN (
     'Lake Trout',
     'Lake Whitefish',
     'Bull Trout',
@@ -361,12 +361,12 @@ AND f.fishSpecies IN (
 -- Kokanee Salmon
 -- ============================================================
 
-INSERT INTO FishWaterBodies (fishId, waterBodyId)
-SELECT f.fishId, w.waterBodyId
-FROM Fishes f
-CROSS JOIN WaterBodies w
-WHERE w.waterBodySlug = 'georgetown-lake'
-AND f.fishSpecies IN (
+INSERT INTO FishWaterBody (fishId, waterBodyId)
+SELECT f.id, w.id
+FROM Fish f
+CROSS JOIN WaterBody w
+WHERE w.slug = 'georgetown-lake'
+AND f.species IN (
     'Rainbow Trout',
     'Brook Trout',
     'Kokanee Salmon'

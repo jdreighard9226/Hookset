@@ -65,6 +65,6 @@ public class HooksetUserDetails implements UserDetails {
      * @return the user identifier
      */
     public Long getUserId() {
-        return user.getUserId();
+        return user.getId();
     }
 }

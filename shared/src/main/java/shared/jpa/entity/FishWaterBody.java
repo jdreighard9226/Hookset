@@ -10,7 +10,7 @@ import jakarta.persistence.*;
  * reports them.</p>
  */
 @Entity
-@Table(name = "WaterBody")
+@Table(name = "FishWaterBody")
 public class FishWaterBody {
 
     /** The unique database identifier for the fish water body record. */
