@@ -1,12 +1,15 @@
 package edu.carroll.cs341.hookset.web.controller;
 
 import edu.carroll.cs341.hookset.service.FlyService;
+import edu.carroll.cs341.hookset.service.input.FlyInput;
+import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
 import edu.carroll.cs341.hookset.web.form.FlyForm;
 import edu.carroll.cs341.hookset.web.mapper.FlyMapper;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -62,15 +65,15 @@ public class FlyController {
      * @return the name of the fly index view to render
      */
     @GetMapping
-    public String index(@RequestParam(defaultValue = "hookset") String filter, Model model) {
+    public String index(@RequestParam(defaultValue = "hookset") String filter, @AuthenticationPrincipal HooksetUserDetails user, Model model) {
         log.info("Loading flies page with filter: {}", filter);
 
         List<Fly> flies;
 
         if (filter.equals("all")) {
-            flies = flyService.getAllFlies();
+            flies = flyService.getAllFlies(user.getId());
         } else if (filter.equals("mine")) {
-            flies = flyService.getAllUserFlies();
+            flies = flyService.getAllUserFlies(user.getId());
         } else {
             flies = flyService.getAllHooksetFlies();
             filter = "hookset";
@@ -92,10 +95,10 @@ public class FlyController {
      * @return the name of the fly details view to render
      */
     @GetMapping("/details/{slug}")
-    public String getDetails(@PathVariable String slug, Model model) {
+    public String getDetails(@PathVariable String slug, @AuthenticationPrincipal HooksetUserDetails user, Model model) {
         log.info("Loading fly details page for slug: {}", slug);
 
-        Fly fly = flyService.getFlyFromSlug(slug);
+        Fly fly = flyService.getFlyFromSlug(slug, user.getId());
         FlyDto flyDto = flyMapper.toDto(fly);
         model.addAttribute("fly", flyDto);
 
@@ -129,18 +132,21 @@ public class FlyController {
      * @return a redirect to the fly list on success, or the add fly view if there are errors
      */
     @PostMapping("/add")
-    public String postAddFly(@Valid @ModelAttribute FlyForm flyForm, BindingResult result, Model model) {
+    public String postAddFly(@Valid @ModelAttribute FlyForm flyForm, BindingResult result, @AuthenticationPrincipal HooksetUserDetails user ,Model model) {
 
         boolean hasCustomErrors = false;
 
-        if (!flyService.isSizeRangeValid(flyForm)) {
+        FlyInput flyInput = flyMapper.toInput(flyForm);
+
+
+        if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
             model.addAttribute("invalidSizeRange", true);
             hasCustomErrors = true;
         }
 
-        if (!flyService.isFlyNameUnique(flyForm)) {
+        if (!flyService.isFlyNameUnique(flyInput.name(), user.getId())) {
             // only display to user if they didn't type a blank name. Blank names will be caught by form
-            if (!flyService.isFlyNameBlank(flyForm.getName())) {
+            if (!flyService.isFlyNameBlank(flyInput.name())) {
                 model.addAttribute("duplicateFlyName", true);
                 hasCustomErrors = true;
             }
@@ -150,7 +156,7 @@ public class FlyController {
             return "flies/add";
         }
 
-        if (!flyService.addFly(flyForm)) {
+        if (!flyService.addFly(flyInput, user.getId())) {
             log.warn("Add fly failed");
             model.addAttribute("addFlyFailed", true);
             return "flies/add";
@@ -160,12 +166,10 @@ public class FlyController {
     }
 
     @GetMapping("/edit/{id}")
-    public String getEditFly(@PathVariable Long id, Model model) {
-        Fly fly = flyService.getFlyById(id);
+    public String getEditFly(@PathVariable Long id, @AuthenticationPrincipal HooksetUserDetails user, Model model) {
+        Fly fly = flyService.getFlyById(id, user.getId());
 
-        FlyDto flyDto = flyMapper.toDto(fly);
-
-        FlyForm flyForm = flyMapper.toForm(flyDto);
+        FlyForm flyForm = flyMapper.toForm(fly);
 
         model.addAttribute("flyForm", flyForm);
 
@@ -176,18 +180,20 @@ public class FlyController {
     public String postEditFly(
             @PathVariable Long id,
             @Valid @ModelAttribute FlyForm flyForm,
-            BindingResult result,
+            BindingResult result, @AuthenticationPrincipal HooksetUserDetails user,
             Model model) {
 
         boolean hasCustomErrors = false;
 
-        if (!flyService.isSizeRangeValid(flyForm)) {
+        FlyInput flyInput = flyMapper.toInput(flyForm);
+
+        if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
             model.addAttribute("invalidSizeRange", true);
             hasCustomErrors = true;
         }
 
-        if (!flyService.isFlyNameUniqueForEdit(id, flyForm)) {
-            if (!flyService.isFlyNameBlank(flyForm.getName())) {
+        if (!flyService.isFlyNameUniqueForEdit(id, flyInput.name(), user.getId())) {
+            if (!flyService.isFlyNameBlank(flyInput.name())) {
                 model.addAttribute("duplicateFlyName", true);
                 hasCustomErrors = true;
             }
@@ -198,7 +204,7 @@ public class FlyController {
             return "flies/edit";
         }
 
-        flyService.updateFly(id, flyForm);
+        flyService.updateFly(id, flyInput, user.getId());
 
         return "redirect:/flies";
     }
@@ -210,10 +216,10 @@ public class FlyController {
      * @return a redirect to the fly list
      */
     @PostMapping("/delete/{id}")
-    public String postDeleteFly(@PathVariable Long id) {
+    public String postDeleteFly(@PathVariable Long id, @AuthenticationPrincipal HooksetUserDetails user) {
         log.info("Delete fly request for fly ID: {}", id);
 
-        flyService.deleteFly(id);
+        flyService.deleteFly(id, user.getId());
 
         return "redirect:/flies";
     }
