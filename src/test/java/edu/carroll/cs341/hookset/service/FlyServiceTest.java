@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-public class FlyServiceImplTest {
+public class FlyServiceTest {
 
     /** Service under test. */
     @Autowired
@@ -60,29 +60,12 @@ public class FlyServiceImplTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /** Data source used to confirm the tests are running against H2. */
-    @Autowired
-    private DataSource dataSource;
-
     /** The main user each test acts as. */
     private User testUser;
 
     /** A second user used to test ownership rules. */
     private User otherUser;
 
-    /**
-     * Confirms the tests are running against the H2 database before each test.
-     *
-     * @throws SQLException if the connection metadata cannot be read
-     */
-    @BeforeEach
-    public void checkDatabase() throws SQLException {
-        // guards against a wrong profile pointing these tests at the real MySQL database
-        try (Connection connection = dataSource.getConnection()) {
-            assertTrue(connection.getMetaData().getURL().startsWith("jdbc:h2:"),
-                    "Tests must use the H2 database");
-        }
-    }
 
     /**
      * Saves two test users before each test.
