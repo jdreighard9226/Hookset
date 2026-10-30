@@ -2,6 +2,7 @@ package edu.carroll.cs341.hookset.service;
 
 import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
 import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
+import edu.carroll.cs341.hookset.web.form.ProfileForm;
 import edu.carroll.cs341.hookset.web.form.SignupForm;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -494,6 +495,130 @@ public class UserServiceImplTest {
         assertNotNull(savedUser, "The new user should be findable by username");
     }
 
+    // ---------- changePassword ----------
+
+    /**
+     * Happy path: the logged-in user's password is changed and the new one verifies against the saved hash.
+     */
+    @Test
+    public void testChangePasswordHappyPath() {
+        String newPw = "newPassword1";
+        ProfileForm profileForm = createProfileForm(newPw, newPw);
+
+        boolean result = userService.changePassword(profileForm);
+
+        // reload from the repository so the check reads what was saved, not the object in memory
+        User updatedUser = userRepository.findByUsername("testuser");
+
+        assertTrue(result, "A valid password change should succeed");
+        assertNotNull(updatedUser, "The user should still exist after a password change");
+
+        // the hash is salted, so matches() is the only way to confirm the new password was saved
+        assertTrue(passwordEncoder.matches(newPw, updatedUser.getHashPassword()),
+                "The saved hash should match the new password");
+        assertFalse(passwordEncoder.matches("test-password", updatedUser.getHashPassword()),
+                "The old password should no longer match");
+    }
+
+    // ---------- isUsernameBlank ----------
+
+    /**
+     * Happy path: a normal username is not blank.
+     */
+    @Test
+    public void testIsUsernameBlankHappyPath() {
+        assertFalse(userService.isUsernameBlank("newuser"),
+                "A normal username should not be blank");
+    }
+
+    // ---------- isUsernameTooLong ----------
+
+    /**
+     * Happy path: a normal length username is not too long.
+     */
+    @Test
+    public void testIsUsernameTooLongHappyPath() {
+        assertFalse(userService.isUsernameTooLong("newuser"),
+                "A normal length username should not be too long");
+    }
+
+    // ---------- isUsernameSpaceFree ----------
+
+    /**
+     * Happy path: a username with no spaces is space free.
+     */
+    @Test
+    public void testIsUsernameSpaceFreeHappyPath() {
+        assertTrue(userService.isUsernameSpaceFree("newuser"),
+                "A username with no spaces should be space free");
+    }
+
+    // ---------- isUsernameTaken ----------
+
+    /**
+     * Happy path: a username nobody has used is not taken.
+     */
+    @Test
+    public void testIsUsernameTakenHappyPath() {
+        assertFalse(userService.isUsernameTaken("brandnewuser"),
+                "An unused username should not be taken");
+    }
+
+    // ---------- doPasswordsMatch ----------
+
+    /**
+     * Happy path: a password and an identical confirmation match.
+     */
+    @Test
+    public void testDoPasswordsMatchHappyPath() {
+        assertTrue(userService.doPasswordsMatch("testPassword1", "testPassword1"),
+                "Identical passwords should match");
+    }
+
+    // ---------- isPasswordBlank ----------
+
+    /**
+     * Happy path: a normal password is not blank.
+     */
+    @Test
+    public void testIsPasswordBlankHappyPath() {
+        assertFalse(userService.isPasswordBlank("testPassword1"),
+                "A normal password should not be blank");
+    }
+
+    // ---------- isPasswordTooShort ----------
+
+    /**
+     * Happy path: a normal length password is not too short.
+     */
+    @Test
+    public void testIsPasswordTooShortHappyPath() {
+        assertFalse(userService.isPasswordTooShort("testPassword1"),
+                "A normal length password should not be too short");
+    }
+
+    // ---------- isPasswordTooLong ----------
+
+    /**
+     * Happy path: a normal length password is not too long.
+     */
+    @Test
+    public void testIsPasswordTooLongHappyPath() {
+        assertFalse(userService.isPasswordTooLong("testPassword1"),
+                "A normal length password should not be too long");
+    }
+
+    // ---------- isPasswordSpaceFree ----------
+
+    /**
+     * Happy path: a password with no spaces is space free.
+     */
+    @Test
+    public void testIsPasswordSpaceFreeHappyPath() {
+        assertTrue(userService.isPasswordSpaceFree("testPassword1"),
+                "A password with no spaces should be space free");
+    }
+
     // ---------- Helpers ----------
 
     /**
@@ -547,5 +672,21 @@ public class UserServiceImplTest {
         signupForm.setConfirmPassword(confirmPw);
 
         return signupForm;
+    }
+
+    /**
+     * Builds a profile form with the given new password and confirmation.
+     *
+     * @param pw the new password to put on the form
+     * @param confirmPw the new password confirmation to put on the form
+     * @return a new profile form
+     */
+    private ProfileForm createProfileForm(String pw, String confirmPw) {
+        ProfileForm profileForm = new ProfileForm();
+
+        profileForm.setPassword(pw);
+        profileForm.setConfirmPassword(confirmPw);
+
+        return profileForm;
     }
 }
