@@ -88,6 +88,8 @@ public interface UserService {
      */
     boolean isPasswordTooShort(String password);
 
+    boolean isPasswordTooLong(String passsword);
+
     /**
      * Checks that a password has no spaces.
      *

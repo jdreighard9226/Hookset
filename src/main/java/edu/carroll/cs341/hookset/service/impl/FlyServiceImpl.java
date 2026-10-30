@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import shared.jpa.entity.Fly;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -75,6 +76,11 @@ public class FlyServiceImpl implements FlyService {
      */
     @Override
     public List<Fly> getAllUserFlies(Long userId) {
+        // a null user ID would turn this into an IS NULL query and return the default flies
+        if (userId == null) {
+            log.warn("Could not load user flies. User ID is null");
+            return new ArrayList<>();
+        }
         log.info("Getting custom flies for user ID: {}", userId);
 
         List<Fly> flies = flyRepository.findByUserId(userId);
@@ -203,6 +209,11 @@ public class FlyServiceImpl implements FlyService {
      */
     @Override
     public boolean updateFly(Long flyId, FlyInput flyInput, Long userId) {
+        if (flyId == null) {
+            log.warn("Fly update failed. Fly ID is null");
+            return false;
+        }
+
         log.info("Updating fly with ID: {} for user ID: {}", flyId, userId);
 
         Fly fly = flyRepository.findById(flyId).orElse(null);
@@ -351,6 +362,9 @@ public class FlyServiceImpl implements FlyService {
      */
     @Override
     public boolean isFlyNameUniqueForEdit(Long flyId, String name, Long userId) {
+        if (flyId == null) {
+            return false;
+        }
         Fly flyBeingEdited = flyRepository.findById(flyId).orElse(null);
 
         if (flyBeingEdited == null) {
@@ -410,6 +424,10 @@ public class FlyServiceImpl implements FlyService {
      * @return {@code true} if every check passes, otherwise {@code false}
      */
     private boolean isFlyInputValid(FlyInput flyInput) {
+        if (flyInput == null) {
+            log.warn("Fly validation failed. Fly input is null");
+            return false;
+        }
         if (flyInput.name() == null || flyInput.name().isBlank()) {
             log.warn("Fly validation failed. Fly name is blank");
             return false;

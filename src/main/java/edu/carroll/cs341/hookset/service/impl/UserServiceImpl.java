@@ -67,6 +67,10 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
+        if (isPasswordTooLong(profileForm.getPassword())) {
+            return false;
+        }
+
         if (!isPasswordSpaceFree(profileForm.getPassword())) {
             return false;
         }
@@ -130,6 +134,10 @@ public class UserServiceImpl implements UserService {
         }
 
         if (isPasswordTooShort(signupForm.getPassword())) {
+            return false;
+        }
+
+        if (isPasswordTooLong(signupForm.getPassword())) {
             return false;
         }
 
@@ -297,6 +305,11 @@ public class UserServiceImpl implements UserService {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean isPasswordTooLong(String passsword) {
+        return passsword.length() > 18;
     }
 
     /**

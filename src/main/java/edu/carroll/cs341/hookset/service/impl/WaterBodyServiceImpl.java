@@ -100,6 +100,9 @@ public class WaterBodyServiceImpl implements WaterBodyService {
      */
     @Override
     public List<Fish> getAllFishForWaterBody(Long waterBodyId) {
+        if (waterBodyId == null) {
+            return new ArrayList<>();
+        }
         log.info("Loading fish for water body ID: {}", waterBodyId);
 
         WaterBody waterBody = waterBodyRepository.findById(waterBodyId).orElse(null);
