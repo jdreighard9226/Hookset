@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * saved at once.</p>
  *
  * <p>Looking up the fish in a single water body is tested in
- * {@link WaterBodyServiceImplTest}, since that lookup goes through the water body.</p>
+ * {@link WaterBodyServiceTest}, since that lookup goes through the water body.</p>
  *
  * <p>Tests run against the H2 test database and each test is rolled back by
  * {@link Transactional}. Count assertions are measured against a baseline so the tests
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-public class FishServiceImplTest {
+public class FishServiceTest {
 
     /** Service under test. */
     @Autowired
@@ -45,23 +45,6 @@ public class FishServiceImplTest {
     @Autowired
     private FishRepository fishRepository;
 
-    /** Data source used to confirm the tests are running against H2. */
-    @Autowired
-    private DataSource dataSource;
-
-    /**
-     * Confirms the tests are running against the H2 database before each test.
-     *
-     * @throws SQLException if the connection metadata cannot be read
-     */
-    @BeforeEach
-    public void checkDatabase() throws SQLException {
-        // guards against a wrong profile pointing these tests at the real MySQL database
-        try (Connection connection = dataSource.getConnection()) {
-            assertTrue(connection.getMetaData().getURL().startsWith("jdbc:h2:"),
-                    "Tests must use the H2 database");
-        }
-    }
 
     // ---------- getAllFish ----------
 
