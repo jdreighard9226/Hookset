@@ -1,25 +1,17 @@
 package edu.carroll.cs341.hookset.service;
 
 import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
-import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
-import edu.carroll.cs341.hookset.web.form.ProfileForm;
-import edu.carroll.cs341.hookset.web.form.SignupForm;
-import org.junit.jupiter.api.AfterEach;
+import edu.carroll.cs341.hookset.service.input.PasswordChangeInput;
+import edu.carroll.cs341.hookset.service.input.SignupInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import shared.jpa.entity.User;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * Crazy paths cover unusual input such as null values, names made only of spaces, and
  * values sitting exactly on a length limit.</p>
  *
- * <p>Two users are saved before each test, and the first one is logged in by loading their
- * real {@link HooksetUserDetails} through the application's {@link UserDetailsService}.</p>
+ * <p>The service never reads the login itself, so tests pass the user's ID directly.
+ * Two users are saved before each test so their IDs exist.</p>
  *
  * <p>Tests run against the H2 test database and each test is rolled back by
  * {@link Transactional}. Count assertions are measured against a baseline so the tests
@@ -53,37 +45,23 @@ public class UserServiceTest {
     @Autowired
     private UserRepository userRepository;
 
-    /** User details service used to log in test users the same way the app does. */
-    @Autowired
-    private UserDetailsService userDetailsService;
-
     /** Password encoder used to hash test user passwords the same way signup does. */
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /** The user logged in for each test. */
+    /** The main user each test acts as. */
     private User testUser;
 
     /** A second user used to test ownership rules. */
     private User otherUser;
 
     /**
-     * Saves two test users and logs in the first one before each test.
+     * Saves two test users before each test.
      */
     @BeforeEach
     public void setUpUsers() {
         testUser = userRepository.save(createTestUser("testuser"));
         otherUser = userRepository.save(createTestUser("otheruser"));
-
-        loginAs(testUser);
-    }
-
-    /**
-     * Clears the security context after each test so a login does not leak into the next test.
-     */
-    @AfterEach
-    public void clearLogin() {
-        SecurityContextHolder.clearContext();
     }
 
     // ---------- addUser ----------
@@ -95,11 +73,11 @@ public class UserServiceTest {
     public void testAddUserHappyPath() {
         String username = "testusername";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -108,7 +86,7 @@ public class UserServiceTest {
         assertTrue(result, "A valid signup should be saved");
         assertEquals(before + 1, after, "User count should grow by one");
         assertNotNull(savedUser, "The new user should be findable by username");
-        assertEquals(username, savedUser.getUsername(), "Saved username should match the form");
+        assertEquals(username, savedUser.getUsername(), "Saved username should match the input");
     }
 
     /**
@@ -118,11 +96,11 @@ public class UserServiceTest {
     public void testAddUserHappyPathMixedCaseSavedLowercase() {
         String username = "NewUser";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -143,11 +121,11 @@ public class UserServiceTest {
     public void testAddUserCrappyPathUsernameBlank() {
         String username = "";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -164,11 +142,11 @@ public class UserServiceTest {
         // one over the VARCHAR(20) username column
         String username = "abcdefghijklmnopqrstu";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -186,11 +164,11 @@ public class UserServiceTest {
     public void testAddUserCrappyPathUsernameHasSpaces() {
         String username = "test user";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -209,11 +187,11 @@ public class UserServiceTest {
         // "testuser" is saved in setUpUsers before every test
         String username = "testuser";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -229,11 +207,11 @@ public class UserServiceTest {
     public void testAddUserCrappyPathUsernameTakenDifferentCase() {
         String username = "TESTUSER";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -249,11 +227,11 @@ public class UserServiceTest {
     public void testAddUserCrappyPathPasswordsDontMatch() {
         String username = "newuser";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, "differentPassword1");
+        SignupInput signupInput = createSignupInput(username, pw, "differentPassword1");
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -271,11 +249,11 @@ public class UserServiceTest {
     public void testAddUserCrappyPathPasswordBlank() {
         String username = "newuser";
         String pw = "";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -294,11 +272,11 @@ public class UserServiceTest {
         // one under the 8 character minimum
         String username = "newuser";
         String pw = "passwor";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -310,24 +288,24 @@ public class UserServiceTest {
     }
 
     /**
-     * Crappy path: a password over BCrypt's 72 byte limit is rejected instead of crashing.
+     * Crappy path: a password over the 18 character limit is rejected instead of crashing BCrypt.
      */
     @Test
     public void testAddUserCrappyPathPasswordTooLong() {
-        // BCrypt throws past 72 bytes, so this fails with an exception until isPasswordTooLong exists
+        // well over the 18 character cap, and over BCrypt's 72 byte limit too
         String username = "newuser";
         String pw = "a".repeat(73);
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
         User savedUser = userRepository.findByUsername(username);
 
-        assertFalse(result, "A password over 72 bytes should be rejected");
+        assertFalse(result, "A password over 18 characters should be rejected");
         assertEquals(before, after, "No user should be saved");
         assertNull(savedUser, "The rejected username should not exist");
     }
@@ -339,11 +317,11 @@ public class UserServiceTest {
     public void testAddUserCrappyPathPasswordHasSpaces() {
         String username = "newuser";
         String pw = "test Password1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -355,10 +333,10 @@ public class UserServiceTest {
     }
 
     /**
-     * Crazy path: a null form is rejected and nothing is saved.
+     * Crazy path: a null input is rejected and nothing is saved.
      */
     @Test
-    public void testAddUserCrazyPathNullSignupForm() {
+    public void testAddUserCrazyPathNullSignupInput() {
         int before = userRepository.findAll().size();
 
         boolean result = userService.addUser(null);
@@ -366,7 +344,7 @@ public class UserServiceTest {
         List<User> userList = userRepository.findAll();
         int after = userList.size();
 
-        assertFalse(result, "A null signup form should be rejected");
+        assertFalse(result, "A null signup input should be rejected");
         assertEquals(before, after, "No user should be saved");
     }
 
@@ -376,11 +354,11 @@ public class UserServiceTest {
     @Test
     public void testAddUserCrazyPathNullUsername() {
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(null, pw, pw);
+        SignupInput signupInput = createSignupInput(null, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -395,11 +373,11 @@ public class UserServiceTest {
     @Test
     public void testAddUserCrazyPathNullPassword() {
         String username = "newuser";
-        SignupForm signupForm = createSignupForm(username, null, null);
+        SignupInput signupInput = createSignupInput(username, null, null);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -418,11 +396,11 @@ public class UserServiceTest {
         // blank and contains spaces at once, either check alone should reject it
         String username = "   ";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -439,11 +417,11 @@ public class UserServiceTest {
         // boundary case, catches a > that should have been >= in isUsernameTooLong
         String username = "abcdefghijklmnopqrst";
         String pw = "testPassword1";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -462,11 +440,11 @@ public class UserServiceTest {
         // boundary case, catches a < that should have been <= in isPasswordTooShort
         String username = "newuser";
         String pw = "password";
-        SignupForm signupForm = createSignupForm(username, pw, pw);
+        SignupInput signupInput = createSignupInput(username, pw, pw);
 
         int before = userRepository.findAll().size();
 
-        boolean result = userService.addUser(signupForm);
+        boolean result = userService.addUser(signupInput);
 
         List<User> userList = userRepository.findAll();
         int after = userList.size();
@@ -480,14 +458,14 @@ public class UserServiceTest {
     // ---------- changePassword ----------
 
     /**
-     * Happy path: the logged-in user's password is changed and the new one verifies against the saved hash.
+     * Happy path: the user's password is changed and the new one verifies against the saved hash.
      */
     @Test
     public void testChangePasswordHappyPath() {
         String newPw = "newPassword1";
-        ProfileForm profileForm = createProfileForm(newPw, newPw);
+        PasswordChangeInput passwordChangeInput = createPasswordChangeInput(newPw, newPw);
 
-        boolean result = userService.changePassword(profileForm);
+        boolean result = userService.changePassword(passwordChangeInput, testUser.getId());
 
         // reload from the repository so the check reads what was saved, not the object in memory
         User updatedUser = userRepository.findByUsername("testuser");
@@ -604,23 +582,6 @@ public class UserServiceTest {
     // ---------- Helpers ----------
 
     /**
-     * Logs in a user by loading their real {@link HooksetUserDetails} and placing it in the security context.
-     *
-     * @param user the saved user to log in
-     */
-    private void loginAs(User user) {
-        // loads through the real UserDetailsService so the test login matches what the app does
-        HooksetUserDetails userDetails =
-                (HooksetUserDetails) userDetailsService.loadUserByUsername(user.getUsername());
-
-        // skips the password check, since these tests are about what a logged-in user can do
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
-
-    /**
      * Builds a user with fixed test values and the given username.
      *
      * <p>The password is hashed with the app's password encoder, the same way signup stores it.</p>
@@ -639,36 +600,25 @@ public class UserServiceTest {
     }
 
     /**
-     * Builds a signup form with the given values.
+     * Builds signup input with the given values.
      *
-     * @param username the username to put on the form
-     * @param pw the password to put on the form
-     * @param confirmPw the password confirmation to put on the form
-     * @return a new signup form
+     * @param username the username for the new account
+     * @param pw the password for the new account
+     * @param confirmPw the password confirmation
+     * @return new signup input
      */
-    private SignupForm createSignupForm(String username, String pw, String confirmPw) {
-        SignupForm signupForm = new SignupForm();
-
-        signupForm.setUsername(username);
-        signupForm.setPassword(pw);
-        signupForm.setConfirmPassword(confirmPw);
-
-        return signupForm;
+    private SignupInput createSignupInput(String username, String pw, String confirmPw) {
+        return new SignupInput(username, pw, confirmPw);
     }
 
     /**
-     * Builds a profile form with the given new password and confirmation.
+     * Builds password change input with the given new password and confirmation.
      *
-     * @param pw the new password to put on the form
-     * @param confirmPw the new password confirmation to put on the form
-     * @return a new profile form
+     * @param pw the new password
+     * @param confirmPw the new password confirmation
+     * @return new password change input
      */
-    private ProfileForm createProfileForm(String pw, String confirmPw) {
-        ProfileForm profileForm = new ProfileForm();
-
-        profileForm.setPassword(pw);
-        profileForm.setConfirmPassword(confirmPw);
-
-        return profileForm;
+    private PasswordChangeInput createPasswordChangeInput(String pw, String confirmPw) {
+        return new PasswordChangeInput(pw, confirmPw);
     }
 }
