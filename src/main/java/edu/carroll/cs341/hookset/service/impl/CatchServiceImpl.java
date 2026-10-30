@@ -3,12 +3,8 @@ package edu.carroll.cs341.hookset.service.impl;
 import edu.carroll.cs341.hookset.jpa.repo.*;
 import edu.carroll.cs341.hookset.service.CatchService;
 import edu.carroll.cs341.hookset.service.input.CatchInput;
-import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
-import edu.carroll.cs341.hookset.web.form.CatchForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import shared.jpa.entity.*;
 
@@ -170,6 +166,7 @@ public class CatchServiceImpl implements CatchService {
 
     @Override
     public boolean updateCatch(Long catchId, CatchInput catchInput, Long userId) {
+
         // ownership first, so a bad form can't tell someone whether another user's catch exists
         if (!isCatchOwner(catchId, userId)) {
             return false;
@@ -400,6 +397,9 @@ public class CatchServiceImpl implements CatchService {
     }
 
     private boolean isCatchInputValid(CatchInput catchInput, Long userId) {
+        if (catchInput == null || userId == null) {
+            return false;
+        }
         if (!isFlyValid(catchInput.flyId(), userId)) {
             return false;
         }
@@ -416,7 +416,7 @@ public class CatchServiceImpl implements CatchService {
             return false;
         }
 
-        if (!isFishLengthValid(catchInput.fishLengh())) {
+        if (!isFishLengthValid(catchInput.fishLength())) {
             return false;
         }
 
@@ -435,7 +435,7 @@ public class CatchServiceImpl implements CatchService {
         catchRecord.setFly(flyRepository.findById(catchInput.flyId()).orElse(null));
         catchRecord.setFish(fishRepository.findById(catchInput.fishId()).orElse(null));
         catchRecord.setWaterBody(waterBodyRepository.findById(catchInput.waterBodyId()).orElse(null));
-        catchRecord.setFishLength(catchInput.fishLengh());
+        catchRecord.setFishLength(catchInput.fishLength());
         catchRecord.setDateCaught(catchInput.dateCaught());
         catchRecord.setNotes(catchInput.notes());
     }

@@ -6,8 +6,14 @@ import edu.carroll.cs341.hookset.service.WaterBodyService;
 import edu.carroll.cs341.hookset.service.input.CatchInput;
 import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import edu.carroll.cs341.hookset.web.dto.CatchDto;
+import edu.carroll.cs341.hookset.web.dto.FishDto;
+import edu.carroll.cs341.hookset.web.dto.FlyDto;
+import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
 import edu.carroll.cs341.hookset.web.form.CatchForm;
 import edu.carroll.cs341.hookset.web.mapper.CatchMapper;
+import edu.carroll.cs341.hookset.web.mapper.FishMapper;
+import edu.carroll.cs341.hookset.web.mapper.FlyMapper;
+import edu.carroll.cs341.hookset.web.mapper.WaterBodyMapper;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +29,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import shared.jpa.entity.Catch;
 import shared.jpa.entity.Fish;
+import shared.jpa.entity.Fly;
+import shared.jpa.entity.WaterBody;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,6 +68,12 @@ public class CatchController {
 
     private final CatchMapper catchMapper;
 
+    private final FishMapper fishMapper;
+
+    private final WaterBodyMapper waterBodyMapper;
+
+    private final FlyMapper flyMapper;
+
     /**
      * Creates the catch controller with the services it depends on.
      *
@@ -69,11 +83,16 @@ public class CatchController {
      */
     public CatchController(CatchService catchService,
                            FlyService flyService,
-                           WaterBodyService waterBodyService, CatchMapper catchMapper) {
+                           WaterBodyService waterBodyService, CatchMapper catchMapper,
+                           FishMapper fishMapper, WaterBodyMapper waterBodyMapper,
+                           FlyMapper flyMapper) {
         this.catchService = catchService;
         this.flyService = flyService;
         this.waterBodyService = waterBodyService;
         this.catchMapper = catchMapper;
+        this.fishMapper = fishMapper;
+        this.waterBodyMapper = waterBodyMapper;
+        this.flyMapper = flyMapper;
     }
 
     /**
@@ -126,12 +145,14 @@ public class CatchController {
 
         Catch catchRecord = catchService.getCatchById(catchId);
 
-        CatchDto catchDto = catchMapper.toDto(catchRecord);
-
-        if (catchDto == null) {
+        if (catchRecord == null) {
             log.warn("Catch details not found for catch ID: {}", catchId);
             return "redirect:/catches";
         }
+
+        CatchDto catchDto = catchMapper.toDto(catchRecord);
+
+
 
         model.addAttribute("catchRecord", catchDto);
         model.addAttribute("isOwner", catchService.isCatchOwner(catchId, user.getId()));
@@ -255,12 +276,13 @@ public class CatchController {
 
         log.info("Edit catch form submitted for catch ID: {}", catchId);
 
-        CatchInput catchInput = catchMapper.toInput(catchForm);
         // checked before validation so someone can't probe other users' catches through error messages
         if (!catchService.isCatchOwner(catchId, user.getId())) {
             log.warn("Catch ID {} not found or not owned by the current user", catchId);
             return "redirect:/catches/mine";
         }
+        CatchInput catchInput = catchMapper.toInput(catchForm);
+
 
         boolean hasCustomErrors = addCustomErrors(catchInput, model, user.getId());
 
@@ -302,7 +324,12 @@ public class CatchController {
             fish = waterBodyService.getAllFishForWaterBody(waterBodyId);
         }
 
-        model.addAttribute("fish", fish);
+        List<FishDto> fishDtos = new ArrayList<>();
+        for (Fish temp : fish) {
+            fishDtos.add(fishMapper.toDto(temp));
+        }
+
+        model.addAttribute("fish", fishDtos);
 
         // only the fragment is rendered, htmx drops it straight into the fish dropdown
         return "catches/fish-options :: options";
@@ -353,8 +380,19 @@ public class CatchController {
      * @param catchForm the form whose water body decides which fish to show
      */
     private void addFormOptions(Model model, CatchForm catchForm, Long userId) {
-        model.addAttribute("flies", flyService.getAllFlies(userId));
-        model.addAttribute("waterBodies", waterBodyService.getAllWaterBodies());
+        List<Fly> flies = flyService.getAllFlies(userId);
+        List<FlyDto> flyDtos = new ArrayList<>();
+
+        for (Fly flyEntity : flies) {
+            flyDtos.add(flyMapper.toDto(flyEntity));
+        }
+
+        List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
+        List<WaterBodyDto> waterBodyDtos = new ArrayList<>();
+
+        for (WaterBody waterBodyEntity : waterBodies) {
+            waterBodyDtos.add(waterBodyMapper.toDto(waterBodyEntity));
+        }
 
         List<Fish> fish = new ArrayList<>();
 
@@ -362,7 +400,15 @@ public class CatchController {
             fish = waterBodyService.getAllFishForWaterBody(catchForm.getWaterBodyId());
         }
 
-        model.addAttribute("fish", fish);
+        List<FishDto> fishDtos = new ArrayList<>();
+
+        for (Fish fishEntity : fish) {
+            fishDtos.add(fishMapper.toDto(fishEntity));
+        }
+
+        model.addAttribute("flies", flyDtos);
+        model.addAttribute("waterBodies", waterBodyDtos);
+        model.addAttribute("fish", fishDtos);
 
         // seconds are dropped because the picker only works in minutes
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
