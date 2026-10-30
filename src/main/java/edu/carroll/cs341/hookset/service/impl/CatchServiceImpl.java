@@ -16,10 +16,12 @@ import java.util.List;
 /**
  * Service that handles loading, adding, and editing catches.
  *
- * <p>Every catch belongs to the logged-in user. Before a catch is saved, the
- * fly, fish, and water body are checked to make sure they exist, the fly is
- * checked to make sure the user is allowed to use it, and the fish is checked
- * to make sure it actually lives in the chosen water body.</p>
+ * <p>Every catch belongs to the user who logged it. The user is always passed
+ * in by the caller, so this service doesn't depend on how they logged in.
+ * Before a catch is saved, the fly, fish, and water body are checked to make
+ * sure they exist, the fly is checked to make sure the user is allowed to use
+ * it, and the fish is checked to make sure it actually lives in the chosen
+ * water body.</p>
  *
  * <p>Catches are returned as entities. The fly, fish, and water body are
  * mapped on the catch itself, so callers can read them straight off it.</p>
@@ -87,15 +89,16 @@ public class CatchServiceImpl implements CatchService {
     }
 
     /**
-     * Loads every catch that belongs to the logged-in user.
+     * Loads every catch that belongs to a user.
      *
-     * @return the list of the user's catches, or an empty list if no user is logged in
+     * @param userId the ID of the user whose catches to load
+     * @return the list of the user's catches, or an empty list if the user ID is null
      */
     @Override
     public List<Catch> getAllUserCatches(Long userId) {
-        // nobody logged in means there are no catches to show
+        // a null user ID would turn this into an IS NULL query, so there's nothing to show
         if (userId == null) {
-            log.warn("Could not load user catches. No user logged in");
+            log.warn("Could not load user catches. User ID is null");
             return new ArrayList<>();
         }
 
@@ -132,19 +135,21 @@ public class CatchServiceImpl implements CatchService {
     }
 
     /**
-     * Saves a new catch for the logged-in user.
+     * Saves a new catch for a user.
      *
-     * <p>The catch is only saved if a user is logged in and every check on
-     * the form passes.</p>
+     * <p>The catch is only saved if a user ID is given and every check on
+     * the input passes. The owner always comes from the user ID parameter,
+     * never from the input.</p>
      *
+     * @param catchInput the details of the new catch
+     * @param userId the ID of the user logging the catch
      * @return {@code true} if the catch was saved, otherwise {@code false}
      */
     @Override
     public boolean addCatch(CatchInput catchInput, Long userId) {
-
         // a catch has to belong to someone
         if (userId == null) {
-            log.warn("Catch not saved. No user logged in");
+            log.warn("Catch not saved. User ID is null");
             return false;
         }
 
@@ -154,7 +159,7 @@ public class CatchServiceImpl implements CatchService {
 
         Catch catchRecord = new Catch();
 
-        // user ID comes from the login, not the form, so nobody can save a catch as someone else
+        // owner comes from the caller, not the input, so nobody can save a catch as someone else
         catchRecord.setUserId(userId);
         copyInputToCatch(catchInput, catchRecord);
 
@@ -164,10 +169,20 @@ public class CatchServiceImpl implements CatchService {
         return true;
     }
 
+    /**
+     * Updates a catch owned by a user.
+     *
+     * <p>Ownership is checked before the input, so bad input can't reveal
+     * whether another user's catch exists. The owner is never changed.</p>
+     *
+     * @param catchId the ID of the catch to update
+     * @param catchInput the new catch details
+     * @param userId the ID of the user editing the catch
+     * @return {@code true} if the catch was updated, otherwise {@code false}
+     */
     @Override
     public boolean updateCatch(Long catchId, CatchInput catchInput, Long userId) {
-
-        // ownership first, so a bad form can't tell someone whether another user's catch exists
+        // ownership first, so bad input can't tell someone whether another user's catch exists
         if (!isCatchOwner(catchId, userId)) {
             return false;
         }
@@ -188,10 +203,11 @@ public class CatchServiceImpl implements CatchService {
     }
 
     /**
-     * Checks that a catch exists and belongs to the logged-in user.
+     * Checks that a catch exists and belongs to a user.
      *
      * @param catchId the ID of the catch to check
-     * @return {@code true} if the catch belongs to the logged-in user, otherwise {@code false}
+     * @param userId the ID of the user to check ownership against
+     * @return {@code true} if the catch exists and belongs to the user, otherwise {@code false}
      */
     @Override
     public boolean isCatchOwner(Long catchId, Long userId) {
@@ -208,7 +224,7 @@ public class CatchServiceImpl implements CatchService {
         }
 
         if (userId == null || !userId.equals(catchRecord.getUserId())) {
-            log.warn("Catch ID {} does not belong to the current user", catchId);
+            log.warn("Catch ID {} does not belong to user ID: {}", catchId, userId);
             return false;
         }
 
@@ -216,12 +232,13 @@ public class CatchServiceImpl implements CatchService {
     }
 
     /**
-     * Checks that a fly exists and that the logged-in user is allowed to use it.
+     * Checks that a fly exists and that a user is allowed to use it.
      *
      * <p>Default flies have no owner and can be used by anyone. Custom flies
      * can only be used by the user who made them.</p>
      *
      * @param flyId the ID of the fly to check
+     * @param userId the ID of the user who wants to use the fly
      * @return {@code true} if the fly exists and the user can use it, otherwise {@code false}
      */
     @Override
@@ -396,10 +413,19 @@ public class CatchServiceImpl implements CatchService {
         return true;
     }
 
+    /**
+     * Runs every check a catch must pass before it is saved, no matter who calls the service.
+     *
+     * @param catchInput the catch details to check
+     * @param userId the ID of the user saving the catch, used to check fly ownership
+     * @return {@code true} if every check passes, otherwise {@code false}
+     */
     private boolean isCatchInputValid(CatchInput catchInput, Long userId) {
         if (catchInput == null || userId == null) {
+            log.warn("Catch validation failed. Catch input or user ID is null");
             return false;
         }
+
         if (!isFlyValid(catchInput.flyId(), userId)) {
             return false;
         }
@@ -431,6 +457,16 @@ public class CatchServiceImpl implements CatchService {
         return true;
     }
 
+    /**
+     * Copies the editable fields from the input onto a catch.
+     *
+     * <p>The user ID is not copied, so an edit can't move a catch to another user.
+     * This only runs after {@link #isCatchInputValid(CatchInput, Long)} passes,
+     * so the fly, fish, and water body are known to exist.</p>
+     *
+     * @param catchInput the catch details to copy from
+     * @param catchRecord the catch to copy onto
+     */
     private void copyInputToCatch(CatchInput catchInput, Catch catchRecord) {
         catchRecord.setFly(flyRepository.findById(catchInput.flyId()).orElse(null));
         catchRecord.setFish(fishRepository.findById(catchInput.fishId()).orElse(null));

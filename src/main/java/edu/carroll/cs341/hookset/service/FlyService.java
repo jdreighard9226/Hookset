@@ -22,6 +22,8 @@ public interface FlyService {
     /**
      * Returns all default flies along with a user's custom flies.
      *
+     * <p>A {@code null} user ID returns only the default flies.</p>
+     *
      * @param userId the ID of the user whose custom flies to include
      * @return the combined list of flies, or an empty list if none exist
      */
@@ -38,7 +40,7 @@ public interface FlyService {
      * Returns all custom flies created by a user.
      *
      * @param userId the ID of the user whose flies to return
-     * @return the list of the user's custom flies, or an empty list if none exist
+     * @return the list of the user's custom flies, or an empty list if the user ID is null or has none
      */
     List<Fly> getAllUserFlies(Long userId);
 
@@ -108,6 +110,7 @@ public interface FlyService {
      * Checks that a new fly's name won't collide with a default fly or one of
      * the user's custom flies.
      *
+     * @param name the name of the new fly
      * @param userId the ID of the user adding the fly
      * @return {@code true} if the name is unique, otherwise {@code false}
      */
@@ -119,6 +122,7 @@ public interface FlyService {
      * <p>The fly keeping its own name is allowed.</p>
      *
      * @param flyId the ID of the fly being edited
+     * @param name the new name for the fly
      * @param userId the ID of the user editing the fly
      * @return {@code true} if the name is unchanged or unique, otherwise {@code false}
      */

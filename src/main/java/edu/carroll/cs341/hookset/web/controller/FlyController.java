@@ -23,9 +23,14 @@ import java.util.List;
  * Handles requests for the Hookset fly pages.
  *
  * <p>This controller maps requests under {@code /flies} and returns views for
- * browsing flies, viewing a single fly, adding a custom fly, and deleting a
+ * browsing flies, viewing a single fly, and adding, editing, or deleting a
  * custom fly. The fly list can be filtered to default flies, the user's custom
  * flies, or both.</p>
+ *
+ * <p>The logged-in user is passed into each handler by Spring Security and
+ * handed to the fly service as an ID, so the service never reads the login
+ * itself. Form input is mapped to {@link FlyInput} before it reaches the
+ * service.</p>
  *
  * <p>Sources Used:</p>
  * <ul>
@@ -35,18 +40,20 @@ import java.util.List;
 @Controller
 @RequestMapping("/flies")
 public class FlyController {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(FlyController.class);
 
-    /** The service used to look up, create, and delete flies. */
+    /** The service used to look up, create, edit, and delete flies. */
     private final FlyService flyService;
 
+    /** The mapper used to convert flies to DTOs, forms, and service input. */
     private final FlyMapper flyMapper;
 
     /**
-     * Creates the fly controller with the service it depends on.
+     * Creates the fly controller with the service and mapper it depends on.
      *
-     * @param flyService the service used to look up, create, and delete flies
+     * @param flyService the service used to look up, create, edit, and delete flies
+     * @param flyMapper the mapper used to convert flies to DTOs, forms, and service input
      */
     public FlyController(FlyService flyService, FlyMapper flyMapper) {
         this.flyService = flyService;
@@ -61,11 +68,14 @@ public class FlyController {
      * falls back to "hookset".</p>
      *
      * @param filter which set of flies to show, defaulting to "hookset"
+     * @param user the logged-in user
      * @param model the model used to pass the flies and active filter to the view
      * @return the name of the fly index view to render
      */
     @GetMapping
-    public String index(@RequestParam(defaultValue = "hookset") String filter, @AuthenticationPrincipal HooksetUserDetails user, Model model) {
+    public String index(@RequestParam(defaultValue = "hookset") String filter,
+                        @AuthenticationPrincipal HooksetUserDetails user,
+                        Model model) {
         log.info("Loading flies page with filter: {}", filter);
 
         List<Fly> flies;
@@ -91,11 +101,14 @@ public class FlyController {
      * Handles GET requests for a single fly's details page.
      *
      * @param slug the URL slug of the fly to show
+     * @param user the logged-in user, whose custom flies can also match the slug
      * @param model the model used to pass the fly to the view
      * @return the name of the fly details view to render
      */
     @GetMapping("/details/{slug}")
-    public String getDetails(@PathVariable String slug, @AuthenticationPrincipal HooksetUserDetails user, Model model) {
+    public String getDetails(@PathVariable String slug,
+                             @AuthenticationPrincipal HooksetUserDetails user,
+                             Model model) {
         log.info("Loading fly details page for slug: {}", slug);
 
         Fly fly = flyService.getFlyFromSlug(slug, user.getId());
@@ -129,15 +142,20 @@ public class FlyController {
      *
      * @param flyForm the submitted fly form
      * @param result the binding result holding any validation errors
+     * @param user the logged-in user adding the fly
+     * @param model the model used to pass error flags to the view
      * @return a redirect to the fly list on success, or the add fly view if there are errors
      */
     @PostMapping("/add")
-    public String postAddFly(@Valid @ModelAttribute FlyForm flyForm, BindingResult result, @AuthenticationPrincipal HooksetUserDetails user ,Model model) {
+    public String postAddFly(@Valid @ModelAttribute FlyForm flyForm,
+                             BindingResult result,
+                             @AuthenticationPrincipal HooksetUserDetails user,
+                             Model model) {
+        log.info("Add fly form submitted");
 
         boolean hasCustomErrors = false;
 
         FlyInput flyInput = flyMapper.toInput(flyForm);
-
 
         if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
             model.addAttribute("invalidSizeRange", true);
@@ -153,6 +171,7 @@ public class FlyController {
         }
 
         if (result.hasErrors() || hasCustomErrors) {
+            log.warn("Add fly form failed validation");
             return "flies/add";
         }
 
@@ -165,8 +184,20 @@ public class FlyController {
         return "redirect:/flies";
     }
 
+    /**
+     * Handles GET requests for the edit fly page.
+     *
+     * @param id the ID of the fly to edit
+     * @param user the logged-in user
+     * @param model the model used to pass the filled fly form to the view
+     * @return the name of the edit fly view to render
+     */
     @GetMapping("/edit/{id}")
-    public String getEditFly(@PathVariable Long id, @AuthenticationPrincipal HooksetUserDetails user, Model model) {
+    public String getEditFly(@PathVariable Long id,
+                             @AuthenticationPrincipal HooksetUserDetails user,
+                             Model model) {
+        log.info("Loading edit fly page for fly ID: {}", id);
+
         Fly fly = flyService.getFlyById(id, user.getId());
 
         FlyForm flyForm = flyMapper.toForm(fly);
@@ -176,12 +207,27 @@ public class FlyController {
         return "flies/edit";
     }
 
+    /**
+     * Handles POST requests to save changes to a custom fly.
+     *
+     * <p>The form is checked against its annotations and the service's
+     * business rules. If either finds errors, the edit page is shown again
+     * with those errors.</p>
+     *
+     * @param id the ID of the fly being edited
+     * @param flyForm the submitted fly form
+     * @param result the binding result holding any validation errors
+     * @param user the logged-in user editing the fly
+     * @param model the model used to pass error flags to the view
+     * @return a redirect to the fly list on success, or the edit fly view if there are errors
+     */
     @PostMapping("/edit/{id}")
-    public String postEditFly(
-            @PathVariable Long id,
-            @Valid @ModelAttribute FlyForm flyForm,
-            BindingResult result, @AuthenticationPrincipal HooksetUserDetails user,
-            Model model) {
+    public String postEditFly(@PathVariable Long id,
+                              @Valid @ModelAttribute FlyForm flyForm,
+                              BindingResult result,
+                              @AuthenticationPrincipal HooksetUserDetails user,
+                              Model model) {
+        log.info("Edit fly form submitted for fly ID: {}", id);
 
         boolean hasCustomErrors = false;
 
@@ -193,6 +239,7 @@ public class FlyController {
         }
 
         if (!flyService.isFlyNameUniqueForEdit(id, flyInput.name(), user.getId())) {
+            // only display to user if they didn't type a blank name. Blank names will be caught by form
             if (!flyService.isFlyNameBlank(flyInput.name())) {
                 model.addAttribute("duplicateFlyName", true);
                 hasCustomErrors = true;
@@ -200,6 +247,7 @@ public class FlyController {
         }
 
         if (result.hasErrors() || hasCustomErrors) {
+            log.warn("Edit fly form failed validation for fly ID: {}", id);
             model.addAttribute("id", id);
             return "flies/edit";
         }
@@ -213,10 +261,12 @@ public class FlyController {
      * Handles POST requests to delete a custom fly.
      *
      * @param id the ID of the fly to delete
+     * @param user the logged-in user deleting the fly
      * @return a redirect to the fly list
      */
     @PostMapping("/delete/{id}")
-    public String postDeleteFly(@PathVariable Long id, @AuthenticationPrincipal HooksetUserDetails user) {
+    public String postDeleteFly(@PathVariable Long id,
+                                @AuthenticationPrincipal HooksetUserDetails user) {
         log.info("Delete fly request for fly ID: {}", id);
 
         flyService.deleteFly(id, user.getId());

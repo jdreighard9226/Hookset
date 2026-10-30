@@ -18,27 +18,30 @@ import java.util.List;
  * Handles requests for the fish species pages.
  *
  * <p>This controller maps requests under {@code /fish}, loads fish species
- * from the fish service, and passes them to the view that lists every
- * species in the database.</p>
+ * from the fish service, maps them to DTOs, and passes them to the view that
+ * lists every species in the database.</p>
  */
 @Controller
 @RequestMapping("/fish")
 public class FishController {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(FishController.class);
 
     /** The service used to look up fish species. */
     private final FishService fishService;
 
+    /** The mapper used to convert fish entities into DTOs for the view. */
     private final FishMapper fishMapper;
 
     /**
-     * Creates the fish controller with the service it depends on.
+     * Creates the fish controller with the service and mapper it depends on.
      *
      * @param fishService the service used to look up fish species
+     * @param fishMapper the mapper used to convert fish entities into DTOs for the view
      */
     public FishController(FishService fishService, FishMapper fishMapper) {
-        this.fishService = fishService; this.fishMapper = fishMapper;
+        this.fishService = fishService;
+        this.fishMapper = fishMapper;
     }
 
     /**
@@ -54,9 +57,13 @@ public class FishController {
         List<Fish> fishEntities = fishService.getAllFish();
 
         List<FishDto> fishDtos = new ArrayList<>();
+
         for (Fish fish : fishEntities) {
             fishDtos.add(fishMapper.toDto(fish));
         }
+
+        log.info("Found {} fish", fishDtos.size());
+
         model.addAttribute("fishes", fishDtos);
 
         return "fish/index";

@@ -1,6 +1,5 @@
 package edu.carroll.cs341.hookset.web.controller;
 
-import edu.carroll.cs341.hookset.service.FishService;
 import edu.carroll.cs341.hookset.service.WaterBodyService;
 import edu.carroll.cs341.hookset.web.dto.FishDto;
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
@@ -25,7 +24,8 @@ import java.util.Set;
  *
  * <p>This controller maps requests under {@code /waterbodies} and displays
  * the list of every water body and the details page for a single water body.
- * The details page also shows the fish species found in that water body.</p>
+ * The details page also shows the fish species found in that water body,
+ * read straight off the water body's {@code @ManyToMany}.</p>
  */
 @Controller
 @RequestMapping("/waterbodies")
@@ -36,9 +36,6 @@ public class WaterBodyController {
     /** The service used to look up water bodies. */
     private final WaterBodyService waterBodyService;
 
-    /** The service used to look up the fish species in a water body. */
-    private final FishService fishService;
-
     /** The mapper used to convert fish entities into DTOs. */
     private final FishMapper fishMapper;
 
@@ -46,19 +43,16 @@ public class WaterBodyController {
     private final WaterBodyMapper waterBodyMapper;
 
     /**
-     * Creates the water body controller with the services and mappers it depends on.
+     * Creates the water body controller with the service and mappers it depends on.
      *
      * @param waterBodyService the service used to look up water bodies
-     * @param fishService the service used to look up the fish species in a water body
      * @param fishMapper the mapper used to convert fish entities into DTOs
      * @param waterBodyMapper the mapper used to convert water body entities into DTOs
      */
     public WaterBodyController(WaterBodyService waterBodyService,
-                               FishService fishService,
                                FishMapper fishMapper,
                                WaterBodyMapper waterBodyMapper) {
         this.waterBodyService = waterBodyService;
-        this.fishService = fishService;
         this.fishMapper = fishMapper;
         this.waterBodyMapper = waterBodyMapper;
     }
@@ -80,6 +74,8 @@ public class WaterBodyController {
         for (WaterBody waterBody : waterBodyEntities) {
             waterBodies.add(waterBodyMapper.toDto(waterBody));
         }
+
+        log.info("Found {} water bodies", waterBodies.size());
 
         model.addAttribute("waterBodies", waterBodies);
 
@@ -115,6 +111,8 @@ public class WaterBodyController {
         for (Fish fish : fishEntities) {
             fishDtos.add(fishMapper.toDto(fish));
         }
+
+        log.info("Found {} fish for water body slug: {}", fishDtos.size(), slug);
 
         model.addAttribute("waterBody", waterBody);
         model.addAttribute("fishes", fishDtos);

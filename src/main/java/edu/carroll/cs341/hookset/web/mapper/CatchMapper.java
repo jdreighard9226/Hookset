@@ -10,11 +10,15 @@ import org.springframework.stereotype.Component;
 import shared.jpa.entity.Catch;
 
 /**
- * Maps catch entities to catch DTOs and catch forms.
+ * Maps catches between entities, DTOs, forms, and service input.
  *
  * <p>A catch entity holds its fly, fish, and water body as full entities.
  * This mapper converts each of those with its own mapper and combines them
  * with the catch details into a single {@link CatchDto}.</p>
+ *
+ * <p>It also turns a catch into a {@link CatchForm} for the edit page, and
+ * turns a submitted form into {@link CatchInput} so the catch service never
+ * depends on the web layer.</p>
  */
 @Component
 public class CatchMapper {
@@ -85,8 +89,20 @@ public class CatchMapper {
         return catchForm;
     }
 
+    /**
+     * Converts a submitted catch form into service input.
+     *
+     * @param catchForm the submitted catch form
+     * @return the catch input built from the form
+     */
     public CatchInput toInput(CatchForm catchForm) {
-        return new CatchInput(catchForm.getFlyId(), catchForm.getFishId(), catchForm.getWaterBodyId(),
-                catchForm.getFishLength(), catchForm.getDateCaught(), catchForm.getNotes());
+        return new CatchInput(
+                catchForm.getFlyId(),
+                catchForm.getFishId(),
+                catchForm.getWaterBodyId(),
+                catchForm.getFishLength(),
+                catchForm.getDateCaught(),
+                catchForm.getNotes()
+        );
     }
 }

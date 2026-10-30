@@ -12,9 +12,10 @@ import java.util.List;
 /**
  * Service implementation for looking up fish species.
  *
- * <p>Fish can be looked up as a full list or filtered to the species found
- * in a single water body. Fish are read-only here, since they come from
- * the importer rather than from users.</p>
+ * <p>Fish are read-only here, since they come from the seed script rather
+ * than from users. The fish found in a single water body are loaded through
+ * {@link edu.carroll.cs341.hookset.service.WaterBodyService}, since that
+ * lookup goes through the water body.</p>
  */
 @Service
 public class FishServiceImpl implements FishService {
@@ -25,7 +26,7 @@ public class FishServiceImpl implements FishService {
     private final FishRepository fishRepository;
 
     /**
-     * Creates the fish service with the repositories it depends on.
+     * Creates the fish service with the repository it depends on.
      *
      * @param fishRepository the repository used to look up fish species
      */
@@ -44,7 +45,7 @@ public class FishServiceImpl implements FishService {
 
         List<Fish> fish = fishRepository.findAll();
 
-        // an empty fish table usually means the importer has not been run
+        // an empty fish table usually means the seed script has not been run
         if (fish.size() < 1) {
             log.warn("No fish found in the database");
         }
@@ -53,5 +54,4 @@ public class FishServiceImpl implements FishService {
 
         return fish;
     }
-
 }

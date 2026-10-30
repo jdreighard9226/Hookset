@@ -4,29 +4,57 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Holds the data from the Hookset profile form.
+ *
+ * <p>The username is filled in by the controller so the page can show it, and
+ * is never changed through this form. The password and confirmation are
+ * checked against their annotations before the password change reaches the
+ * user service.</p>
+ */
 public class ProfileForm {
 
+    /** The logged-in user's username, shown on the profile page. */
     private String username;
-    /** The password entered into the signup form. */
+
+    /** The new password entered into the profile form. */
     @NotBlank(message = "Password is required.")
-    @Size(min = 8, max = 20, message = "Password must be between 8 and 20 characters.")
+    @Size(min = 8, max = 18, message = "Password must be between 8 and 18 characters.")
     private String password;
 
-    /** The password confirmation entered into the signup form. */
+    /** The new password confirmation entered into the profile form. */
     @NotBlank(message = "Password confirmation is required.")
     private String confirmPassword;
 
     /**
-     * Returns the password entered into the signup form.
+     * Returns the logged-in user's username.
+     *
+     * @return the username
+     */
+    public String getUsername() {
+        return this.username;
+    }
+
+    /**
+     * Sets the logged-in user's username.
+     *
+     * @param username the username
+     */
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    /**
+     * Returns the new password entered into the profile form.
      *
      * @return the password
      */
     public String getPassword() {
-        return password;
+        return this.password;
     }
 
     /**
-     * Sets the password entered into the signup form.
+     * Sets the new password entered into the profile form.
      *
      * @param password the password
      */
@@ -35,16 +63,16 @@ public class ProfileForm {
     }
 
     /**
-     * Returns the password confirmation entered into the signup form.
+     * Returns the new password confirmation entered into the profile form.
      *
      * @return the password confirmation
      */
     public String getConfirmPassword() {
-        return confirmPassword;
+        return this.confirmPassword;
     }
 
     /**
-     * Sets the password confirmation entered into the signup form.
+     * Sets the new password confirmation entered into the profile form.
      *
      * @param confirmPassword the password confirmation
      */
@@ -52,34 +80,22 @@ public class ProfileForm {
         this.confirmPassword = confirmPassword;
     }
 
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-
     /**
      * Checks whether the password and password confirmation match.
      *
      * <p>This method is used by bean validation through {@link AssertTrue}.
      * Validation reports the result under the passwordMatching property.</p>
      *
-     * @return true if the passwords match or either one is missing, false otherwise
+     * @return {@code true} if the passwords match or either one is missing, otherwise {@code false}
      */
     @AssertTrue(message = "Passwords do not match.")
     public boolean isPasswordMatching() {
-
         // missing fields are already reported by @NotBlank,
         // so skip the match check to avoid a second error
-        if (password == null || confirmPassword == null) {
+        if (this.password == null || this.confirmPassword == null) {
             return true;
         }
 
-        return password.equals(confirmPassword);
+        return this.password.equals(this.confirmPassword);
     }
 }
-

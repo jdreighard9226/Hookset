@@ -6,10 +6,11 @@ import shared.jpa.entity.WaterBody;
 import java.util.List;
 
 /**
- * Service for looking up water bodies.
+ * Service for looking up water bodies and the fish found in them.
  *
  * <p>Water bodies can be looked up as a full list or individually by their
- * URL slug.</p>
+ * URL slug. The fish in a single water body are loaded here too, since that
+ * lookup goes through the water body.</p>
  */
 public interface WaterBodyService {
 
@@ -32,7 +33,8 @@ public interface WaterBodyService {
      * Returns every fish species found in a water body.
      *
      * @param waterBodyId the ID of the water body
-     * @return the list of fish species in the water body, or an empty list if the water body does not exist or has no fish
+     * @return the list of fish species in the water body, or an empty list if the ID is null,
+     *         the water body does not exist, or it has no fish
      */
     List<Fish> getAllFishForWaterBody(Long waterBodyId);
 }

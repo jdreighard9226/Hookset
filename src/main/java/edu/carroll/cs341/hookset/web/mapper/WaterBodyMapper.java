@@ -9,6 +9,10 @@ import shared.jpa.entity.WaterBody;
  *
  * <p>This mapper copies the fields the views need from a water body entity
  * into a new WaterBodyDto, so the entity itself never reaches the views.</p>
+ *
+ * <p>The water body's fish are left out on purpose, since loading them for
+ * every water body on the list page would be a database query each. The
+ * details page maps the fish separately.</p>
  */
 @Component
 public class WaterBodyMapper {

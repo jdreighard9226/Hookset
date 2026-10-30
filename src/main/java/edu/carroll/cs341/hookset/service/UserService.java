@@ -1,33 +1,37 @@
 package edu.carroll.cs341.hookset.service;
 
-import edu.carroll.cs341.hookset.web.form.ProfileForm;
-import edu.carroll.cs341.hookset.web.form.SignupForm;
+import edu.carroll.cs341.hookset.service.input.PasswordChangeInput;
+import edu.carroll.cs341.hookset.service.input.SignupInput;
 
 /**
  * Service for creating users and changing passwords.
  *
+ * <p>The user is always passed in by the caller, so this service doesn't
+ * depend on how they logged in.</p>
+ *
  * <p>The validation methods are public so the controllers can call each one
- * and show a specific error message. {@link #addUser(SignupForm)} and
- * {@link #changePassword(ProfileForm)} run them again so bad data can't be
- * saved no matter who calls the service.</p>
+ * and show a specific error message. {@link #addUser(SignupInput)} and
+ * {@link #changePassword(PasswordChangeInput, Long)} run them again so bad
+ * data can't be saved no matter who calls the service.</p>
  */
 public interface UserService {
 
     /**
-     * Changes the password for the logged-in user.
+     * Changes the password for a user.
      *
-     * @param profileForm the form containing the new password and its confirmation
+     * @param passwordChangeInput the new password and its confirmation
+     * @param userId the ID of the user whose password to change
      * @return {@code true} if the password was changed, otherwise {@code false}
      */
-    boolean changePassword(ProfileForm profileForm);
+    boolean changePassword(PasswordChangeInput passwordChangeInput, Long userId);
 
     /**
-     * Creates a new user account from the submitted signup form.
+     * Creates a new user account.
      *
-     * @param signupForm the form containing the username and password
+     * @param signupInput the username, password, and password confirmation for the new account
      * @return {@code true} if the user was created, otherwise {@code false}
      */
-    boolean addUser(SignupForm signupForm);
+    boolean addUser(SignupInput signupInput);
 
     /**
      * Checks whether a username is missing or only whitespace.
@@ -88,7 +92,16 @@ public interface UserService {
      */
     boolean isPasswordTooShort(String password);
 
-    boolean isPasswordTooLong(String passsword);
+    /**
+     * Checks whether a password is longer than 18 characters.
+     *
+     * <p>The cap keeps every password under BCrypt's 72 byte limit, since a
+     * character takes at most 4 bytes.</p>
+     *
+     * @param password the password to check
+     * @return {@code true} if the password is over 18 characters, otherwise {@code false}
+     */
+    boolean isPasswordTooLong(String password);
 
     /**
      * Checks that a password has no spaces.

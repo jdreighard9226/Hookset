@@ -44,6 +44,11 @@ import java.util.List;
  * for browsing every logged catch, viewing the logged-in user's own catches,
  * viewing a single catch, and logging or editing a catch.</p>
  *
+ * <p>The logged-in user is passed into each handler by Spring Security and
+ * handed to the services as an ID, so the services never read the login
+ * themselves. Form input is mapped to {@link CatchInput} before it reaches
+ * the catch service.</p>
+ *
  * <p>It also returns the fish dropdown options fragment that htmx swaps into
  * the catch forms when a water body is picked.</p>
  */
@@ -63,28 +68,38 @@ public class CatchController {
     /** The service used to load the fly dropdown options. */
     private final FlyService flyService;
 
-    /** The service used to load the water body dropdown options. */
+    /** The service used to load the water body and fish dropdown options. */
     private final WaterBodyService waterBodyService;
 
+    /** The mapper used to convert catches to DTOs, forms, and service input. */
     private final CatchMapper catchMapper;
 
+    /** The mapper used to convert fish for the fish dropdown. */
     private final FishMapper fishMapper;
 
+    /** The mapper used to convert water bodies for the water body dropdown. */
     private final WaterBodyMapper waterBodyMapper;
 
+    /** The mapper used to convert flies for the fly dropdown. */
     private final FlyMapper flyMapper;
 
     /**
-     * Creates the catch controller with the services it depends on.
+     * Creates the catch controller with the services and mappers it depends on.
      *
      * @param catchService the service used to look up, save, and validate catches
      * @param flyService the service used to load the fly dropdown options
-     * @param waterBodyService the service used to load the water body dropdown options
+     * @param waterBodyService the service used to load the water body and fish dropdown options
+     * @param catchMapper the mapper used to convert catches to DTOs, forms, and service input
+     * @param fishMapper the mapper used to convert fish for the fish dropdown
+     * @param waterBodyMapper the mapper used to convert water bodies for the water body dropdown
+     * @param flyMapper the mapper used to convert flies for the fly dropdown
      */
     public CatchController(CatchService catchService,
                            FlyService flyService,
-                           WaterBodyService waterBodyService, CatchMapper catchMapper,
-                           FishMapper fishMapper, WaterBodyMapper waterBodyMapper,
+                           WaterBodyService waterBodyService,
+                           CatchMapper catchMapper,
+                           FishMapper fishMapper,
+                           WaterBodyMapper waterBodyMapper,
                            FlyMapper flyMapper) {
         this.catchService = catchService;
         this.flyService = flyService;
@@ -115,6 +130,7 @@ public class CatchController {
     /**
      * Handles GET requests for the page listing the logged-in user's catches.
      *
+     * @param user the logged-in user
      * @param model the model used to pass the user's catches to the view
      * @return the name of the user catches view to render
      */
@@ -135,12 +151,15 @@ public class CatchController {
      * <p>Any logged-in user can view any catch. The edit button only shows
      * for the user who logged it.</p>
      *
+     * @param user the logged-in user
      * @param catchId the ID of the catch to show
      * @param model the model used to pass the catch and ownership to the view
      * @return the name of the catch details view, or a redirect to the catch list if the catch does not exist
      */
     @GetMapping("/details/{catchId}")
-    public String getCatchDetails(@AuthenticationPrincipal HooksetUserDetails user, @PathVariable Long catchId, Model model) {
+    public String getCatchDetails(@AuthenticationPrincipal HooksetUserDetails user,
+                                  @PathVariable Long catchId,
+                                  Model model) {
         log.info("Loading catch details page for catch ID: {}", catchId);
 
         Catch catchRecord = catchService.getCatchById(catchId);
@@ -152,8 +171,6 @@ public class CatchController {
 
         CatchDto catchDto = catchMapper.toDto(catchRecord);
 
-
-
         model.addAttribute("catchRecord", catchDto);
         model.addAttribute("isOwner", catchService.isCatchOwner(catchId, user.getId()));
 
@@ -164,6 +181,7 @@ public class CatchController {
      * Handles GET requests for the add catch page.
      *
      * @param model the model used to pass the form and dropdown options to the view
+     * @param user the logged-in user, used to load their custom flies into the dropdown
      * @return the name of the add catch view to render
      */
     @GetMapping("/add")
@@ -191,15 +209,15 @@ public class CatchController {
      *
      * @param catchForm the submitted catch form
      * @param result the validation results for the form
+     * @param user the logged-in user saving the catch
      * @param model the model used to pass errors and dropdown options to the view
      * @return the view to render or the redirect to perform
      */
     @PostMapping("/add")
-    public String postAddCatch(
-            @Valid @ModelAttribute CatchForm catchForm,
-            BindingResult result, @AuthenticationPrincipal HooksetUserDetails user,
-            Model model) {
-
+    public String postAddCatch(@Valid @ModelAttribute CatchForm catchForm,
+                               BindingResult result,
+                               @AuthenticationPrincipal HooksetUserDetails user,
+                               Model model) {
         log.info("Add catch form submitted");
 
         CatchInput catchInput = catchMapper.toInput(catchForm);
@@ -228,11 +246,14 @@ public class CatchController {
      * their own catch list.</p>
      *
      * @param catchId the ID of the catch to edit
+     * @param user the logged-in user
      * @param model the model used to pass the form and dropdown options to the view
      * @return the name of the edit catch view, or a redirect if the catch can't be edited
      */
     @GetMapping("/edit/{catchId}")
-    public String getEditCatch(@PathVariable Long catchId, @AuthenticationPrincipal HooksetUserDetails user, Model model) {
+    public String getEditCatch(@PathVariable Long catchId,
+                               @AuthenticationPrincipal HooksetUserDetails user,
+                               Model model) {
         log.info("Loading edit catch page for catch ID: {}", catchId);
 
         // false for catches that don't exist or belong to someone else
@@ -264,16 +285,16 @@ public class CatchController {
      * @param catchId the ID of the catch being edited
      * @param catchForm the submitted catch form
      * @param result the validation results for the form
+     * @param user the logged-in user editing the catch
      * @param model the model used to pass errors and dropdown options to the view
      * @return the view to render or the redirect to perform
      */
     @PostMapping("/edit/{catchId}")
-    public String postEditCatch(
-            @PathVariable Long catchId,
-            @Valid @ModelAttribute CatchForm catchForm,
-            BindingResult result, @AuthenticationPrincipal HooksetUserDetails user,
-            Model model) {
-
+    public String postEditCatch(@PathVariable Long catchId,
+                                @Valid @ModelAttribute CatchForm catchForm,
+                                BindingResult result,
+                                @AuthenticationPrincipal HooksetUserDetails user,
+                                Model model) {
         log.info("Edit catch form submitted for catch ID: {}", catchId);
 
         // checked before validation so someone can't probe other users' catches through error messages
@@ -281,9 +302,8 @@ public class CatchController {
             log.warn("Catch ID {} not found or not owned by the current user", catchId);
             return "redirect:/catches/mine";
         }
+
         CatchInput catchInput = catchMapper.toInput(catchForm);
-
-
         boolean hasCustomErrors = addCustomErrors(catchInput, model, user.getId());
 
         if (result.hasErrors() || hasCustomErrors) {
@@ -325,8 +345,9 @@ public class CatchController {
         }
 
         List<FishDto> fishDtos = new ArrayList<>();
-        for (Fish temp : fish) {
-            fishDtos.add(fishMapper.toDto(temp));
+
+        for (Fish fishEntity : fish) {
+            fishDtos.add(fishMapper.toDto(fishEntity));
         }
 
         model.addAttribute("fish", fishDtos);
@@ -335,6 +356,19 @@ public class CatchController {
         return "catches/fish-options :: options";
     }
 
+    /**
+     * Runs the catch checks the form annotations can't do and adds a flag to
+     * the model for each one that fails.
+     *
+     * <p>Empty fields are skipped because {@code @NotNull} on the form already
+     * reports them. Length, date, and notes are left out entirely because the
+     * form annotations show messages for them.</p>
+     *
+     * @param catchInput the submitted catch details
+     * @param model the model to add the error flags to
+     * @param userId the ID of the logged-in user, used to check fly ownership
+     * @return {@code true} if any check failed, otherwise {@code false}
+     */
     private boolean addCustomErrors(CatchInput catchInput, Model model, Long userId) {
         boolean hasCustomErrors = false;
 
@@ -373,11 +407,13 @@ public class CatchController {
      * Adds the fly, fish, and water body dropdown options and the latest
      * allowed catch date to the model.
      *
-     * <p>The fish list only includes fish found in the picked water body, or
-     * is empty if no water body is picked yet.</p>
+     * <p>The fly list includes the default flies plus the user's custom flies.
+     * The fish list only includes fish found in the picked water body, or is
+     * empty if no water body is picked yet.</p>
      *
      * @param model the model to add the options to
      * @param catchForm the form whose water body decides which fish to show
+     * @param userId the ID of the logged-in user, used to include their custom flies
      */
     private void addFormOptions(Model model, CatchForm catchForm, Long userId) {
         List<Fly> flies = flyService.getAllFlies(userId);
@@ -414,7 +450,6 @@ public class CatchController {
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
         model.addAttribute("maxDateCaught", now.format(DATE_INPUT_FORMAT));
     }
-
 
     /**
      * Converts a list of catch entities into catch DTOs.

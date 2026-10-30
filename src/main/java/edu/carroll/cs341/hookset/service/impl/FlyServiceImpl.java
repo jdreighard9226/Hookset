@@ -44,8 +44,10 @@ public class FlyServiceImpl implements FlyService {
     /**
      * Returns all default flies along with a user's custom flies.
      *
+     * <p>A {@code null} user ID returns only the default flies.</p>
+     *
      * @param userId the ID of the user whose custom flies to include
-     * @return the combined list of flies
+     * @return the combined list of flies, or an empty list if none exist
      */
     @Override
     public List<Fly> getAllFlies(Long userId) {
@@ -58,7 +60,7 @@ public class FlyServiceImpl implements FlyService {
     /**
      * Returns all default Hookset flies.
      *
-     * @return the list of default flies
+     * @return the list of default flies, or an empty list if none exist
      */
     @Override
     public List<Fly> getAllHooksetFlies() {
@@ -72,7 +74,7 @@ public class FlyServiceImpl implements FlyService {
      * Returns all custom flies created by a user.
      *
      * @param userId the ID of the user whose flies to return
-     * @return the list of the user's custom flies
+     * @return the list of the user's custom flies, or an empty list if the user ID is null or has none
      */
     @Override
     public List<Fly> getAllUserFlies(Long userId) {
@@ -81,6 +83,7 @@ public class FlyServiceImpl implements FlyService {
             log.warn("Could not load user flies. User ID is null");
             return new ArrayList<>();
         }
+
         log.info("Getting custom flies for user ID: {}", userId);
 
         List<Fly> flies = flyRepository.findByUserId(userId);
@@ -171,7 +174,7 @@ public class FlyServiceImpl implements FlyService {
     @Override
     public boolean addFly(FlyInput flyInput, Long userId) {
         if (userId == null) {
-            log.warn("Fly not saved. No user given");
+            log.warn("Fly not saved. User ID is null");
             return false;
         }
 
@@ -325,6 +328,8 @@ public class FlyServiceImpl implements FlyService {
      * <p>Names are compared by slug, so names that only differ by case or
      * spacing count as duplicates. Default flies are included, so a user
      * can't make a fly whose URL matches a Hookset fly.</p>
+     *
+     * @param name the name of the new fly
      * @param userId the ID of the user adding the fly
      * @return {@code true} if no visible fly has the same slug, otherwise {@code false}
      */
@@ -354,17 +359,21 @@ public class FlyServiceImpl implements FlyService {
      * Checks that an edited fly's name won't collide with another fly the user can see.
      *
      * <p>The fly keeping its own name is allowed. Otherwise this uses the same
+     * slug rules as {@link #isFlyNameUnique(String, Long)}.</p>
      *
      * @param flyId the ID of the fly being edited
-     * @param flyInput the new fly details
+     * @param name the new name for the fly
      * @param userId the ID of the user editing the fly
      * @return {@code true} if the name is unchanged or no other visible fly has the same slug, otherwise {@code false}
      */
     @Override
     public boolean isFlyNameUniqueForEdit(Long flyId, String name, Long userId) {
+        // findById throws on a null ID instead of returning empty, so this has to be checked first
         if (flyId == null) {
+            log.warn("Fly edit validation failed. Fly ID is null");
             return false;
         }
+
         Fly flyBeingEdited = flyRepository.findById(flyId).orElse(null);
 
         if (flyBeingEdited == null) {
@@ -428,6 +437,7 @@ public class FlyServiceImpl implements FlyService {
             log.warn("Fly validation failed. Fly input is null");
             return false;
         }
+
         if (flyInput.name() == null || flyInput.name().isBlank()) {
             log.warn("Fly validation failed. Fly name is blank");
             return false;

@@ -1,7 +1,9 @@
 package edu.carroll.cs341.hookset.web.controller;
 
 import edu.carroll.cs341.hookset.service.UserService;
+import edu.carroll.cs341.hookset.service.input.SignupInput;
 import edu.carroll.cs341.hookset.web.form.SignupForm;
+import edu.carroll.cs341.hookset.web.mapper.UserMapper;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * form, validates submitted form data, and creates new user accounts through
  * the user service. After a successful signup the user is redirected to the
  * login page.</p>
+ *
+ * <p>The signup form is mapped to {@link SignupInput} before it reaches the
+ * user service, so the service never depends on the web layer.</p>
  */
 @Controller
 @RequestMapping("/signup")
@@ -30,19 +35,24 @@ public class SignupController {
     /** The service used to create new user accounts. */
     private final UserService userService;
 
+    /** The mapper used to convert the signup form into service input. */
+    private final UserMapper userMapper;
+
     /**
-     * Creates the signup controller with the service it depends on.
+     * Creates the signup controller with the service and mapper it depends on.
      *
      * @param userService the service used to create new user accounts
+     * @param userMapper the mapper used to convert the signup form into service input
      */
-    public SignupController(UserService userService) {
+    public SignupController(UserService userService, UserMapper userMapper) {
         this.userService = userService;
+        this.userMapper = userMapper;
     }
 
     /**
      * Handles GET requests for the Hookset signup page.
      *
-     * <p>A new {@code SignupForm} is added to the model so the signup view can
+     * <p>A new {@link SignupForm} is added to the model so the signup view can
      * bind form fields to the object.</p>
      *
      * @param model the model used to provide data to the signup view
@@ -71,11 +81,9 @@ public class SignupController {
      * @return the view to render or the redirect to perform
      */
     @PostMapping
-    public String postSignup(
-            @Valid @ModelAttribute SignupForm signupForm,
-            BindingResult result,
-            Model model) {
-
+    public String postSignup(@Valid @ModelAttribute SignupForm signupForm,
+                             BindingResult result,
+                             Model model) {
         log.info("Signup form submitted");
 
         boolean hasCustomErrors = false;
@@ -102,7 +110,9 @@ public class SignupController {
             return "signup";
         }
 
-        if (!userService.addUser(signupForm)) {
+        SignupInput signupInput = userMapper.toSignupInput(signupForm);
+
+        if (!userService.addUser(signupInput)) {
             log.warn("Signup failed");
             model.addAttribute("signupFailed", true);
             return "signup";

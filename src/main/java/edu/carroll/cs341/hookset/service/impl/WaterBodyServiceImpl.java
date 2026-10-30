@@ -12,11 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Service implementation for looking up water bodies.
+ * Service implementation for looking up water bodies and the fish found in them.
  *
  * <p>Water bodies can be looked up as a full list or individually by their
- * URL slug. Water bodies are read-only here, since they come from the
- * importer rather than from users.</p>
+ * URL slug. The fish in a single water body are loaded here too, since that
+ * lookup goes through the water body's {@code @ManyToMany} relationship.</p>
+ *
+ * <p>Water bodies are read-only here, since they come from the seed script
+ * rather than from users.</p>
  */
 @Service
 public class WaterBodyServiceImpl implements WaterBodyService {
@@ -46,7 +49,7 @@ public class WaterBodyServiceImpl implements WaterBodyService {
 
         List<WaterBody> waterBodies = waterBodyRepository.findAll();
 
-        // an empty water body table usually means the importer has not been run
+        // an empty water body table usually means the seed script has not been run
         if (waterBodies.size() < 1) {
             log.warn("No water bodies found in the database");
         }
@@ -87,22 +90,17 @@ public class WaterBodyServiceImpl implements WaterBodyService {
      * relationship, which reads the FishWaterBody join table.</p>
      *
      * @param waterBodyId the ID of the water body
-     * @return the list of fish species in the water body, or an empty list if the water body does not exist or has no fish
-     */
-    /**
-     * Returns every fish species found in a water body.
-     *
-     * <p>The fish are loaded through the water body's {@code @ManyToMany}
-     * relationship, which reads the FishWaterBody join table.</p>
-     *
-     * @param waterBodyId the ID of the water body
-     * @return the list of fish species in the water body, or an empty list if the water body does not exist or has no fish
+     * @return the list of fish species in the water body, or an empty list if the ID is null,
+     *         the water body does not exist, or it has no fish
      */
     @Override
     public List<Fish> getAllFishForWaterBody(Long waterBodyId) {
+        // findById throws on a null ID instead of returning empty, so this has to be checked first
         if (waterBodyId == null) {
+            log.warn("Fish lookup failed. Water body ID is null");
             return new ArrayList<>();
         }
+
         log.info("Loading fish for water body ID: {}", waterBodyId);
 
         WaterBody waterBody = waterBodyRepository.findById(waterBodyId).orElse(null);

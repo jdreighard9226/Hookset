@@ -2,13 +2,10 @@ package edu.carroll.cs341.hookset.service.impl;
 
 import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
 import edu.carroll.cs341.hookset.service.UserService;
-import edu.carroll.cs341.hookset.web.form.ProfileForm;
-import edu.carroll.cs341.hookset.web.form.SignupForm;
+import edu.carroll.cs341.hookset.service.input.PasswordChangeInput;
+import edu.carroll.cs341.hookset.service.input.SignupInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import shared.jpa.entity.User;
@@ -18,17 +15,33 @@ import shared.jpa.entity.User;
  *
  * <p>Usernames are saved in lowercase so the same name can't be registered
  * twice with different capitalization. Passwords are hashed with the app's
- * password encoder before they are saved.</p>
+ * password encoder before they are saved. The user is always passed in by
+ * the caller, so this service doesn't depend on how they logged in.</p>
  *
  * <p>The validation methods are public so the controllers can call each one
- * and show a specific error message. {@link #addUser(SignupForm)} and
- * {@link #changePassword(ProfileForm)} run them again so bad data can't be
- * saved no matter who calls the service.</p>
+ * and show a specific error message. {@link #addUser(SignupInput)} and
+ * {@link #changePassword(PasswordChangeInput, Long)} run them again so bad
+ * data can't be saved no matter who calls the service.</p>
  */
 @Service
 public class UserServiceImpl implements UserService {
     /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+
+    /** The longest username the Users table can store, from VARCHAR(20). */
+    private static final int MAX_USERNAME_LENGTH = 20;
+
+    /** The shortest password allowed. */
+    private static final int MIN_PASSWORD_LENGTH = 8;
+
+    /**
+     * The longest password allowed, in characters.
+     *
+     * <p>BCrypt can only hash 72 bytes. A character takes at most 4 bytes in
+     * UTF-8, so capping at 18 characters guarantees a password can never go
+     * over that limit no matter what characters it uses.</p>
+     */
+    private static final int MAX_PASSWORD_LENGTH = 18;
 
     /** The repository used to look up and save users. */
     private final UserRepository userRepository;
@@ -48,45 +61,56 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Changes the password for the logged-in user.
+     * Changes the password for a user.
      *
-     * <p>The new password is validated before the current user is looked up,
-     * so a bad password never touches the database.</p>
+     * <p>The new password is validated before the user is looked up, so a bad
+     * password never touches the database.</p>
      *
-     * @param profileForm the form containing the new password and its confirmation
+     * @param passwordChangeInput the new password and its confirmation
+     * @param userId the ID of the user whose password to change
      * @return {@code true} if the password was changed, otherwise {@code false}
      */
     @Override
-    public boolean changePassword(ProfileForm profileForm) {
+    public boolean changePassword(PasswordChangeInput passwordChangeInput, Long userId) {
+        if (passwordChangeInput == null) {
+            log.warn("Password change failed. Password change input is null");
+            return false;
+        }
+
+        if (userId == null) {
+            log.warn("Password change failed. User ID is null");
+            return false;
+        }
+
         // runs every check itself so no caller can save a bad password
-        if (isPasswordBlank(profileForm.getPassword())) {
+        if (isPasswordBlank(passwordChangeInput.password())) {
             return false;
         }
 
-        if (isPasswordTooShort(profileForm.getPassword())) {
+        if (isPasswordTooShort(passwordChangeInput.password())) {
             return false;
         }
 
-        if (isPasswordTooLong(profileForm.getPassword())) {
+        if (isPasswordTooLong(passwordChangeInput.password())) {
             return false;
         }
 
-        if (!isPasswordSpaceFree(profileForm.getPassword())) {
+        if (!isPasswordSpaceFree(passwordChangeInput.password())) {
             return false;
         }
 
-        if (!doPasswordsMatch(profileForm.getPassword(), profileForm.getConfirmPassword())) {
+        if (!doPasswordsMatch(passwordChangeInput.password(), passwordChangeInput.confirmPassword())) {
             return false;
         }
 
-        User user = getCurrentUser();
+        User user = userRepository.findById(userId).orElse(null);
 
         if (user == null) {
-            log.warn("Password change failed. User not found");
+            log.warn("Password change failed. User not found with ID: {}", userId);
             return false;
         }
 
-        user.setHashPassword(passwordEncoder.encode(profileForm.getPassword()));
+        user.setHashPassword(passwordEncoder.encode(passwordChangeInput.password()));
         userRepository.save(user);
 
         log.info("Password changed for username: {}", user.getUsername());
@@ -95,66 +119,66 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Creates a new user account from the submitted signup form.
+     * Creates a new user account.
      *
      * <p>New users are never admins. The username is saved in lowercase and
      * the password is hashed before saving.</p>
      *
-     * @param signupForm the form containing the username and password
+     * @param signupInput the username, password, and password confirmation for the new account
      * @return {@code true} if the user was created, otherwise {@code false}
      */
     @Override
-    public boolean addUser(SignupForm signupForm) {
-        if (signupForm == null) {
-            log.warn("Signup failed. Signup form is null");
+    public boolean addUser(SignupInput signupInput) {
+        if (signupInput == null) {
+            log.warn("Signup failed. Signup input is null");
             return false;
         }
 
-        log.info("Attempting signup for username: {}", signupForm.getUsername());
+        log.info("Attempting signup for username: {}", signupInput.username());
 
         // runs every check itself so no caller can save a bad user
-        if (isUsernameBlank(signupForm.getUsername())) {
+        if (isUsernameBlank(signupInput.username())) {
             return false;
         }
 
-        if (isUsernameTooLong(signupForm.getUsername())) {
+        if (isUsernameTooLong(signupInput.username())) {
             return false;
         }
 
-        if (!isUsernameSpaceFree(signupForm.getUsername())) {
+        if (!isUsernameSpaceFree(signupInput.username())) {
             return false;
         }
 
-        if (isUsernameTaken(signupForm.getUsername())) {
+        if (isUsernameTaken(signupInput.username())) {
             return false;
         }
 
-        if (isPasswordBlank(signupForm.getPassword())) {
+        if (isPasswordBlank(signupInput.password())) {
             return false;
         }
 
-        if (isPasswordTooShort(signupForm.getPassword())) {
+        if (isPasswordTooShort(signupInput.password())) {
             return false;
         }
 
-        if (isPasswordTooLong(signupForm.getPassword())) {
+        if (isPasswordTooLong(signupInput.password())) {
             return false;
         }
 
-        if (!isPasswordSpaceFree(signupForm.getPassword())) {
+        if (!isPasswordSpaceFree(signupInput.password())) {
             return false;
         }
 
-        if (!doPasswordsMatch(signupForm.getPassword(), signupForm.getConfirmPassword())) {
+        if (!doPasswordsMatch(signupInput.password(), signupInput.confirmPassword())) {
             return false;
         }
 
         User newUser = new User();
 
         // lowercase so "JD" and "jd" can't both be registered
-        newUser.setUsername(signupForm.getUsername().toLowerCase());
+        newUser.setUsername(signupInput.username().toLowerCase());
         newUser.setIsAdmin(false);
-        newUser.setHashPassword(passwordEncoder.encode(signupForm.getPassword()));
+        newUser.setHashPassword(passwordEncoder.encode(signupInput.password()));
 
         userRepository.save(newUser);
 
@@ -179,16 +203,16 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Checks whether a username is longer than 20 characters.
+     * Checks whether a username is longer than {@link #MAX_USERNAME_LENGTH} characters.
      *
      * @param username the username to check
-     * @return {@code true} if the username is over 20 characters, otherwise {@code false}
+     * @return {@code true} if the username is too long, otherwise {@code false}
      */
     @Override
     public boolean isUsernameTooLong(String username) {
-        // 20 matches the VARCHAR(20) username column
-        if (username != null && username.length() > 20) {
-            log.warn("Username validation failed. Username exceeds 20 characters: {}", username);
+        if (username != null && username.length() > MAX_USERNAME_LENGTH) {
+            log.warn("Username validation failed. Username exceeds {} characters: {}",
+                    MAX_USERNAME_LENGTH, username);
             return true;
         }
 
@@ -255,18 +279,43 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Checks whether a password is shorter than 8 characters.
+     * Checks whether a password is shorter than {@link #MIN_PASSWORD_LENGTH} characters.
      *
      * <p>A blank password returns false here because it is reported by
      * {@link #isPasswordBlank(String)} instead.</p>
      *
      * @param password the password to check
-     * @return {@code true} if the password is under 8 characters, otherwise {@code false}
+     * @return {@code true} if the password is too short, otherwise {@code false}
      */
     @Override
     public boolean isPasswordTooShort(String password) {
-        if (password != null && !password.isBlank() && password.length() < 8) {
-            log.warn("Password validation failed. Password is less than 8 characters");
+        if (password != null && !password.isBlank() && password.length() < MIN_PASSWORD_LENGTH) {
+            log.warn("Password validation failed. Password is less than {} characters", MIN_PASSWORD_LENGTH);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether a password is longer than {@link #MAX_PASSWORD_LENGTH} characters.
+     *
+     * <p>The cap keeps every password under BCrypt's 72 byte limit, so hashing
+     * can never fail. A null password returns false here because it is reported
+     * by {@link #isPasswordBlank(String)} instead.</p>
+     *
+     * @param password the password to check
+     * @return {@code true} if the password is too long, otherwise {@code false}
+     */
+    @Override
+    public boolean isPasswordTooLong(String password) {
+        if (password == null) {
+            return false;
+        }
+
+        // the password itself is never logged
+        if (password.length() > MAX_PASSWORD_LENGTH) {
+            log.warn("Password validation failed. Password exceeds {} characters", MAX_PASSWORD_LENGTH);
             return true;
         }
 
@@ -305,30 +354,5 @@ public class UserServiceImpl implements UserService {
         }
 
         return true;
-    }
-
-    @Override
-    public boolean isPasswordTooLong(String passsword) {
-        return passsword.length() > 18;
-    }
-
-    /**
-     * Gets the logged-in user from the security context.
-     *
-     * @return the logged-in user, or {@code null} if no user is logged in
-     */
-    private User getCurrentUser() {
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        // visitors who aren't logged in still get an anonymous authentication
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            log.warn("No authenticated user found");
-            return null;
-        }
-
-        return userRepository.findByUsername(authentication.getName());
     }
 }

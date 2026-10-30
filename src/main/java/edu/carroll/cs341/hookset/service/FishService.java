@@ -7,8 +7,10 @@ import java.util.List;
 /**
  * Service for looking up fish species.
  *
- * <p>Fish can be looked up as a full list or filtered to the species found
- * in a single water body.</p>
+ * <p>Fish are read-only, since they come from the seed script rather than
+ * from users. The fish found in a single water body are loaded through
+ * {@link WaterBodyService#getAllFishForWaterBody(Long)}, since that lookup
+ * goes through the water body.</p>
  */
 public interface FishService {
 

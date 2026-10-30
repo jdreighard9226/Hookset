@@ -20,7 +20,7 @@ import shared.jpa.entity.User;
  */
 @Service
 public class LoginServiceImpl implements LoginService {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(LoginServiceImpl.class);
 
     /** The repository used to look up users. */
@@ -38,16 +38,26 @@ public class LoginServiceImpl implements LoginService {
     /**
      * Loads a user by username for authentication.
      *
+     * <p>Usernames are saved in lowercase, so the lookup lowercases the
+     * entered username first. That way login works the same no matter how
+     * the user capitalizes it.</p>
+     *
      * @param username the username entered on the login form
      * @return the user details used by Spring Security
-     * @throws UsernameNotFoundException if no user has that username
+     * @throws UsernameNotFoundException if the username is null or no user has that username
      */
     @Override
     public UserDetails loadUserByUsername(String username) {
-
         log.info("Attempting login for username: {}", username);
 
-        User user = userRepository.findByUsername(username);
+        // Spring Security expects this exception for any username that can't log in
+        if (username == null) {
+            log.warn("Login failed. Username is null");
+            throw new UsernameNotFoundException("User not found");
+        }
+
+        // usernames are saved in lowercase, so the lookup has to match
+        User user = userRepository.findByUsername(username.toLowerCase());
 
         // Spring Security expects this exception when the user does not exist
         if (user == null) {

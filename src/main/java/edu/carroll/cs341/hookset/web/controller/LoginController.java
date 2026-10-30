@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * Handles requests for the Hookset login page.
  *
  * <p>This controller maps requests under {@code /login}, displays the login
- * page, and adds a new LoginForm object to the model for use by the login
+ * page, and adds a new {@link LoginForm} to the model for use by the login
  * form.</p>
  *
  * <p>There is no POST handler here. Spring Security's login filter handles
@@ -21,13 +21,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 @RequestMapping("/login")
 public class LoginController {
-
+    /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 
     /**
      * Handles GET requests for the Hookset login page.
      *
-     * <p>A new LoginForm is added to the model so the login view can
+     * <p>A new {@link LoginForm} is added to the model so the login view can
      * bind form fields to the object.</p>
      *
      * @param model the model used to provide data to the login view

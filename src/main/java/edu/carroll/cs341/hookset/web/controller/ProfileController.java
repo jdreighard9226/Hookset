@@ -1,11 +1,14 @@
 package edu.carroll.cs341.hookset.web.controller;
 
 import edu.carroll.cs341.hookset.service.UserService;
+import edu.carroll.cs341.hookset.service.input.PasswordChangeInput;
+import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import edu.carroll.cs341.hookset.web.form.ProfileForm;
+import edu.carroll.cs341.hookset.web.mapper.UserMapper;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,6 +23,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * <p>This controller maps requests under {@code /profile}, displays the
  * logged-in user's profile, and handles password changes submitted from
  * the profile form.</p>
+ *
+ * <p>The logged-in user is passed in by Spring Security and handed to the
+ * user service as an ID. The profile form is mapped to
+ * {@link PasswordChangeInput} before it reaches the service.</p>
  */
 @Controller
 @RequestMapping("/profile")
@@ -30,32 +37,37 @@ public class ProfileController {
     /** The service used to update the logged-in user's profile. */
     private final UserService userService;
 
+    /** The mapper used to convert the profile form into service input. */
+    private final UserMapper userMapper;
+
     /**
-     * Creates the profile controller with the service it depends on.
+     * Creates the profile controller with the service and mapper it depends on.
      *
      * @param userService the service used to update the logged-in user's profile
+     * @param userMapper the mapper used to convert the profile form into service input
      */
-    public ProfileController(UserService userService) {
+    public ProfileController(UserService userService, UserMapper userMapper) {
         this.userService = userService;
+        this.userMapper = userMapper;
     }
 
     /**
      * Handles GET requests for the profile page.
      *
-     * <p>A new {@code ProfileForm} is filled with the logged-in user's username
+     * <p>A new {@link ProfileForm} is filled with the logged-in user's username
      * and added to the model so the profile view can display it.</p>
      *
+     * @param user the logged-in user
      * @param model the model used to pass the profile form to the view
-     * @param authentication the logged-in user's authentication details
      * @return the name of the profile view to render
      */
     @GetMapping
-    public String getProfile(Model model, Authentication authentication) {
-        log.info("Loading profile page for username: {}", authentication.getName());
+    public String getProfile(@AuthenticationPrincipal HooksetUserDetails user, Model model) {
+        log.info("Loading profile page for username: {}", user.getUsername());
 
         ProfileForm profileForm = new ProfileForm();
 
-        profileForm.setUsername(authentication.getName());
+        profileForm.setUsername(user.getUsername());
 
         model.addAttribute("profileForm", profileForm);
 
@@ -72,15 +84,15 @@ public class ProfileController {
      *
      * @param profileForm the submitted profile form
      * @param result the validation results for the form
+     * @param user the logged-in user changing their password
      * @param model the model used to pass error flags to the view
      * @return a redirect to the home page on success, or the profile view if there are errors
      */
     @PostMapping
-    public String postProfile(
-            @Valid @ModelAttribute ProfileForm profileForm,
-            BindingResult result,
-            Model model) {
-
+    public String postProfile(@Valid @ModelAttribute ProfileForm profileForm,
+                              BindingResult result,
+                              @AuthenticationPrincipal HooksetUserDetails user,
+                              Model model) {
         log.info("Profile form submitted");
 
         boolean hasCustomErrors = false;
@@ -96,7 +108,9 @@ public class ProfileController {
             return "profile";
         }
 
-        if (!userService.changePassword(profileForm)) {
+        PasswordChangeInput passwordChangeInput = userMapper.toPasswordChangeInput(profileForm);
+
+        if (!userService.changePassword(passwordChangeInput, user.getId())) {
             log.warn("Password change failed");
             model.addAttribute("passwordChangeFailed", true);
             return "profile";
