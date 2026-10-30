@@ -94,10 +94,10 @@ public class FishServiceImplTest {
         // compare by species since the returned objects may not be the same instances that were saved
         List<String> returnedSpecies = new ArrayList<>();
         for (Fish returnedFish : fish) {
-            returnedSpecies.add(returnedFish.getFishSpecies());
+            returnedSpecies.add(returnedFish.getSpecies());
         }
 
-        assertTrue(returnedSpecies.contains(testFish.getFishSpecies()),
+        assertTrue(returnedSpecies.contains(testFish.getSpecies()),
                 "Saved fish should be in the returned list");
     }
 
@@ -138,13 +138,13 @@ public class FishServiceImplTest {
 
         List<String> returnedSpecies = new ArrayList<>();
         for (Fish returnedFish : fish) {
-            returnedSpecies.add(returnedFish.getFishSpecies());
+            returnedSpecies.add(returnedFish.getSpecies());
         }
 
         // the count alone could pass with the wrong fish, so check each one is actually there
         for (Fish savedFish : testFish) {
-            assertTrue(returnedSpecies.contains(savedFish.getFishSpecies()),
-                    "Missing fish with species: " + savedFish.getFishSpecies());
+            assertTrue(returnedSpecies.contains(savedFish.getSpecies()),
+                    "Missing fish with species: " + savedFish.getSpecies());
         }
     }
 
@@ -168,11 +168,11 @@ public class FishServiceImplTest {
         // check every field so a query that joins the wrong columns can't slip through
         assertEquals(savedFish.getFishId(), fish.getFirst().getFishId(),
                 "Returned fish ID should match the linked fish");
-        assertEquals("test-species", fish.getFirst().getFishSpecies(),
+        assertEquals("test-species", fish.getFirst().getSpecies(),
                 "Returned fish species should match the linked fish");
-        assertEquals("test-family", fish.getFirst().getFishFamily(),
+        assertEquals("test-family", fish.getFirst().getFamily(),
                 "Returned fish family should match the linked fish");
-        assertEquals("test-image", fish.getFirst().getFishImage(),
+        assertEquals("test-image", fish.getFirst().getImage(),
                 "Returned fish image should match the linked fish");
     }
 
@@ -281,17 +281,17 @@ public class FishServiceImplTest {
 
         List<String> returnedSpecies = new ArrayList<>();
         for (Fish returnedFish : fish) {
-            returnedSpecies.add(returnedFish.getFishSpecies());
+            returnedSpecies.add(returnedFish.getSpecies());
         }
 
         for (Fish linkedFish : targetFish) {
-            assertTrue(returnedSpecies.contains(linkedFish.getFishSpecies()),
-                    "Missing fish with species: " + linkedFish.getFishSpecies());
+            assertTrue(returnedSpecies.contains(linkedFish.getSpecies()),
+                    "Missing fish with species: " + linkedFish.getSpecies());
         }
 
         for (Fish unlinkedFish : otherFish) {
-            assertFalse(returnedSpecies.contains(unlinkedFish.getFishSpecies()),
-                    "Fish from another water body was returned: " + unlinkedFish.getFishSpecies());
+            assertFalse(returnedSpecies.contains(unlinkedFish.getSpecies()),
+                    "Fish from another water body was returned: " + unlinkedFish.getSpecies());
         }
     }
 
@@ -331,9 +331,9 @@ public class FishServiceImplTest {
     private Fish createTestFish(String species) {
         Fish fish = new Fish();
 
-        fish.setFishFamily("test-family");
-        fish.setFishImage("test-image");
-        fish.setFishSpecies(species);
+        fish.setFamily("test-family");
+        fish.setImage("test-image");
+        fish.setSpecies(species);
 
         return fish;
     }

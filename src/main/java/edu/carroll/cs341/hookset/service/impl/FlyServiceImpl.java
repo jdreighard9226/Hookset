@@ -314,8 +314,6 @@ public class FlyServiceImpl implements FlyService {
      * <p>Names are compared by slug, so names that only differ by case or
      * spacing count as duplicates. Default flies are included, so a user
      * can't make a fly whose URL matches a Hookset fly.</p>
-     *
-     * @param flyInput the details of the new fly
      * @param userId the ID of the user adding the fly
      * @return {@code true} if no visible fly has the same slug, otherwise {@code false}
      */
