@@ -189,4 +189,62 @@ public class Catch {
     public void setNotes(String notes) {
         this.notes = notes;
     }
+
+    /**
+     * Checks whether another object is the same catch record.
+     *
+     * <p>Two catches are equal only when both have been saved and share the same
+     * database ID. A catch that hasn't been saved yet is only equal to itself.</p>
+     *
+     * @param other the object to compare against
+     * @return {@code true} if both are the same saved catch, otherwise {@code false}
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        if (!(other instanceof Catch otherCatch)) {
+            return false;
+        }
+
+        // unsaved catches have no ID yet, so they can't be equal to anything but themselves
+        if (this.getId() == null || otherCatch.getId() == null) {
+            return false;
+        }
+
+        return this.getId().equals(otherCatch.getId());
+    }
+
+    /**
+     * Returns a hash code that stays the same for the catch's whole life.
+     *
+     * <p>The ID can't be used here because it is null until the catch is saved,
+     * and a hash code that changes after saving would lose the catch inside a
+     * {@code HashSet}.</p>
+     *
+     * @return the hash code for the catch
+     */
+    @Override
+    public int hashCode() {
+        return Catch.class.hashCode();
+    }
+
+    /**
+     * Returns a readable summary of the catch for logging.
+     *
+     * <p>The fly, fish, and water body are left out on purpose, since printing
+     * any of them would trigger a lazy load from the database. Notes are left
+     * out too, since they're free text that can run up to 1000 characters.</p>
+     *
+     * @return the catch's ID, user ID, fish length, and date caught
+     */
+    @Override
+    public String toString() {
+        return "Catch{id=" + this.id
+                + ", userId=" + this.userId
+                + ", fishLength=" + this.fishLength
+                + ", dateCaught=" + this.dateCaught + "}";
+    }
 }

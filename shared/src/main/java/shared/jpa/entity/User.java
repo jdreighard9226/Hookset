@@ -23,7 +23,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private long id;
+    private Long id;
 
     /** The username associated with the user account. */
     @Column(name = "username")
@@ -37,13 +37,14 @@ public class User {
     @Column(name = "isAdmin")
     private Boolean isAdmin;
 
+
     /**
      * Returns the unique identifier for the user.
      *
-     * @return the user identifier
+     * @return the user identifier, or {@code null} if the user hasn't been saved yet
      */
-    public long getId() {
-        return id;
+    public Long getId() {
+        return this.id;
     }
 
     /**
@@ -52,25 +53,7 @@ public class User {
      * @return the username
      */
     public String getUsername() {
-        return username;
-    }
-
-    /**
-     * Returns the hashed password associated with the user account.
-     *
-     * @return the hashed password
-     */
-    public String getHashPassword() {
-        return hashPassword;
-    }
-
-    /**
-     * Returns whether the user has administrator privileges.
-     *
-     * @return true if the user is an administrator, false otherwise
-     */
-    public Boolean getIsAdmin() {
-        return isAdmin;
+        return this.username;
     }
 
     /**
@@ -83,6 +66,15 @@ public class User {
     }
 
     /**
+     * Returns the hashed password associated with the user account.
+     *
+     * @return the hashed password
+     */
+    public String getHashPassword() {
+        return this.hashPassword;
+    }
+
+    /**
      * Sets the hashed password associated with the user account.
      *
      * @param hashPassword the hashed password
@@ -92,11 +84,74 @@ public class User {
     }
 
     /**
+     * Returns whether the user has administrator privileges.
+     *
+     * @return {@code true} if the user is an administrator, otherwise {@code false}
+     */
+    public Boolean getIsAdmin() {
+        return this.isAdmin;
+    }
+
+    /**
      * Sets whether the user has administrator privileges.
      *
-     * @param isAdmin true if the user is an administrator, false otherwise
+     * @param isAdmin {@code true} if the user is an administrator, otherwise {@code false}
      */
     public void setIsAdmin(Boolean isAdmin) {
         this.isAdmin = isAdmin;
+    }
+
+    /**
+     * Checks whether another object is the same user record.
+     *
+     * <p>Two users are equal only when both have been saved and share the same
+     * database ID. A user that hasn't been saved yet is only equal to itself.</p>
+     *
+     * @param other the object to compare against
+     * @return {@code true} if both are the same saved user, otherwise {@code false}
+     */
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+
+        if (!(other instanceof User otherUser)) {
+            return false;
+        }
+
+        if (this.getId() == null || otherUser.getId() == null) {
+            return false;
+        }
+
+        return this.getId().equals(otherUser.getId());
+    }
+
+    /**
+     * Returns a hash code that stays the same for the user's whole life.
+     *
+     * <p>The ID can't be used here because it is null until the user is saved,
+     * and a hash code that changes after saving would lose the user inside a
+     * {@code HashSet}.</p>
+     *
+     * @return the hash code for the user
+     */
+    @Override
+    public int hashCode() {
+        return User.class.hashCode();
+    }
+
+    /**
+     * Returns a readable summary of the user for logging.
+     *
+     * <p>The password hash is left out on purpose so it never ends up in a log file.</p>
+     *
+     * @return the user's ID, username, and admin status
+     */
+    @Override
+    public String toString() {
+        return "User{id=" + this.id
+                + ", username='" + this.username + "'"
+                + ", isAdmin=" + this.isAdmin + "}";
     }
 }
