@@ -2,7 +2,6 @@ package edu.carroll.cs341.hookset.service;
 
 import edu.carroll.cs341.hookset.jpa.repo.FishRepository;
 import edu.carroll.cs341.hookset.jpa.repo.WaterBodyRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
