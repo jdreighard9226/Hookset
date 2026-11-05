@@ -28,6 +28,11 @@
                                 Global error
                             </div>
 
+                            <!--/* shown when the service rejects the fly after the form passed validation */-->
+                            <div th:if="${addFlyFailed}" class="alert alert-danger">
+                                Something went wrong adding your fly. Please try again.
+                            </div>
+
                             <div class="mb-3">
                                 <label for="name" class="form-label">
                                     Fly Name
@@ -87,6 +92,10 @@
                                      th:if="${#fields.hasErrors('color')}"
                                      th:errors="*{color}">
                                     Fly color error
+                                </div>
+
+                                <div th:if="${invalidFlyColor}" class="text-danger mt-1">
+                                    Fly color can't be just a number
                                 </div>
                             </div>
 

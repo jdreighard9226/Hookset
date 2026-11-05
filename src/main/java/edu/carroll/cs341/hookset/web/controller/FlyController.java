@@ -157,9 +157,20 @@ public class FlyController {
 
         FlyInput flyInput = flyMapper.toInput(flyForm);
 
-        if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
-            model.addAttribute("invalidSizeRange", true);
-            hasCustomErrors = true;
+        // only display if both sizes are filled in. Missing sizes will be caught by form
+        if (flyInput.minSize() != null && flyInput.maxSize() != null) {
+            if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
+                model.addAttribute("invalidSizeRange", true);
+                hasCustomErrors = true;
+            }
+        }
+
+        // only display if the color isn't blank. Blank colors will be caught by form
+        if (!flyService.isFlyColorBlank(flyInput.color())) {
+            if (!flyService.isFlyColorValidString(flyInput.color())) {
+                model.addAttribute("invalidFlyColor", true);
+                hasCustomErrors = true;
+            }
         }
 
         if (!flyService.isFlyNameUnique(flyInput.name(), user.getId())) {
@@ -233,9 +244,20 @@ public class FlyController {
 
         FlyInput flyInput = flyMapper.toInput(flyForm);
 
-        if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
-            model.addAttribute("invalidSizeRange", true);
-            hasCustomErrors = true;
+        // only display if both sizes are filled in. Missing sizes will be caught by form
+        if (flyInput.minSize() != null && flyInput.maxSize() != null) {
+            if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
+                model.addAttribute("invalidSizeRange", true);
+                hasCustomErrors = true;
+            }
+        }
+
+        // only display if the color isn't blank. Blank colors will be caught by form
+        if (!flyService.isFlyColorBlank(flyInput.color())) {
+            if (!flyService.isFlyColorValidString(flyInput.color())) {
+                model.addAttribute("invalidFlyColor", true);
+                hasCustomErrors = true;
+            }
         }
 
         if (!flyService.isFlyNameUniqueForEdit(id, flyInput.name(), user.getId())) {
@@ -252,7 +274,12 @@ public class FlyController {
             return "flies/edit";
         }
 
-        flyService.updateFly(id, flyInput, user.getId());
+        if (!flyService.updateFly(id, flyInput, user.getId())) {
+            log.warn("Edit fly failed for fly ID: {}", id);
+            model.addAttribute("updateFlyFailed", true);
+            model.addAttribute("id", id);
+            return "flies/edit";
+        }
 
         return "redirect:/flies";
     }

@@ -135,4 +135,17 @@ public interface FlyService {
      * @return {@code true} if the name is blank, otherwise {@code false}
      */
     boolean isFlyNameBlank(String name);
+
+    boolean isFlyColorBlank(String flyColor);
+
+    boolean isFlyColorLengthValid(String flyColor);
+
+    boolean isFlyColorValidString(String flyColor);
+
+    boolean isMinSizeValidNumber(Integer minSize);
+
+    boolean isMaxSizeValidNumber(Integer maxSize);
+    boolean isFlyTypeValid(String flyType);
+
+    boolean isFlyNameLengthValid(String name);
 }

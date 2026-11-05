@@ -25,6 +25,7 @@ public class FlyForm {
     /** The color of the fly. */
     @NotBlank(message = "Please select a fly color.")
     @Size(max = 40, message = "Fly color cannot exceed 40 characters.")
+    @Size(min = 3, message ="Fly color cannot be less than 3 charactors")
     private String color;
 
     /** The minimum hook size the fly is tied in. */

@@ -423,6 +423,169 @@ public class FlyServiceImpl implements FlyService {
         return false;
     }
 
+
+    /**
+     * Checks whether a fly color is blank.
+     *
+     * @param flyColor the fly color to check
+     * @return true if the color is null, empty, or only whitespace, false otherwise
+     */
+    @Override
+    public boolean isFlyColorBlank(String flyColor) {
+        if (flyColor == null || flyColor.isBlank()) {
+            log.warn("Fly color is blank");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether a fly color is between 3 and 40 characters long.
+     *
+     * @param flyColor the fly color to check
+     * @return true if the trimmed color is between 3 and 40 characters, false otherwise
+     */
+    @Override
+    public boolean isFlyColorLengthValid(String flyColor) {
+        if (flyColor == null) {
+            log.warn("Fly color length check failed: color is null");
+            return false;
+        }
+
+        int colorLength = flyColor.trim().length();
+
+        if (colorLength < 3 || colorLength > 40) {
+            log.warn("Fly color length check failed: length {} is outside 3-40", colorLength);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether a fly color is a real word and not just a number.
+     *
+     * @param flyColor the fly color to check
+     * @return true if the color is not blank and is not made up entirely of digits, false otherwise
+     */
+    @Override
+    public boolean isFlyColorValidString(String flyColor) {
+        if (flyColor == null || flyColor.isBlank()) {
+            log.warn("Fly color string check failed: color is blank");
+            return false;
+        }
+
+        String trimmedColor = flyColor.trim();
+        boolean isAllDigits = true;
+
+        for (int i = 0; i < trimmedColor.length(); i++) {
+            char currentCharacter = trimmedColor.charAt(i);
+
+            if (!Character.isDigit(currentCharacter)) {
+                isAllDigits = false;
+                break;
+            }
+        }
+
+        if (isAllDigits) {
+            log.warn("Fly color string check failed: '{}' is only a number", flyColor);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether a minimum hook size is between 1 and 32.
+     *
+     * @param minSize the minimum hook size to check
+     * @return true if the size is not null and between 1 and 32, false otherwise
+     */
+    @Override
+    public boolean isMinSizeValidNumber(Integer minSize) {
+        if (minSize == null) {
+            log.warn("Minimum size check failed: size is null");
+            return false;
+        }
+
+        if (minSize < 1 || minSize > 32) {
+            log.warn("Minimum size check failed: {} is outside 1-32", minSize);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether a maximum hook size is between 1 and 32.
+     *
+     * @param maxSize the maximum hook size to check
+     * @return true if the size is not null and between 1 and 32, false otherwise
+     */
+    @Override
+    public boolean isMaxSizeValidNumber(Integer maxSize) {
+        if (maxSize == null) {
+            log.warn("Maximum size check failed: size is null");
+            return false;
+        }
+
+        if (maxSize < 1 || maxSize > 32) {
+            log.warn("Maximum size check failed: {} is outside 1-32", maxSize);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether a fly type is one of the allowed types.
+     *
+     * @param flyType the fly type to check
+     * @return true if the type matches one of the allowed fly types, false otherwise
+     */
+    @Override
+    public boolean isFlyTypeValid(String flyType) {
+        if (flyType == null || flyType.isBlank()) {
+            log.warn("Fly type check failed: type is blank");
+            return false;
+        }
+
+        List<String> validFlyTypes = List.of("Dry", "Nymph", "Streamer");
+
+        for (String validType : validFlyTypes) {
+            if (validType.equals(flyType)) {
+                return true;
+            }
+        }
+
+        log.warn("Fly type check failed: '{}' is not an allowed type", flyType);
+        return false;
+    }
+
+    /**
+     * Checks whether a fly name is between 1 and 150 characters long.
+     *
+     * @param name the fly name to check
+     * @return true if the trimmed name is between 1 and 150 characters, false otherwise
+     */
+    @Override
+    public boolean isFlyNameLengthValid(String name) {
+        if (name == null) {
+            log.warn("Fly name length check failed: name is null");
+            return false;
+        }
+
+        int nameLength = name.trim().length();
+
+        if (nameLength < 1 || nameLength > 150) {
+            log.warn("Fly name length check failed: length {} is outside 1-150", nameLength);
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * Runs the checks every saved fly must pass, no matter who calls the service.
      *
@@ -438,23 +601,35 @@ public class FlyServiceImpl implements FlyService {
             return false;
         }
 
-        if (flyInput.name() == null || flyInput.name().isBlank()) {
-            log.warn("Fly validation failed. Fly name is blank");
+        if (isFlyNameBlank(flyInput.name())) {
             return false;
         }
 
-        if (flyInput.type() == null || flyInput.type().isBlank()) {
-            log.warn("Fly validation failed. Fly type is blank");
+        if (!isFlyNameLengthValid(flyInput.name())) {
             return false;
         }
 
-        if (flyInput.minSize() == null || flyInput.maxSize() == null) {
-            log.warn("Fly validation failed. Min or max size is missing");
+        if (!isFlyTypeValid(flyInput.type())) {
             return false;
         }
 
-        if (flyInput.color() == null || flyInput.color().isBlank()) {
-            log.warn("Fly validation failed. Fly color is blank");
+        if (isFlyColorBlank(flyInput.color())) {
+            return false;
+        }
+
+        if (!isFlyColorLengthValid(flyInput.color())) {
+            return false;
+        }
+
+        if (!isFlyColorValidString(flyInput.color())) {
+            return false;
+        }
+
+        if (!isMinSizeValidNumber(flyInput.minSize())) {
+            return false;
+        }
+
+        if (!isMaxSizeValidNumber(flyInput.maxSize())) {
             return false;
         }
 
