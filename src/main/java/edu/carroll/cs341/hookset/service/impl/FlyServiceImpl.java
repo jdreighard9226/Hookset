@@ -1,5 +1,6 @@
 package edu.carroll.cs341.hookset.service.impl;
 
+import edu.carroll.cs341.hookset.jpa.repo.CatchRepository;
 import edu.carroll.cs341.hookset.jpa.repo.FlyRepository;
 import edu.carroll.cs341.hookset.service.FlyService;
 import edu.carroll.cs341.hookset.service.input.FlyInput;
@@ -32,13 +33,18 @@ public class FlyServiceImpl implements FlyService {
     /** The repository used to access fly records. */
     private final FlyRepository flyRepository;
 
+    /** The repository used to check whether catches use a fly. */
+    private final CatchRepository catchRepository;
+
     /**
-     * Creates the fly service with the repository it depends on.
+     * Creates the fly service with the repositories it depends on.
      *
      * @param flyRepository the repository used to access fly records
+     * @param catchRepository the repository used to check whether catches use a fly
      */
-    public FlyServiceImpl(FlyRepository flyRepository) {
+    public FlyServiceImpl(FlyRepository flyRepository, CatchRepository catchRepository) {
         this.flyRepository = flyRepository;
+        this.catchRepository = catchRepository;
     }
 
     /**
@@ -265,15 +271,19 @@ public class FlyServiceImpl implements FlyService {
     /**
      * Deletes a custom fly owned by a user.
      *
+     * <p>A fly that is used by any catch can't be deleted, since removing it
+     * would leave those catches pointing at a fly that no longer exists.</p>
+     *
      * @param id the ID of the fly to delete
      * @param userId the ID of the user deleting the fly
+     * @return true if the fly was deleted, false otherwise
      * @throws AccessDeniedException if the fly belongs to another user or is a default fly
      */
     @Override
-    public void deleteFly(Long id, Long userId) {
+    public boolean deleteFly(Long id, Long userId) {
         if (id == null) {
             log.warn("Fly delete failed. Fly ID is null");
-            return;
+            return false;
         }
 
         log.info("Deleting fly with ID: {} for user ID: {}", id, userId);
@@ -282,7 +292,7 @@ public class FlyServiceImpl implements FlyService {
 
         if (fly == null) {
             log.warn("Fly not found with ID: {}", id);
-            return;
+            return false;
         }
 
         // default flies have a null user ID, so this also blocks deleting them
@@ -291,9 +301,34 @@ public class FlyServiceImpl implements FlyService {
             throw new AccessDeniedException("You cannot delete this fly");
         }
 
+        if (isFlyUsedByCatch(id)) {
+            log.warn("Fly delete failed. Fly ID: {} is used by at least one catch", id);
+            return false;
+        }
+
         flyRepository.delete(fly);
 
         log.info("Fly deleted with ID: {}", id);
+        return true;
+    }
+
+    /**
+     * Checks whether any catch was logged with a fly.
+     *
+     * @param flyId the ID of the fly to check
+     * @return true if at least one catch uses the fly, false otherwise
+     */
+    @Override
+    public boolean isFlyUsedByCatch(Long flyId) {
+        if (flyId == null) {
+            log.warn("Fly in use check failed. Fly ID is null");
+            return false;
+        }
+
+        boolean isUsed = catchRepository.existsByFlyId(flyId);
+
+        log.info("Fly ID: {} used by a catch: {}", flyId, isUsed);
+        return isUsed;
     }
 
     /**

@@ -95,7 +95,15 @@ public interface FlyService {
      * @param userId the ID of the user deleting the fly
      * @throws org.springframework.security.access.AccessDeniedException if the fly belongs to another user or is a default fly
      */
-    void deleteFly(Long id, Long userId);
+    boolean deleteFly(Long id, Long userId);
+
+    /**
+     * Checks whether any catch was logged with a fly.
+     *
+     * @param flyId the ID of the fly to check
+     * @return {@code true} if at least one catch uses the fly, otherwise {@code false}
+     */
+    boolean isFlyUsedByCatch(Long flyId);
 
     /**
      * Checks that a fly's min size is not larger than its max size.

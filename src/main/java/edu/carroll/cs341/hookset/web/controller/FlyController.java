@@ -14,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import shared.jpa.entity.Fly;
 
 import java.util.ArrayList;
@@ -287,16 +288,29 @@ public class FlyController {
     /**
      * Handles POST requests to delete a custom fly.
      *
+     * <p>If the fly is used by any catches it isn't deleted, and a message is
+     * passed to the fly list to tell the user why.</p>
+     *
      * @param id the ID of the fly to delete
      * @param user the logged-in user deleting the fly
+     * @param redirectAttributes used to pass a one-time message to the fly list after the redirect
      * @return a redirect to the fly list
      */
     @PostMapping("/delete/{id}")
     public String postDeleteFly(@PathVariable Long id,
-                                @AuthenticationPrincipal HooksetUserDetails user) {
+                                @AuthenticationPrincipal HooksetUserDetails user,
+                                RedirectAttributes redirectAttributes) {
         log.info("Delete fly request for fly ID: {}", id);
 
-        flyService.deleteFly(id, user.getId());
+        if (!flyService.deleteFly(id, user.getId())) {
+            if (flyService.isFlyUsedByCatch(id)) {
+                log.warn("Delete fly blocked. Fly ID: {} is used by catches", id);
+                redirectAttributes.addFlashAttribute("flyInUse", true);
+            } else {
+                log.warn("Delete fly failed for fly ID: {}", id);
+                redirectAttributes.addFlashAttribute("deleteFlyFailed", true);
+            }
+        }
 
         return "redirect:/flies";
     }

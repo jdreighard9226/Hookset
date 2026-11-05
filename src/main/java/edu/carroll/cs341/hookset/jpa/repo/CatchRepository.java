@@ -21,4 +21,12 @@ public interface CatchRepository extends JpaRepository<Catch, Long> {
      * @return the list of catches for that user, or an empty list if none exist
      */
     List<Catch> findByUserId(Long userId);
+
+    /**
+     * Checks whether any catch was logged with the given fly.
+     *
+     * @param flyId the ID of the fly to check
+     * @return true if at least one catch uses the fly, false otherwise
+     */
+    boolean existsByFlyId(Long flyId);
 }

@@ -37,6 +37,15 @@
             </a>
         </div>
 
+        <!--/* flash messages from postDeleteFly, only shown once after the redirect */-->
+        <div th:if="${flyInUse}" class="alert alert-danger text-center">
+            This fly can't be deleted because it's used in one or more of your catches.
+        </div>
+
+        <div th:if="${deleteFlyFailed}" class="alert alert-danger text-center">
+            Something went wrong deleting your fly. Please try again.
+        </div>
+
         <div class="table-responsive">
             <table id="fliesTable"
                    class="table table-striped table-hover align-middle"
