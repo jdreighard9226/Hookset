@@ -48,11 +48,6 @@ git clone https://github.com/jdreighard9226/Hookset.git
 cd Hookset
 ```
 
-On Mac and Linux, also run:
-
-```bash
-chmod +x gradlew
-```
 
 ### 4. Create the database and app user
 
