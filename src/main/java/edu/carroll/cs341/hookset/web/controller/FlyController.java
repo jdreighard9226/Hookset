@@ -66,28 +66,28 @@ public class FlyController {
      *
      * <p>The filter can be "all" for default and custom flies, "mine" for the
      * user's custom flies, or "hookset" for default flies. Any other value
-     * falls back to "hookset".</p>
+     * falls back to "all".</p>
      *
-     * @param filter which set of flies to show, defaulting to "hookset"
+     * @param filter which set of flies to show, defaulting to "all"
      * @param user the logged-in user
      * @param model the model used to pass the flies and active filter to the view
      * @return the name of the fly index view to render
      */
     @GetMapping
-    public String index(@RequestParam(defaultValue = "hookset") String filter,
+    public String index(@RequestParam(defaultValue = "all") String filter,
                         @AuthenticationPrincipal HooksetUserDetails user,
                         Model model) {
         log.info("Loading flies page with filter: {}", filter);
 
         List<Fly> flies;
 
-        if (filter.equals("all")) {
-            flies = flyService.getAllFlies(user.getId());
-        } else if (filter.equals("mine")) {
+        if (filter.equals("mine")) {
             flies = flyService.getAllUserFlies(user.getId());
-        } else {
+        } else if (filter.equals("hookset")) {
             flies = flyService.getAllHooksetFlies();
-            filter = "hookset";
+        } else {
+            flies = flyService.getAllFlies(user.getId());
+            filter = "all";
         }
 
         List<FlyDto> flyDtos = mapAllFlyDtos(flies);
