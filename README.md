@@ -37,7 +37,7 @@ java -version
 
 ### 2. Install MySQL 8.0.46
 
-Download and run the MySQL 8.0.46 installer for your OS from <https://downloads.mysql.com/archives/community/>. Set a root password when it asks.
+Download and run the MySQL 8.0.46 installer for your OS from <https://dev.mysql.com/downloads/installer/>. Set a root password when it asks.
 
 MySQL Workbench is optional: <https://dev.mysql.com/downloads/workbench/>.
 
