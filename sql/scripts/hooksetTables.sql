@@ -21,12 +21,12 @@ CREATE TABLE Fly (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     userId BIGINT NULL,
     type VARCHAR(50) NOT NULL,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(150) NOT NULL,
     color VARCHAR(40) NOT NULL,
     minSize INT NOT NULL,
     maxSize INT NOT NULL,
     image VARCHAR(100) NOT NULL,
-    slug VARCHAR(125) NOT NULL,
+    slug VARCHAR(175) NOT NULL,
     
     FOREIGN KEY (userId)
         REFERENCES Users(id),

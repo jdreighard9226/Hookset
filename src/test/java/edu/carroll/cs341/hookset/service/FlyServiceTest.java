@@ -1,7 +1,10 @@
 package edu.carroll.cs341.hookset.service;
 
+import edu.carroll.cs341.hookset.jpa.repo.CatchRepository;
+import edu.carroll.cs341.hookset.jpa.repo.FishRepository;
 import edu.carroll.cs341.hookset.jpa.repo.FlyRepository;
 import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
+import edu.carroll.cs341.hookset.jpa.repo.WaterBodyRepository;
 import edu.carroll.cs341.hookset.service.input.FlyInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,12 +14,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import shared.jpa.entity.Catch;
+import shared.jpa.entity.Fish;
 import shared.jpa.entity.Fly;
 import shared.jpa.entity.User;
-
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
+import shared.jpa.entity.WaterBody;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +59,18 @@ public class FlyServiceTest {
     @Autowired
     private UserRepository userRepository;
 
+    /** Repository used to save catches that use a fly. */
+    @Autowired
+    private CatchRepository catchRepository;
+
+    /** Repository used to save the fish a test catch needs. */
+    @Autowired
+    private FishRepository fishRepository;
+
+    /** Repository used to save the water body a test catch needs. */
+    @Autowired
+    private WaterBodyRepository waterBodyRepository;
+
     /** Password encoder used to hash test user passwords the same way signup does. */
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -83,7 +98,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetAllFliesHappyPath() {
-        // baseline instead of a hardcoded count, so seed data doesn't break the test
+        // baseline instead of a hardcoded count
         int before = flyService.getAllFlies(testUser.getId()).size();
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
@@ -800,17 +815,13 @@ public class FlyServiceTest {
     }
 
     /**
-     * Crazy path: a fly type that is not dry fly or streamer falls back to the nymph image.
+     * Crazy path: a fly type that isn't one of the allowed types is rejected and nothing is saved.
      */
     @Test
     public void testAddFlyCrazyPathUnknownType() {
         // a type the form can't send, so this only reaches the service through a direct call
-        flyService.addFly(createTestFlyInput("Soft Hackle", "Wet Fly"), testUser.getId());
-
-        Fly saved = flyService.getAllUserFlies(testUser.getId()).getFirst();
-
-        assertEquals("nymph.png", saved.getImage(),
-                "An unknown fly type should fall back to the nymph image");
+        assertAddFlyRejected(createTestFlyInput("Soft Hackle", "Wet Fly"),
+                "A fly type that isn't Dry, Nymph, or Streamer should not be saved");
     }
 
     /**
@@ -1491,6 +1502,670 @@ public class FlyServiceTest {
                 "A single character name should not be blank");
     }
 
+    // ---------- isFlyNameLengthValid ----------
+
+    /**
+     * Happy path: a normal name is within the allowed length.
+     */
+    @Test
+    public void testIsFlyNameLengthValidHappyPath() {
+        assertTrue(flyService.isFlyNameLengthValid("Woolly Bugger"),
+                "A normal name should be within the allowed length");
+    }
+
+    /**
+     * Crappy path: a name over 150 characters is too long.
+     */
+    @Test
+    public void testIsFlyNameLengthValidCrappyPath() {
+        String longName = "a".repeat(151);
+
+        assertFalse(flyService.isFlyNameLengthValid(longName),
+                "A name over 150 characters should be too long");
+    }
+
+    /**
+     * Crazy path: a name of exactly 150 characters is allowed.
+     */
+    @Test
+    public void testIsFlyNameLengthValidCrazyPathExactlyMax() {
+        // boundary case, catches a > that should have been >= or the other way around
+        String maxName = "a".repeat(150);
+
+        assertTrue(flyService.isFlyNameLengthValid(maxName),
+                "A name of exactly 150 characters should be allowed");
+    }
+
+    /**
+     * Crazy path: a single character name is allowed.
+     */
+    @Test
+    public void testIsFlyNameLengthValidCrazyPathSingleCharacter() {
+        assertTrue(flyService.isFlyNameLengthValid("A"),
+                "A single character name should be allowed");
+    }
+
+    /**
+     * Crazy path: an empty name is too short.
+     */
+    @Test
+    public void testIsFlyNameLengthValidCrazyPathEmpty() {
+        assertFalse(flyService.isFlyNameLengthValid(""),
+                "An empty name should be too short");
+    }
+
+    /**
+     * Crazy path: a name of only spaces is too short once trimmed.
+     */
+    @Test
+    public void testIsFlyNameLengthValidCrazyPathSpaces() {
+        assertFalse(flyService.isFlyNameLengthValid("     "),
+                "A name of only spaces should be too short once trimmed");
+    }
+
+    /**
+     * Crazy path: spaces around a 150 character name don't count toward the length.
+     */
+    @Test
+    public void testIsFlyNameLengthValidCrazyPathPaddedMax() {
+        String paddedName = "  " + "a".repeat(150) + "  ";
+
+        assertTrue(flyService.isFlyNameLengthValid(paddedName),
+                "Spaces around the name should be trimmed before checking the length");
+    }
+
+    /**
+     * Crazy path: a null name is not valid.
+     */
+    @Test
+    public void testIsFlyNameLengthValidCrazyPathNull() {
+        assertFalse(flyService.isFlyNameLengthValid(null),
+                "A null name should not be valid");
+    }
+
+    // ---------- isFlyTypeValid ----------
+
+    /**
+     * Happy path: every type the form can send is valid.
+     */
+    @Test
+    public void testIsFlyTypeValidHappyPath() {
+        assertTrue(flyService.isFlyTypeValid("Dry"), "Dry should be a valid type");
+        assertTrue(flyService.isFlyTypeValid("Nymph"), "Nymph should be a valid type");
+        assertTrue(flyService.isFlyTypeValid("Streamer"), "Streamer should be a valid type");
+    }
+
+    /**
+     * Crappy path: a type that isn't on the list is not valid.
+     */
+    @Test
+    public void testIsFlyTypeValidCrappyPath() {
+        assertFalse(flyService.isFlyTypeValid("Wet Fly"),
+                "A type that isn't on the list should not be valid");
+    }
+
+    /**
+     * Crazy path: the dropdown's display text is not the value it sends, so it is not valid.
+     */
+    @Test
+    public void testIsFlyTypeValidCrazyPathDisplayText() {
+        // the form shows "Dry Fly" but sends "Dry"
+        assertFalse(flyService.isFlyTypeValid("Dry Fly"),
+                "The display text Dry Fly should not be valid, only the value Dry");
+    }
+
+    /**
+     * Crazy path: a type with the wrong case is not valid.
+     */
+    @Test
+    public void testIsFlyTypeValidCrazyPathWrongCase() {
+        assertFalse(flyService.isFlyTypeValid("dry"),
+                "A lowercase type should not be valid");
+    }
+
+    /**
+     * Crazy path: a valid type with spaces around it is not valid.
+     */
+    @Test
+    public void testIsFlyTypeValidCrazyPathPadded() {
+        assertFalse(flyService.isFlyTypeValid(" Dry "),
+                "A type with spaces around it should not be valid");
+    }
+
+    /**
+     * Crazy path: a blank type is not valid.
+     */
+    @Test
+    public void testIsFlyTypeValidCrazyPathBlank() {
+        assertFalse(flyService.isFlyTypeValid("   "),
+                "A blank type should not be valid");
+    }
+
+    /**
+     * Crazy path: a null type is not valid.
+     */
+    @Test
+    public void testIsFlyTypeValidCrazyPathNull() {
+        assertFalse(flyService.isFlyTypeValid(null),
+                "A null type should not be valid");
+    }
+
+    // ---------- isFlyColorBlank ----------
+
+    /**
+     * Happy path: a real color is not blank.
+     */
+    @Test
+    public void testIsFlyColorBlankHappyPath() {
+        assertFalse(flyService.isFlyColorBlank("Olive"),
+                "A real color should not be blank");
+    }
+
+    /**
+     * Crappy path: a null color is blank.
+     */
+    @Test
+    public void testIsFlyColorBlankCrappyPathNull() {
+        assertTrue(flyService.isFlyColorBlank(null),
+                "A null color should be blank");
+    }
+
+    /**
+     * Crazy path: an empty color is blank.
+     */
+    @Test
+    public void testIsFlyColorBlankCrazyPathEmpty() {
+        assertTrue(flyService.isFlyColorBlank(""),
+                "An empty color should be blank");
+    }
+
+    /**
+     * Crazy path: a color of only spaces is blank.
+     */
+    @Test
+    public void testIsFlyColorBlankCrazyPathSpaces() {
+        assertTrue(flyService.isFlyColorBlank("   "),
+                "A color of only spaces should be blank");
+    }
+
+    /**
+     * Crazy path: a color of only tabs and newlines is blank.
+     */
+    @Test
+    public void testIsFlyColorBlankCrazyPathTabsAndNewlines() {
+        // isBlank covers all whitespace, not just spaces
+        assertTrue(flyService.isFlyColorBlank("\t\n \r"),
+                "A color of only tabs and newlines should be blank");
+    }
+
+    // ---------- isFlyColorLengthValid ----------
+
+    /**
+     * Happy path: a normal color is within the allowed length.
+     */
+    @Test
+    public void testIsFlyColorLengthValidHappyPath() {
+        assertTrue(flyService.isFlyColorLengthValid("Olive"),
+                "A normal color should be within the allowed length");
+    }
+
+    /**
+     * Crappy path: a color over 40 characters is too long.
+     */
+    @Test
+    public void testIsFlyColorLengthValidCrappyPath() {
+        String longColor = "a".repeat(41);
+
+        assertFalse(flyService.isFlyColorLengthValid(longColor),
+                "A color over 40 characters should be too long");
+    }
+
+    /**
+     * Crazy path: a color of exactly 40 characters is allowed.
+     */
+    @Test
+    public void testIsFlyColorLengthValidCrazyPathExactlyMax() {
+        String maxColor = "a".repeat(40);
+
+        assertTrue(flyService.isFlyColorLengthValid(maxColor),
+                "A color of exactly 40 characters should be allowed");
+    }
+
+    /**
+     * Crazy path: a color of exactly 3 characters is allowed.
+     */
+    @Test
+    public void testIsFlyColorLengthValidCrazyPathExactlyMin() {
+        assertTrue(flyService.isFlyColorLengthValid("Red"),
+                "A color of exactly 3 characters should be allowed");
+    }
+
+    /**
+     * Crazy path: a color of 2 characters is too short.
+     */
+    @Test
+    public void testIsFlyColorLengthValidCrazyPathTooShort() {
+        assertFalse(flyService.isFlyColorLengthValid("Re"),
+                "A color of 2 characters should be too short");
+    }
+
+    /**
+     * Crazy path: spaces around a short color don't count toward the length.
+     */
+    @Test
+    public void testIsFlyColorLengthValidCrazyPathPaddedShort() {
+        // passes the form's @Size since it counts the spaces, but the service trims first
+        assertFalse(flyService.isFlyColorLengthValid("  Re  "),
+                "Spaces around the color should be trimmed before checking the length");
+    }
+
+    /**
+     * Crazy path: an empty color is too short.
+     */
+    @Test
+    public void testIsFlyColorLengthValidCrazyPathEmpty() {
+        assertFalse(flyService.isFlyColorLengthValid(""),
+                "An empty color should be too short");
+    }
+
+    /**
+     * Crazy path: a null color is not valid.
+     */
+    @Test
+    public void testIsFlyColorLengthValidCrazyPathNull() {
+        assertFalse(flyService.isFlyColorLengthValid(null),
+                "A null color should not be valid");
+    }
+
+    // ---------- isFlyColorValidString ----------
+
+    /**
+     * Happy path: a normal color is a valid string.
+     */
+    @Test
+    public void testIsFlyColorValidStringHappyPath() {
+        assertTrue(flyService.isFlyColorValidString("Olive"),
+                "A normal color should be a valid string");
+    }
+
+    /**
+     * Crappy path: a color that is only a number is not valid.
+     */
+    @Test
+    public void testIsFlyColorValidStringCrappyPath() {
+        assertFalse(flyService.isFlyColorValidString("123"),
+                "A color that is only a number should not be valid");
+    }
+
+    /**
+     * Crazy path: a number with spaces around it is still only a number.
+     */
+    @Test
+    public void testIsFlyColorValidStringCrazyPathPaddedNumber() {
+        assertFalse(flyService.isFlyColorValidString("  42  "),
+                "A number with spaces around it should still not be valid");
+    }
+
+    /**
+     * Crazy path: a color mixing letters and digits is valid.
+     */
+    @Test
+    public void testIsFlyColorValidStringCrazyPathLettersAndDigits() {
+        assertTrue(flyService.isFlyColorValidString("Olive2"),
+                "A color with letters and digits should be valid");
+    }
+
+    /**
+     * Crazy path: a color with symbols is valid.
+     */
+    @Test
+    public void testIsFlyColorValidStringCrazyPathSymbols() {
+        assertTrue(flyService.isFlyColorValidString("Olive/Black"),
+                "A color with symbols should be valid");
+    }
+
+    /**
+     * Crazy path: a decimal number is not all digits, so it passes.
+     */
+    @Test
+    public void testIsFlyColorValidStringCrazyPathDecimal() {
+        // the check only blocks all-digit strings, the decimal point makes this pass
+        assertTrue(flyService.isFlyColorValidString("1.5"),
+                "A decimal number should pass since it isn't all digits");
+    }
+
+    /**
+     * Crazy path: a blank color is not valid.
+     */
+    @Test
+    public void testIsFlyColorValidStringCrazyPathBlank() {
+        assertFalse(flyService.isFlyColorValidString("   "),
+                "A blank color should not be valid");
+    }
+
+    /**
+     * Crazy path: a null color is not valid.
+     */
+    @Test
+    public void testIsFlyColorValidStringCrazyPathNull() {
+        assertFalse(flyService.isFlyColorValidString(null),
+                "A null color should not be valid");
+    }
+
+    // ---------- isMinSizeValidNumber ----------
+
+    /**
+     * Happy path: a normal hook size is valid.
+     */
+    @Test
+    public void testIsMinSizeValidNumberHappyPath() {
+        assertTrue(flyService.isMinSizeValidNumber(12),
+                "A normal hook size should be valid");
+    }
+
+    /**
+     * Crappy path: a size over 32 is not valid.
+     */
+    @Test
+    public void testIsMinSizeValidNumberCrappyPath() {
+        assertFalse(flyService.isMinSizeValidNumber(33),
+                "A size over 32 should not be valid");
+    }
+
+    /**
+     * Crazy path: the smallest size number, 1, is valid.
+     */
+    @Test
+    public void testIsMinSizeValidNumberCrazyPathExactlyMin() {
+        assertTrue(flyService.isMinSizeValidNumber(1),
+                "A size of 1 should be valid");
+    }
+
+    /**
+     * Crazy path: the largest size number, 32, is valid.
+     */
+    @Test
+    public void testIsMinSizeValidNumberCrazyPathExactlyMax() {
+        assertTrue(flyService.isMinSizeValidNumber(32),
+                "A size of 32 should be valid");
+    }
+
+    /**
+     * Crazy path: a size of 0 is not valid.
+     */
+    @Test
+    public void testIsMinSizeValidNumberCrazyPathZero() {
+        assertFalse(flyService.isMinSizeValidNumber(0),
+                "A size of 0 should not be valid");
+    }
+
+    /**
+     * Crazy path: a negative size is not valid.
+     */
+    @Test
+    public void testIsMinSizeValidNumberCrazyPathNegative() {
+        assertFalse(flyService.isMinSizeValidNumber(-5),
+                "A negative size should not be valid");
+    }
+
+    /**
+     * Crazy path: a null size is not valid.
+     */
+    @Test
+    public void testIsMinSizeValidNumberCrazyPathNull() {
+        assertFalse(flyService.isMinSizeValidNumber(null),
+                "A null size should not be valid");
+    }
+
+    // ---------- isMaxSizeValidNumber ----------
+
+    /**
+     * Happy path: a normal hook size is valid.
+     */
+    @Test
+    public void testIsMaxSizeValidNumberHappyPath() {
+        assertTrue(flyService.isMaxSizeValidNumber(18),
+                "A normal hook size should be valid");
+    }
+
+    /**
+     * Crappy path: a size over 32 is not valid.
+     */
+    @Test
+    public void testIsMaxSizeValidNumberCrappyPath() {
+        assertFalse(flyService.isMaxSizeValidNumber(33),
+                "A size over 32 should not be valid");
+    }
+
+    /**
+     * Crazy path: the smallest size number, 1, is valid.
+     */
+    @Test
+    public void testIsMaxSizeValidNumberCrazyPathExactlyMin() {
+        assertTrue(flyService.isMaxSizeValidNumber(1),
+                "A size of 1 should be valid");
+    }
+
+    /**
+     * Crazy path: the largest size number, 32, is valid.
+     */
+    @Test
+    public void testIsMaxSizeValidNumberCrazyPathExactlyMax() {
+        assertTrue(flyService.isMaxSizeValidNumber(32),
+                "A size of 32 should be valid");
+    }
+
+    /**
+     * Crazy path: a size of 0 is not valid.
+     */
+    @Test
+    public void testIsMaxSizeValidNumberCrazyPathZero() {
+        assertFalse(flyService.isMaxSizeValidNumber(0),
+                "A size of 0 should not be valid");
+    }
+
+    /**
+     * Crazy path: a negative size is not valid.
+     */
+    @Test
+    public void testIsMaxSizeValidNumberCrazyPathNegative() {
+        assertFalse(flyService.isMaxSizeValidNumber(-5),
+                "A negative size should not be valid");
+    }
+
+    /**
+     * Crazy path: a null size is not valid.
+     */
+    @Test
+    public void testIsMaxSizeValidNumberCrazyPathNull() {
+        assertFalse(flyService.isMaxSizeValidNumber(null),
+                "A null size should not be valid");
+    }
+
+    // ---------- isFlyUsedByCatch ----------
+
+    /**
+     * Happy path: a fly with a catch logged on it is in use.
+     */
+    @Test
+    public void testIsFlyUsedByCatchHappyPath() {
+        Fly saved = flyRepository.save(createTestFly("Used Fly", "used-fly", testUser.getId()));
+        catchRepository.save(createTestCatch(saved));
+
+        assertTrue(flyService.isFlyUsedByCatch(saved.getId()),
+                "A fly with a catch logged on it should be in use");
+    }
+
+    /**
+     * Crappy path: a fly with no catches is not in use.
+     */
+    @Test
+    public void testIsFlyUsedByCatchCrappyPath() {
+        Fly saved = flyRepository.save(createTestFly("Unused Fly", "unused-fly", testUser.getId()));
+
+        assertFalse(flyService.isFlyUsedByCatch(saved.getId()),
+                "A fly with no catches should not be in use");
+    }
+
+    /**
+     * Crazy path: a catch on a different fly doesn't count.
+     */
+    @Test
+    public void testIsFlyUsedByCatchCrazyPathOtherFlyHasCatch() {
+        Fly usedFly = flyRepository.save(createTestFly("Used Fly", "used-fly", testUser.getId()));
+        Fly unusedFly = flyRepository.save(createTestFly("Unused Fly", "unused-fly", testUser.getId()));
+        catchRepository.save(createTestCatch(usedFly));
+
+        assertFalse(flyService.isFlyUsedByCatch(unusedFly.getId()),
+                "A catch on a different fly should not make this fly in use");
+    }
+
+    /**
+     * Crazy path: a fly ID that doesn't exist is not in use.
+     */
+    @Test
+    public void testIsFlyUsedByCatchCrazyPathMissingFly() {
+        assertFalse(flyService.isFlyUsedByCatch(999999L),
+                "A fly ID that doesn't exist should not be in use");
+    }
+
+    /**
+     * Crazy path: a null fly ID is not in use.
+     */
+    @Test
+    public void testIsFlyUsedByCatchCrazyPathNull() {
+        assertFalse(flyService.isFlyUsedByCatch(null),
+                "A null fly ID should not be in use");
+    }
+
+    // ---------- deleteFly return value and catch check ----------
+
+    /**
+     * Happy path: deleting an unused custom fly returns true.
+     */
+    @Test
+    public void testDeleteFlyHappyPathReturnsTrue() {
+        Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
+
+        boolean result = flyService.deleteFly(saved.getId(), testUser.getId());
+
+        assertTrue(result, "Deleting an unused custom fly should return true");
+        assertNull(flyRepository.findById(saved.getId()).orElse(null),
+                "The fly should be gone after it is deleted");
+    }
+
+    /**
+     * Crappy path: a fly used by a catch is not deleted.
+     */
+    @Test
+    public void testDeleteFlyCrappyPathUsedByCatch() {
+        Fly saved = flyRepository.save(createTestFly("Used Fly", "used-fly", testUser.getId()));
+        catchRepository.save(createTestCatch(saved));
+
+        boolean result = flyService.deleteFly(saved.getId(), testUser.getId());
+
+        assertFalse(result, "A fly used by a catch should not be deleted");
+        assertFlyNameUnchanged(saved.getId(), "Used Fly");
+    }
+
+    /**
+     * Crazy path: a fly ID that doesn't exist returns false.
+     */
+    @Test
+    public void testDeleteFlyCrazyPathMissingFlyReturnsFalse() {
+        assertFalse(flyService.deleteFly(999999L, testUser.getId()),
+                "Deleting a fly that doesn't exist should return false");
+    }
+
+    /**
+     * Crazy path: a null fly ID returns false.
+     */
+    @Test
+    public void testDeleteFlyCrazyPathNullIdReturnsFalse() {
+        assertFalse(flyService.deleteFly(null, testUser.getId()),
+                "Deleting with a null fly ID should return false");
+    }
+
+    /**
+     * Crazy path: another user's fly that is used by a catch is still denied, not just rejected.
+     */
+    @Test
+    public void testDeleteFlyCrazyPathOtherUserUsedFly() {
+        // ownership is checked before the catch check, so this throws instead of returning false
+        Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
+        catchRepository.save(createTestCatch(otherFly));
+
+        assertThrows(AccessDeniedException.class,
+                () -> flyService.deleteFly(otherFly.getId(), testUser.getId()),
+                "Deleting another user's fly should be denied even when it is used by a catch");
+        assertFlyNameUnchanged(otherFly.getId(), "Other Fly");
+    }
+
+    // ---------- addFly and updateFly with the new checks ----------
+
+    /**
+     * Crazy path: addFly rejects a name over 150 characters.
+     */
+    @Test
+    public void testAddFlyCrazyPathNameTooLong() {
+        assertAddFlyRejected(createTestFlyInput("a".repeat(151), "Dry", "Olive", 12, 18),
+                "A fly name over 150 characters should not be saved");
+    }
+
+    /**
+     * Crazy path: addFly rejects a color that is only a number.
+     */
+    @Test
+    public void testAddFlyCrazyPathNumberColor() {
+        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "123", 12, 18),
+                "A fly color that is only a number should not be saved");
+    }
+
+    /**
+     * Crazy path: addFly rejects a color that is too short.
+     */
+    @Test
+    public void testAddFlyCrazyPathColorTooShort() {
+        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Re", 12, 18),
+                "A fly color under 3 characters should not be saved");
+    }
+
+    /**
+     * Crazy path: addFly rejects a size outside 1-32.
+     */
+    @Test
+    public void testAddFlyCrazyPathSizeOutOfRange() {
+        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Olive", 0, 40),
+                "A fly with sizes outside 1-32 should not be saved");
+    }
+
+    /**
+     * Crazy path: updateFly rejects a type that isn't on the list.
+     */
+    @Test
+    public void testUpdateFlyCrazyPathUnknownType() {
+        assertUpdateFlyRejected(createTestFlyInput("New Name", "Wet Fly", "Olive", 12, 18),
+                "Updating to a type that isn't on the list should be rejected");
+    }
+
+    /**
+     * Crazy path: updateFly rejects a color that is only a number.
+     */
+    @Test
+    public void testUpdateFlyCrazyPathNumberColor() {
+        assertUpdateFlyRejected(createTestFlyInput("New Name", "Dry", "123", 12, 18),
+                "Updating to a color that is only a number should be rejected");
+    }
+
+    /**
+     * Crazy path: updateFly rejects a size outside 1-32.
+     */
+    @Test
+    public void testUpdateFlyCrazyPathSizeOutOfRange() {
+        assertUpdateFlyRejected(createTestFlyInput("New Name", "Dry", "Olive", 12, 33),
+                "Updating to a size over 32 should be rejected");
+    }
+
     // ---------- Helpers ----------
 
     /**
@@ -1605,6 +2280,63 @@ public class FlyServiceTest {
      */
     private FlyInput createTestFlyInput(String name, String type, String color, Integer minSize, Integer maxSize) {
         return new FlyInput(name, type, color, minSize, maxSize);
+    }
+
+    /**
+     * Builds a catch logged by the test user with the given fly.
+     *
+     * <p>The catch table requires a real fish and water body, so this saves one of each
+     * first. The fly is passed in so tests can choose which fly the catch uses.</p>
+     *
+     * @param fly the fly the catch was made with
+     * @return a new, unsaved catch
+     */
+    private Catch createTestCatch(Fly fly) {
+        Fish fish = fishRepository.save(createTestFish());
+        WaterBody waterBody = waterBodyRepository.save(createTestWaterBody());
+
+        Catch testCatch = new Catch();
+
+        testCatch.setUserId(testUser.getId());
+        testCatch.setFly(fly);
+        testCatch.setFish(fish);
+        testCatch.setWaterBody(waterBody);
+        testCatch.setDateCaught(LocalDateTime.now());
+
+        return testCatch;
+    }
+
+    /**
+     * Builds a fish with fixed test values.
+     *
+     * @return a new, unsaved fish
+     */
+    private Fish createTestFish() {
+        Fish fish = new Fish();
+
+        fish.setFamily("Trout");
+        fish.setSpecies("Test Rainbow Trout");
+        fish.setImage("rainbow-trout.png");
+
+        return fish;
+    }
+
+    /**
+     * Builds a water body with fixed test values.
+     *
+     * @return a new, unsaved water body
+     */
+    private WaterBody createTestWaterBody() {
+        WaterBody waterBody = new WaterBody();
+
+        // slug is unique in the table, so this one is named so it won't collide with seed data
+        waterBody.setName("Fly Service Test River");
+        waterBody.setType("River");
+        waterBody.setState("Montana");
+        waterBody.setDescription("A water body used by fly service tests.");
+        waterBody.setSlug("fly-service-test-river");
+
+        return waterBody;
     }
 
     /**
