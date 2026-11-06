@@ -16,117 +16,39 @@ Bad input on any form is caught and the page shows a message explaining what wen
 
 ### What you need
 
-| Tool | Version | Notes |
-| --- | --- | --- |
-| JDK | 25 | Hookset was built with Oracle JDK 25 (25.0.4.1 LTS). Any JDK 25 works, such as Eclipse Temurin 25. Gradle's toolchain in `build.gradle` asks for Java 25, so the build fails if no JDK 25 is installed. |
-| MySQL Server | 8.0.46 | Hookset was built and tested with MySQL 8.0.46. Homebrew and apt install the latest 8.0 release, which works the same. |
-| MySQL Workbench | 8.0 | Optional. Only needed if you'd rather run the SQL scripts in a GUI. |
-| Git | Any recent version | Used to clone the repo. |
-| Gradle | None | The Gradle wrapper is included in the repo. Nothing to install. |
+| Tool | Version |
+| --- | --- |
+| JDK | 25 (built with Oracle JDK 25.0.4.1) |
+| MySQL Server | 8.0.46 |
+| MySQL Workbench | 8.0 (optional) |
+| Git | Any |
+
+Gradle is included in the repo through the Gradle wrapper.
 
 ### 1. Install JDK 25
 
-**Windows**
+Download and run the JDK 25 installer for your OS from <https://www.oracle.com/java/technologies/downloads/>.
 
-1. Download the JDK 25 Windows x64 Installer (`.msi`) from <https://www.oracle.com/java/technologies/downloads/>.
-2. Run the installer.
-3. Open a new PowerShell window and check it:
+Check it:
 
-   ```powershell
-   java -version
-   ```
-
-   The first line should start with `java 25`.
-
-**Mac**
-
-1. Download the JDK 25 macOS installer (`.dmg`) from <https://www.oracle.com/java/technologies/downloads/>. Pick ARM64 for Apple Silicon Macs or x64 for Intel Macs.
-2. Run the installer.
-3. Open a new Terminal window and check it:
-
-   ```bash
-   java -version
-   ```
-
-**Linux (Ubuntu/Debian)**
-
-1. Download the JDK 25 Linux x64 Debian package (`.deb`) from <https://www.oracle.com/java/technologies/downloads/>.
-2. Install it:
-
-   ```bash
-   sudo apt install ./jdk-25_linux-x64_bin.deb
-   ```
-
-3. Check it:
-
-   ```bash
-   java -version
-   ```
-
-If `java -version` shows an older version, another JDK is first on your `PATH`. Gradle can still find JDK 25 on its own, but the check above won't show it.
+```bash
+java -version
+```
 
 ### 2. Install MySQL 8.0.46
 
-**Windows**
+Download and run the MySQL 8.0.46 installer for your OS from <https://downloads.mysql.com/archives/community/>. Set a root password when it asks.
 
-1. Go to the MySQL archive at <https://downloads.mysql.com/archives/community/>, set Product Version to 8.0.46 and Operating System to Microsoft Windows, then download the Windows (x86, 64-bit) MSI Installer and run it.
-2. Install MySQL Server 8.0.46. If you want the GUI, download MySQL Workbench separately from <https://dev.mysql.com/downloads/workbench/>.
-3. Set a root password when the installer asks. You'll need it in the next steps.
-4. Add MySQL to your `PATH` so the `mysql` command works in PowerShell. The installer doesn't do this. Run this once, then open a new PowerShell window:
-
-   ```powershell
-   [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Program Files\MySQL\MySQL Server 8.0\bin", "User")
-   ```
-
-5. Check it:
-
-   ```powershell
-   mysql --version
-   ```
-
-**Mac**
-
-With [Homebrew](https://brew.sh):
-
-```bash
-brew install mysql@8.0
-brew services start mysql@8.0
-echo 'export PATH="$(brew --prefix mysql@8.0)/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-mysql --version
-```
-
-Homebrew's MySQL starts with no root password. Set one:
-
-```bash
-mysql_secure_installation
-```
-
-Homebrew installs the latest 8.0 release. To get exactly 8.0.46, use the macOS installer (`.dmg`) instead: go to <https://downloads.mysql.com/archives/community/>, set Product Version to 8.0.46 and Operating System to macOS, and pick ARM64 for Apple Silicon or x86 for Intel.
-
-**Linux (Ubuntu/Debian)**
-
-```bash
-sudo apt update
-sudo apt install mysql-server
-sudo systemctl start mysql
-mysql --version
-```
-
-apt installs the 8.0 release your Ubuntu version ships with, so `mysql --version` may not say exactly 8.0.46. To get exactly 8.0.46, download the packages from <https://downloads.mysql.com/archives/community/> with Product Version set to 8.0.46.
-
-On Ubuntu, root logs in with `sudo mysql` instead of a password.
+MySQL Workbench is optional: <https://dev.mysql.com/downloads/workbench/>.
 
 ### 3. Clone the repo
-
-Windows (PowerShell), Mac, and Linux use the same commands:
 
 ```bash
 git clone https://github.com/jdreighard9226/Hookset.git
 cd Hookset
 ```
 
-On Mac and Linux, make the Gradle wrapper runnable:
+On Mac and Linux, also run:
 
 ```bash
 chmod +x gradlew
@@ -134,17 +56,11 @@ chmod +x gradlew
 
 ### 4. Create the database and app user
 
-Hibernate is set to `ddl-auto=validate`. It checks the tables but does not create them, so the database has to be set up before the app starts.
-
-The app connects as `hooksetapp` to the `hookset` database on `localhost`, port 3306 (`spring.datasource.url=jdbc:mysql://localhost/hookset`). The password must match `spring.datasource.password` in `src/main/resources/application.properties`. If you use a different password, change it in both places.
-
 Log in to MySQL as root:
 
 ```bash
 mysql -u root -p
 ```
-
-On Ubuntu, use `sudo mysql` instead.
 
 Then run:
 
@@ -155,21 +71,19 @@ GRANT ALL PRIVILEGES ON hookset.* TO 'hooksetapp'@'localhost';
 EXIT;
 ```
 
+The password has to match `spring.datasource.password` in `src/main/resources/application.properties`.
+
 ### 5. Run the SQL scripts
 
-Run the scripts in `sql/scripts` in this order. Each one starts with `USE hookset;`, so they go into the right database on their own.
+Run these three scripts in this order:
 
 | Order | Script | What it does |
 | --- | --- | --- |
-| 1 | `hooksetTables.sql` | Drops and recreates every table. Running it again wipes all data. |
-| 2 | `fish-waterbody-importer.sql` | Adds the water bodies, fish species, and which fish live in which water. |
-| 3 | `hookset_flies_with_slugs.sql` | Adds the 198 default flies. |
-
-Run these from the `Hookset` folder. Each command asks for the `hooksetapp` password.
+| 1 | `sql/scripts/hooksetTables.sql` | Drops and recreates every table. Running it again wipes all data. |
+| 2 | `sql/scripts/fish-waterbody-importer.sql` | Adds the water bodies, fish species, and which fish live in which water. |
+| 3 | `sql/scripts/hookset_flies_with_slugs.sql` | Adds the 198 default flies. |
 
 **Windows (PowerShell)**
-
-PowerShell doesn't support `<` for reading a file into a command, so these use MySQL's `source` command:
 
 ```powershell
 mysql -u hooksetapp -p -e "source sql/scripts/hooksetTables.sql"
@@ -187,24 +101,11 @@ mysql -u hooksetapp -p < sql/scripts/hookset_flies_with_slugs.sql
 
 **MySQL Workbench**
 
-Connect as `hooksetapp`. For each script in order, go to File > Open SQL Script, open it, and click the lightning bolt to run the whole thing.
-
-Check that the data loaded:
-
-```sql
-USE hookset;
-SELECT COUNT(*) FROM Fly;
-SELECT COUNT(*) FROM WaterBody;
-SELECT COUNT(*) FROM Fish;
-```
-
-You should get 198 flies, 39 water bodies, and 13 fish.
+Open each script with File > Open SQL Script and run it with the lightning bolt.
 
 The database diagram is in `sql/hookset-erd.png`.
 
 ### 6. Start the app
-
-From the `Hookset` folder:
 
 **Windows (PowerShell)**
 
@@ -218,9 +119,7 @@ From the `Hookset` folder:
 ./gradlew bootRun
 ```
 
-The first run downloads Gradle and the project's dependencies, so it takes a few minutes. When the log shows `Started HooksetApplication`, open <http://localhost:8080/> and sign up for an account.
-
-Stop the app with `Ctrl+C`.
+Open <http://localhost:8080/> and sign up for an account.
 
 ### 7. Run the tests
 
@@ -236,24 +135,22 @@ Stop the app with `Ctrl+C`.
 ./gradlew test
 ```
 
-The tests don't use MySQL. The `test` profile (`src/test/resources/application-test.properties`) runs them against an in-memory H2 database that's built from `hooksetTables.sql` and starts with no data. Each test runs in a transaction that gets rolled back, so tests don't affect each other.
-
-The test report is written to `build/reports/tests/test/index.html`.
+The tests use an in-memory H2 database, so MySQL doesn't need to be running.
 
 ### Logs
 
-Logs print to the console and are written to `logs/spring-boot-logger.log`. Logging is configured in `src/main/resources/logback-spring.xml`.
+Logs print to the console and are written to `logs/spring-boot-logger.log`.
 
 ### Troubleshooting
 
 | Problem | Fix |
 | --- | --- |
-| `mysql` is not recognized (Windows) | MySQL's `bin` folder isn't on your `PATH`. Run the `PATH` command from the Windows part of step 2, then open a new PowerShell window. |
+| `mysql` is not recognized | MySQL's `bin` folder isn't on your `PATH`. Add it, or use MySQL Workbench for steps 4 and 5. |
 | `Permission denied` running `./gradlew` | Run `chmod +x gradlew`. |
-| `No matching toolchains found` | JDK 25 isn't installed. Install it from step 1. |
-| `Access denied for user 'hooksetapp'@'localhost'` | The password in `application.properties` doesn't match the one you used in `CREATE USER`. |
-| `Schema-validation: missing table` | The SQL scripts haven't been run. Run them in order from step 5. |
-| `Communications link failure` | MySQL isn't running. Start it from Services (Windows), `brew services start mysql@8.0` (Mac), or `sudo systemctl start mysql` (Linux). |
+| `No matching toolchains found` | JDK 25 isn't installed. |
+| `Access denied for user 'hooksetapp'@'localhost'` | The password in `application.properties` doesn't match the one in `CREATE USER`. |
+| `Schema-validation: missing table` | Run the SQL scripts from step 5. |
+| `Communications link failure` | MySQL isn't running. |
 
 ## References
 ### Fish Images
