@@ -14,7 +14,7 @@ use hookset;
 -- are only mentioned in a page's regulations or overview are left out.
 --
 -- Belt Creek, Flathead Lake, and Georgetown Lake are not on that site.
--- They are kept exactly as they were in the earlier version of this script.
+-- Their sources are other pages, cited above each one's fish links.
 -- ============================================================
 
 -- ============================================================
@@ -37,7 +37,7 @@ VALUES
     'Belt Creek',
     'Stream',
     'Montana',
-    'A central Montana stream supporting cold-water fisheries, including rainbow and brown trout, mountain whitefish, and important westslope cutthroat trout habitat.',
+    'A central Montana stream that winds through the Sluice Boxes State Park canyon southeast of Great Falls, supporting rainbow, brown, and brook trout and important westslope cutthroat trout habitat.',
     'belt-creek'
 ),
 
@@ -393,11 +393,16 @@ AND f.species IN (
 -- ============================================================
 -- BELT CREEK
 --
--- Not on the Fly Guys N Lies list, kept from the earlier version.
+-- Source:
+--   https://genuinemontana.com/?p=610
+--   https://en.wikipedia.org/wiki/Belt_Creek_(Montana)
+--   https://theelectricgf.com/2022/01/14/fwp-seeking-public-comment-on-proposals-to-increase-trout-in-belt-creek-watershed-plant-trees-in-giant-springs-state-park/
+--
+-- Note: Genuine Montana lists rainbow, cutthroat, brook, and brown trout. Wikipedia, citing Montana FWP, lists brook, brown, and rainbow trout as introduced. The Electric reports FWP's westslope cutthroat work in the Belt Creek watershed. No source names mountain whitefish, so it was removed, and brook trout was added.
 --
 -- Rainbow Trout
 -- Brown Trout
--- Mountain Whitefish
+-- Brook Trout
 -- Westslope Cutthroat Trout
 -- ============================================================
 
@@ -409,7 +414,7 @@ WHERE w.slug = 'belt-creek'
 AND f.species IN (
     'Rainbow Trout',
     'Brown Trout',
-    'Mountain Whitefish',
+    'Brook Trout',
     'Westslope Cutthroat Trout'
 );
 
@@ -660,7 +665,8 @@ AND f.species IN (
 -- ============================================================
 -- FLATHEAD LAKE
 --
--- Not on the Fly Guys N Lies list, kept from the earlier version.
+-- Source:
+--   https://flbs.umt.edu/newflbs/flathead-lake/lake-facts/
 --
 -- Lake Trout
 -- Lake Whitefish
@@ -767,7 +773,8 @@ AND f.species IN (
 -- ============================================================
 -- GEORGETOWN LAKE
 --
--- Not on the Fly Guys N Lies list, kept from the earlier version.
+-- Source:
+--   https://blackfootriver.com/blogs/fishing-reports/georgetown-lake-fishing-report
 --
 -- Rainbow Trout
 -- Brook Trout
