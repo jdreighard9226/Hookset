@@ -15,7 +15,7 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 
 @SpringBootApplication
 // entities live in the shared module, outside this application's base package
-@EntityScan(basePackages = "shared.jpa.entity")
+@EntityScan(basePackages = "entities.jpa.entity")
 public class HooksetApplication {
 
     /**

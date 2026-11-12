@@ -1,7 +1,7 @@
 package edu.carroll.cs341.hookset.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import shared.jpa.entity.Fish;
+import entities.jpa.entity.Fish;
 
 /**
  * Repository for reading and writing fish species records.

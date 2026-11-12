@@ -12,8 +12,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import shared.jpa.entity.Fish;
-import shared.jpa.entity.WaterBody;
+import entities.jpa.entity.Fish;
+import entities.jpa.entity.WaterBody;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -27,10 +27,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import shared.jpa.entity.Catch;
-import shared.jpa.entity.Fish;
-import shared.jpa.entity.Fly;
-import shared.jpa.entity.WaterBody;
+import entities.jpa.entity.Catch;
+import entities.jpa.entity.Fish;
+import entities.jpa.entity.Fly;
+import entities.jpa.entity.WaterBody;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

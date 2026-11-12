@@ -7,7 +7,7 @@ import edu.carroll.cs341.hookset.web.dto.FlyDto;
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
 import edu.carroll.cs341.hookset.web.form.CatchForm;
 import org.springframework.stereotype.Component;
-import shared.jpa.entity.Catch;
+import entities.jpa.entity.Catch;
 
 /**
  * Maps catches between entities, DTOs, forms, and service input.

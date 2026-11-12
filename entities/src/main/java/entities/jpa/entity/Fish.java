@@ -1,4 +1,4 @@
-package shared.jpa.entity;
+package entities.jpa.entity;
 
 import jakarta.persistence.*;
 

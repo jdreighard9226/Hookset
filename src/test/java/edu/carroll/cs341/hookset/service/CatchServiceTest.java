@@ -13,11 +13,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import shared.jpa.entity.Catch;
-import shared.jpa.entity.Fish;
-import shared.jpa.entity.Fly;
-import shared.jpa.entity.User;
-import shared.jpa.entity.WaterBody;
+import entities.jpa.entity.Catch;
+import entities.jpa.entity.Fish;
+import entities.jpa.entity.Fly;
+import entities.jpa.entity.User;
+import entities.jpa.entity.WaterBody;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

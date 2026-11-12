@@ -1,7 +1,7 @@
 package edu.carroll.cs341.hookset.service;
 
 import edu.carroll.cs341.hookset.service.input.FlyInput;
-import shared.jpa.entity.Fly;
+import entities.jpa.entity.Fly;
 
 import java.util.List;
 

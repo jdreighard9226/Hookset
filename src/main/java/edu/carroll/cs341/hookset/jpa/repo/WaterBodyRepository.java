@@ -1,7 +1,7 @@
 package edu.carroll.cs341.hookset.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import shared.jpa.entity.WaterBody;
+import entities.jpa.entity.WaterBody;
 
 /**
  * Repository for reading and writing water body records.

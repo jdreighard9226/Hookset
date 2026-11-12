@@ -2,7 +2,7 @@ package edu.carroll.cs341.hookset.web.mapper;
 
 import edu.carroll.cs341.hookset.web.dto.FishDto;
 import org.springframework.stereotype.Component;
-import shared.jpa.entity.Fish;
+import entities.jpa.entity.Fish;
 
 /**
  * Converts fish entities into DTOs for the web layer.

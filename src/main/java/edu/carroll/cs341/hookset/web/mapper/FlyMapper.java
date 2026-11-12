@@ -4,7 +4,7 @@ import edu.carroll.cs341.hookset.service.input.FlyInput;
 import edu.carroll.cs341.hookset.web.dto.FlyDto;
 import edu.carroll.cs341.hookset.web.form.FlyForm;
 import org.springframework.stereotype.Component;
-import shared.jpa.entity.Fly;
+import entities.jpa.entity.Fly;
 
 /**
  * Converts flies between entities, DTOs, forms, and service input for the web layer.

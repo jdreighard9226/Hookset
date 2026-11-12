@@ -5,8 +5,8 @@ import edu.carroll.cs341.hookset.service.WaterBodyService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import shared.jpa.entity.Fish;
-import shared.jpa.entity.WaterBody;
+import entities.jpa.entity.Fish;
+import entities.jpa.entity.WaterBody;
 
 import java.util.ArrayList;
 import java.util.List;

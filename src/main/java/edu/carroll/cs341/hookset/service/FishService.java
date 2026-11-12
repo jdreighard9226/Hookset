@@ -1,6 +1,6 @@
 package edu.carroll.cs341.hookset.service;
 
-import shared.jpa.entity.Fish;
+import entities.jpa.entity.Fish;
 
 import java.util.List;
 

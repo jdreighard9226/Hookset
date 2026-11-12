@@ -2,7 +2,7 @@ USE hookset;
 
 -- 198 default Hookset flies: 73 Dry, 79 Nymph, 46 Streamer.
 -- userId = NULL means this is a catalog fly, not a user-created fly.
--- Each fly type uses one shared emblem image (dry.png, nymph.png, streamer.png).
+-- Each fly type uses one entities emblem image (dry.png, nymph.png, streamer.png).
 -- Inserts only: does not drop tables or delete existing rows.
 --
 -- Source of truth: every pattern, color, and size range below comes from a

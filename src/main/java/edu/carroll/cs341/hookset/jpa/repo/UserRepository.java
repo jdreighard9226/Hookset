@@ -2,7 +2,7 @@ package edu.carroll.cs341.hookset.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import shared.jpa.entity.User;
+import entities.jpa.entity.User;
 
 /**
  * Provides database access for User entities.

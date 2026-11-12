@@ -1,7 +1,7 @@
 package edu.carroll.cs341.hookset.jpa.repo;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import shared.jpa.entity.Catch;
+import entities.jpa.entity.Catch;
 
 import java.util.List;
 

@@ -2,7 +2,7 @@ package edu.carroll.cs341.hookset.userDetails;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import shared.jpa.entity.User;
+import entities.jpa.entity.User;
 
 import java.util.Collection;
 import java.util.List;

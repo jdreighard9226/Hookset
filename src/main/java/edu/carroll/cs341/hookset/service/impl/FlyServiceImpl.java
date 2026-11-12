@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import shared.jpa.entity.Fly;
+import entities.jpa.entity.Fly;
 
 import java.util.ArrayList;
 import java.util.List;

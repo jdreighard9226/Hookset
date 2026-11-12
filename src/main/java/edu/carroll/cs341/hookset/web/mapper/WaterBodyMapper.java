@@ -2,7 +2,7 @@ package edu.carroll.cs341.hookset.web.mapper;
 
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
 import org.springframework.stereotype.Component;
-import shared.jpa.entity.WaterBody;
+import entities.jpa.entity.WaterBody;
 
 /**
  * Converts water body entities into DTOs for the web layer.

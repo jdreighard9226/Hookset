@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import shared.jpa.entity.User;
+import entities.jpa.entity.User;
 
 /**
  * Loads Hookset users for Spring Security during login.

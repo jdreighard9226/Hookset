@@ -1,9 +1,10 @@
-package shared.jpa.entity;
+package entities.jpa.entity;
 
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * Represents a fish catch recorded by a user in the Hookset database.
@@ -228,7 +229,7 @@ public class Catch {
      */
     @Override
     public int hashCode() {
-        return Catch.class.hashCode();
+        return Objects.hash(userId, fly, fish, waterBody, dateCaught);
     }
 
     /**

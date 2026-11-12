@@ -1,7 +1,7 @@
 package edu.carroll.cs341.hookset.service;
 
 import edu.carroll.cs341.hookset.service.input.CatchInput;
-import shared.jpa.entity.Catch;
+import entities.jpa.entity.Catch;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
