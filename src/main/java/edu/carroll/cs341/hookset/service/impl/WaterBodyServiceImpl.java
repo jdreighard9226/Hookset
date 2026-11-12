@@ -72,12 +72,15 @@ public class WaterBodyServiceImpl implements WaterBodyService {
             return null;
         }
 
-        log.info("Loading water body for slug: {}", waterBodySlug);
+        // lowercased so result doesn't depend on the database's case sensitivity
+        String lowercaseSlug = waterBodySlug.toLowerCase();
 
-        WaterBody waterBody = waterBodyRepository.getWaterBodyBySlug(waterBodySlug);
+        log.info("Loading water body for slug: {}", lowercaseSlug);
+
+        WaterBody waterBody = waterBodyRepository.getWaterBodyBySlug(lowercaseSlug);
 
         if (waterBody == null) {
-            log.warn("No water body found for slug: {}", waterBodySlug);
+            log.warn("No water body found for slug: {}", lowercaseSlug);
         }
 
         return waterBody;

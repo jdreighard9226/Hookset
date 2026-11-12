@@ -60,14 +60,12 @@ public class WaterBodyServiceTest {
         waterBodyRepository.save(testWaterBody);
 
         List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
-
         assertNotNull(waterBodies, "getAllWaterBodies should never return null");
         assertEquals(before + 1, waterBodies.size(),
                 "List size should grow by one after saving a water body");
 
         // checks by slug instead of position, since the list order isn't guaranteed
         List<String> returnedSlugs = getWaterBodySlugs(waterBodies);
-
         assertTrue(returnedSlugs.contains(testWaterBody.getSlug()),
                 "Saved water body should be in the returned list");
     }
@@ -81,7 +79,6 @@ public class WaterBodyServiceTest {
         int before = waterBodyRepository.findAll().size();
 
         List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
-
         assertNotNull(waterBodies, "getAllWaterBodies should never return null");
         assertEquals(before, waterBodies.size(),
                 "List size should not change when no water bodies are added");
@@ -102,14 +99,12 @@ public class WaterBodyServiceTest {
         waterBodyRepository.saveAll(testWaterBodies);
 
         List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
-
         assertNotNull(waterBodies, "getAllWaterBodies should never return null");
         assertEquals(before + 25, waterBodies.size(),
                 "List size should grow by 25 after saving 25 water bodies");
 
-        List<String> returnedSlugs = getWaterBodySlugs(waterBodies);
-
         // the count alone could pass with the wrong water bodies, so check each one is actually there
+        List<String> returnedSlugs = getWaterBodySlugs(waterBodies);
         for (WaterBody testWaterBody : testWaterBodies) {
             assertTrue(returnedSlugs.contains(testWaterBody.getSlug()),
                     "Missing water body with slug: " + testWaterBody.getSlug());
@@ -126,7 +121,6 @@ public class WaterBodyServiceTest {
         WaterBody saved = waterBodyRepository.save(createTestWaterBody("test-river"));
 
         WaterBody result = waterBodyService.getWaterBodyFromSlug("test-river");
-
         // check every field so a lookup that returns the wrong row can't slip through
         assertNotNull(result, "Water body should be found for an existing slug");
         assertEquals(saved.getId(), result.getId(),
@@ -150,7 +144,6 @@ public class WaterBodyServiceTest {
         waterBodyRepository.save(createTestWaterBody("test-river"));
 
         WaterBody result = waterBodyService.getWaterBodyFromSlug("does-not-exist");
-
         assertNull(result, "No water body should be returned for a slug that does not exist");
     }
 
@@ -162,7 +155,6 @@ public class WaterBodyServiceTest {
         waterBodyRepository.save(createTestWaterBody("test-river"));
 
         WaterBody result = waterBodyService.getWaterBodyFromSlug(null);
-
         assertNull(result, "No water body should be returned for a null slug");
     }
 
@@ -174,7 +166,6 @@ public class WaterBodyServiceTest {
         waterBodyRepository.save(createTestWaterBody("test-river"));
 
         WaterBody result = waterBodyService.getWaterBodyFromSlug("");
-
         assertNull(result, "No water body should be returned for an empty slug");
     }
 
@@ -186,21 +177,20 @@ public class WaterBodyServiceTest {
         waterBodyRepository.save(createTestWaterBody("test-river"));
 
         WaterBody result = waterBodyService.getWaterBodyFromSlug("   ");
-
         assertNull(result, "No water body should be returned for a whitespace-only slug");
     }
 
     /**
-     * Crazy path: a slug with the wrong case does not match.
+     * Crazy path: a slug with the wrong case still finds the water body.
      */
     @Test
     public void testGetWaterBodyFromSlugCrazyPathWrongCase() {
-        waterBodyRepository.save(createTestWaterBody("test-river"));
+        WaterBody saved = waterBodyRepository.save(createTestWaterBody("test-river"));
 
-        // H2 compares case-sensitively, but MySQL's default collation doesn't, so prod would match this
         WaterBody result = waterBodyService.getWaterBodyFromSlug("TEST-RIVER");
-
-        assertNull(result, "Slug lookup should be case-sensitive and not match the wrong case");
+        assertNotNull(result, "Slug lookup should be case-insensitive and match the wrong case");
+        assertEquals(saved.getId(), result.getId(),
+                "Wrong-case slug should return the saved water body");
     }
 
     // ---------- getAllFishForWaterBody ----------
@@ -215,7 +205,6 @@ public class WaterBodyServiceTest {
         linkFishToWaterBody(savedFish, savedWaterBody);
 
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(savedWaterBody.getId());
-
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertEquals(1, fish.size(),
                 "Water body should have exactly one linked fish");
@@ -239,7 +228,6 @@ public class WaterBodyServiceTest {
         WaterBody savedWaterBody = waterBodyRepository.save(createTestWaterBody("test-river"));
 
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(savedWaterBody.getId());
-
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
                 "A water body with no linked fish should return an empty list");
@@ -257,7 +245,6 @@ public class WaterBodyServiceTest {
 
         // asks about the empty water body, so a lookup that ignores the ID would fail here
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(emptyWaterBody.getId());
-
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
                 "A fish linked to another water body should not be returned");
@@ -270,7 +257,6 @@ public class WaterBodyServiceTest {
     public void testGetAllFishForWaterBodyCrappyPathMissingWaterBody() {
         // far above any ID H2 will hand out during a test run
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(999999L);
-
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
                 "A water body ID that does not exist should return an empty list");
@@ -287,7 +273,6 @@ public class WaterBodyServiceTest {
         linkFishToWaterBody(savedFish, savedWaterBody);
 
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(null);
-
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
                 "A null water body ID should return an empty list");
@@ -299,7 +284,6 @@ public class WaterBodyServiceTest {
     @Test
     public void testGetAllFishForWaterBodyCrazyPathNegativeId() {
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(-1L);
-
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertTrue(fish.isEmpty(),
                 "A negative water body ID should return an empty list");
@@ -329,7 +313,6 @@ public class WaterBodyServiceTest {
         }
 
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(targetWaterBody.getId());
-
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
         assertEquals(25, fish.size(),
                 "Only the 25 fish linked to the target water body should be returned");
@@ -362,13 +345,13 @@ public class WaterBodyServiceTest {
         linkFishToWaterBody(sharedFish, secondWaterBody);
 
         List<Fish> firstFish = waterBodyService.getAllFishForWaterBody(firstWaterBody.getId());
-        List<Fish> secondFish = waterBodyService.getAllFishForWaterBody(secondWaterBody.getId());
-
         // size 1 on each side catches a bad join that returns the shared fish twice
         assertEquals(1, firstFish.size(),
                 "Shared fish should be returned once for the first water body");
         assertEquals(sharedFish.getId(), firstFish.getFirst().getId(),
                 "First water body should return the shared fish");
+
+        List<Fish> secondFish = waterBodyService.getAllFishForWaterBody(secondWaterBody.getId());
         assertEquals(1, secondFish.size(),
                 "Shared fish should be returned once for the second water body");
         assertEquals(sharedFish.getId(), secondFish.getFirst().getId(),
