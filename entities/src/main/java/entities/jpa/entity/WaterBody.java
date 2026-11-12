@@ -3,6 +3,7 @@ package entities.jpa.entity;
 import jakarta.persistence.*;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -177,33 +178,24 @@ public class WaterBody {
     }
 
     /**
-     * Checks whether another object is the same water body record.
+     * Checks whether this water body is the same as another object.
      *
-     * <p>Two water bodies are equal only when both have been saved and share the
-     * same database ID. A water body that hasn't been saved yet is only equal to itself.</p>
+     * <p>Two water bodies are equal when they have the same name, state, and type. The ID
+     * is not compared, so an unsaved water body can still be equal to a saved one with the
+     * same details. The fish in the water body are left out, since loading them would
+     * trigger a lazy load from the database.</p>
      *
-     * @param other the object to compare against
-     * @return {@code true} if both are the same saved water body, otherwise {@code false}
+     * @param o the object to compare against
+     * @return true if the other object is a water body with the same name, state, and type
      */
     @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-        
-        if (!(other instanceof WaterBody otherWaterBody)) {
-            return false;
-        }
-
-        if (this.getId() == null || otherWaterBody.getId() == null) {
-            return false;
-        }
-
-        return this.getId().equals(otherWaterBody.getId());
+    public boolean equals(Object o) {
+        if (!(o instanceof WaterBody waterBody)) return false;
+        return Objects.equals(getName(), waterBody.getName()) && Objects.equals(getState(), waterBody.getState()) && Objects.equals(getType(), waterBody.getType());
     }
 
     /**
-     * Returns a hash code that stays the same for the water body's whole life.
+     * Returns a hash code built from the water body's name, state, and type instead of its ID.
      *
      * <p>The ID can't be used here because it is null until the water body is saved,
      * and a hash code that changes after saving would lose the water body inside a
@@ -213,7 +205,7 @@ public class WaterBody {
      */
     @Override
     public int hashCode() {
-        return WaterBody.class.hashCode();
+        return Objects.hash(getName(), getState(), getType());
     }
 
     /**

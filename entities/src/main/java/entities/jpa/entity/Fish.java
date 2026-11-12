@@ -2,6 +2,8 @@ package entities.jpa.entity;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 /**
  * Represents a fish species stored in the Hookset database.
  *
@@ -99,45 +101,34 @@ public class Fish {
         this.image = image;
     }
 
+
     /**
-     * Checks whether another object is the same fish record.
+     * Checks whether this fish is the same as another object.
      *
-     * <p>Two fish are equal only when both have been saved and share the same
-     * database ID. A fish that hasn't been saved yet is only equal to itself.</p>
+     * <p>Two fish are equal when they have the same family and species. The ID is not
+     * compared, so an unsaved fish can still be equal to a saved one with the same details.</p>
      *
-     * @param other the object to compare against
-     * @return {@code true} if both are the same saved fish, otherwise {@code false}
+     * @param o the object to compare against
+     * @return true if the other object is a fish with the same family and species
      */
     @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-
-        if (!(other instanceof Fish otherFish)) {
-            return false;
-        }
-
-        // unsaved fish have no ID yet, so they can't be equal to anything but themselves
-        if (this.getId() == null || otherFish.getId() == null) {
-            return false;
-        }
-
-        return this.getId().equals(otherFish.getId());
+    public boolean equals(Object o) {
+        if (!(o instanceof Fish fish)) return false;
+        return Objects.equals(getFamily(), fish.getFamily()) && Objects.equals(getSpecies(), fish.getSpecies());
     }
 
     /**
-     * Returns a hash code that stays the same for the fish's whole life.
+     * Returns a hash code built from the fish's family and species instead of its ID.
      *
      * <p>The ID can't be used here because it is null until the fish is saved,
      * and a hash code that changes after saving would lose the fish inside a
-     * {@code HashSet}, like the one on {@link WaterBody}.</p>
+     * {@code HashSet}.</p>
      *
      * @return the hash code for the fish
      */
     @Override
     public int hashCode() {
-        return Fish.class.hashCode();
+        return Objects.hash(getFamily(), getSpecies());
     }
 
     /**

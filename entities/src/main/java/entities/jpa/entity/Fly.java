@@ -2,6 +2,8 @@ package entities.jpa.entity;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 /**
  * Represents a fly stored in the Hookset database.
  *
@@ -208,34 +210,22 @@ public class Fly {
     }
 
     /**
-     * Checks whether another object is the same fly record.
+     * Checks whether this fly is the same as another object.
      *
-     * <p>Two flies are equal only when both have been saved and share the same
-     * database ID. A fly that hasn't been saved yet is only equal to itself.</p>
+     * <p>Two flies are equal when they have the same type, name, and color. The ID is not
+     * compared, so an unsaved fly can still be equal to a saved one with the same details.</p>
      *
-     * @param other the object to compare against
-     * @return {@code true} if both are the same saved fly, otherwise {@code false}
+     * @param o the object to compare against
+     * @return true if the other object is a fly with the same type, name, and color
      */
     @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-
-        if (!(other instanceof Fly otherFly)) {
-            return false;
-        }
-
-        // unsaved flies have no ID yet, so they can't be equal to anything but themselves
-        if (this.getId() == null || otherFly.getId() == null) {
-            return false;
-        }
-
-        return this.getId().equals(otherFly.getId());
+    public boolean equals(Object o) {
+        if (!(o instanceof Fly fly)) return false;
+        return Objects.equals(getType(), fly.getType()) && Objects.equals(getName(), fly.getName()) && Objects.equals(getColor(), fly.getColor());
     }
 
     /**
-     * Returns a hash code that stays the same for the fly's whole life.
+     * Returns a hash code built from the fly's type, name, and color instead of its ID.
      *
      * <p>The ID can't be used here because it is null until the fly is saved,
      * and a hash code that changes after saving would lose the fly inside a
@@ -245,7 +235,7 @@ public class Fly {
      */
     @Override
     public int hashCode() {
-        return Fly.class.hashCode();
+        return Objects.hash(getType(), getName(), getColor());
     }
 
     /**

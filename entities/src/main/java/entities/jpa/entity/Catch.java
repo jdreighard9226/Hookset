@@ -192,34 +192,36 @@ public class Catch {
     }
 
     /**
-     * Checks whether another object is the same catch record.
+     * Checks whether this catch is the same as another object.
      *
-     * <p>Two catches are equal only when both have been saved and share the same
-     * database ID. A catch that hasn't been saved yet is only equal to itself.</p>
+     * <p>Two catches are equal when they have the same user, fly, fish, water body,
+     * fish length, date caught, and notes. The ID is not compared, so an unsaved catch
+     * can still be equal to a saved one with the same details.</p>
      *
-     * @param other the object to compare against
-     * @return {@code true} if both are the same saved catch, otherwise {@code false}
+     * @param o the object to compare against
+     * @return true if the other object is a catch with all the same details
      */
     @Override
-    public boolean equals(Object other) {
-        if (this == other) {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
 
-        if (!(other instanceof Catch otherCatch)) {
+        if (!(o instanceof Catch aCatch)) {
             return false;
         }
 
-        // unsaved catches have no ID yet, so they can't be equal to anything but themselves
-        if (this.getId() == null || otherCatch.getId() == null) {
-            return false;
-        }
-
-        return this.getId().equals(otherCatch.getId());
+        return Objects.equals(this.userId, aCatch.getUserId())
+                && Objects.equals(this.fly, aCatch.getFly())
+                && Objects.equals(this.fish, aCatch.getFish())
+                && Objects.equals(this.waterBody, aCatch.getWaterBody())
+                && Objects.equals(this.fishLength, aCatch.getFishLength())
+                && Objects.equals(this.dateCaught, aCatch.getDateCaught())
+                && Objects.equals(this.notes, aCatch.getNotes());
     }
 
     /**
-     * Returns a hash code that stays the same for the catch's whole life.
+     * Returns a hash code built from the catch's details instead of its ID.
      *
      * <p>The ID can't be used here because it is null until the catch is saved,
      * and a hash code that changes after saving would lose the catch inside a
@@ -229,7 +231,7 @@ public class Catch {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(userId, fly, fish, waterBody, dateCaught);
+        return Objects.hash(this.userId, this.fly, this.fish, this.waterBody, this.dateCaught);
     }
 
     /**

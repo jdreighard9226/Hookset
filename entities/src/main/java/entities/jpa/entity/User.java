@@ -2,6 +2,8 @@ package entities.jpa.entity;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 /**
  * Represents a user stored in the Hookset database.
  *
@@ -102,33 +104,24 @@ public class User {
     }
 
     /**
-     * Checks whether another object is the same user record.
+     * Checks whether this user is the same as another object.
      *
-     * <p>Two users are equal only when both have been saved and share the same
-     * database ID. A user that hasn't been saved yet is only equal to itself.</p>
+     * <p>Two users are equal when they have the same username, since usernames are unique.
+     * The ID is not compared, so an unsaved user can still be equal to a saved one with
+     * the same username. The password is left out so changing it doesn't change who the
+     * user is.</p>
      *
-     * @param other the object to compare against
-     * @return {@code true} if both are the same saved user, otherwise {@code false}
+     * @param o the object to compare against
+     * @return true if the other object is a user with the same username
      */
     @Override
-    public boolean equals(Object other) {
-        if (this == other) {
-            return true;
-        }
-
-        if (!(other instanceof User otherUser)) {
-            return false;
-        }
-
-        if (this.getId() == null || otherUser.getId() == null) {
-            return false;
-        }
-
-        return this.getId().equals(otherUser.getId());
+    public boolean equals(Object o) {
+        if (!(o instanceof User user)) return false;
+        return Objects.equals(getUsername(), user.getUsername());
     }
 
     /**
-     * Returns a hash code that stays the same for the user's whole life.
+     * Returns a hash code built from the user's username instead of its ID.
      *
      * <p>The ID can't be used here because it is null until the user is saved,
      * and a hash code that changes after saving would lose the user inside a
@@ -138,7 +131,7 @@ public class User {
      */
     @Override
     public int hashCode() {
-        return User.class.hashCode();
+        return Objects.hash(getUsername());
     }
 
     /**
