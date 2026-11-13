@@ -25,8 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link WaterBodyServiceTest}, since that lookup goes through the water body.</p>
  *
  * <p>Tests run against the H2 test database and each test is rolled back by
- * {@link Transactional}. Count assertions are measured against a baseline so the tests
- * do not depend on the database starting empty.</p>
+ * {@link Transactional}.</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -41,7 +40,6 @@ public class FishServiceTest {
     @Autowired
     private FishRepository fishRepository;
 
-
     // ---------- getAllFish ----------
 
     /**
@@ -49,23 +47,21 @@ public class FishServiceTest {
      */
     @Test
     public void testGetAllFishHappyPath() {
-        // baseline instead of a hardcoded count, so seed data doesn't break the test
+        // baseline so the count check only measures the fish this test saves
         int before = fishService.getAllFish().size();
         Fish testFish = createTestFish("test-species");
         fishRepository.save(testFish);
 
         List<Fish> fish = fishService.getAllFish();
-
         assertNotNull(fish, "getAllFish should never return null");
         assertEquals(before + 1, fish.size(),
                 "List size should grow by one after saving a fish");
 
-        // compare by species since the returned objects may not be the same instances that were saved
+        // checks by species instead of position, since the list order isn't guaranteed
         List<String> returnedSpecies = new ArrayList<>();
         for (Fish returnedFish : fish) {
             returnedSpecies.add(returnedFish.getSpecies());
         }
-
         assertTrue(returnedSpecies.contains(testFish.getSpecies()),
                 "Saved fish should be in the returned list");
     }
@@ -79,7 +75,6 @@ public class FishServiceTest {
         int before = fishRepository.findAll().size();
 
         List<Fish> fish = fishService.getAllFish();
-
         assertNotNull(fish, "getAllFish should never return null");
         assertEquals(before, fish.size(),
                 "List size should not change when no fish are added");
@@ -92,19 +87,22 @@ public class FishServiceTest {
     public void testGetAllFishCrazyPath() {
         int before = fishService.getAllFish().size();
 
+        // each fish gets its own species so they can be told apart in the results
         List<Fish> testFish = new ArrayList<>();
         for (int i = 1; i <= 100; i++) {
             Fish temp = createTestFish("test-species-" + i);
             testFish.add(temp);
         }
+
+        // saveAll saves the whole list in one call instead of 100 separate saves
         fishRepository.saveAll(testFish);
 
         List<Fish> fish = fishService.getAllFish();
-
         assertNotNull(fish, "getAllFish should never return null");
         assertEquals(before + 100, fish.size(),
                 "List size should grow by 100 after saving 100 fish");
 
+        // checks by species instead of position, since the list order isn't guaranteed
         List<String> returnedSpecies = new ArrayList<>();
         for (Fish returnedFish : fish) {
             returnedSpecies.add(returnedFish.getSpecies());
@@ -128,6 +126,7 @@ public class FishServiceTest {
     private Fish createTestFish(String species) {
         Fish fish = new Fish();
 
+        // family and image are the same for every test fish, only species changes
         fish.setFamily("test-family");
         fish.setImage("test-image");
         fish.setSpecies(species);
