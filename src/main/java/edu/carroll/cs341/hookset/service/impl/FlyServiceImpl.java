@@ -29,6 +29,24 @@ public class FlyServiceImpl implements FlyService {
     /** The logger for this class. */
     private static final Logger log = LoggerFactory.getLogger(FlyServiceImpl.class);
 
+    /** The longest fly name the Fly table can store, from VARCHAR(150). */
+    private static final int MAX_FLY_NAME_LENGTH = 150;
+
+    /** The shortest fly color allowed, so a single letter or two can't pass as a color. */
+    private static final int MIN_FLY_COLOR_LENGTH = 3;
+
+    /** The longest fly color the Fly table can store, from VARCHAR(40). */
+    private static final int MAX_FLY_COLOR_LENGTH = 40;
+
+    /** The smallest hook size allowed. */
+    private static final int MIN_HOOK_SIZE = 1;
+
+    /** The largest hook size allowed. */
+    private static final int MAX_HOOK_SIZE = 32;
+
+    /** The fly types the forms offer, which must match the option values exactly. */
+    private static final List<String> VALID_FLY_TYPES = List.of("Dry", "Nymph", "Streamer");
+
     /** The repository used to access fly records. */
     private final FlyRepository flyRepository;
 
@@ -510,10 +528,10 @@ public class FlyServiceImpl implements FlyService {
     }
 
     /**
-     * Checks whether a fly color is between 3 and 40 characters long.
+     * Checks whether a fly color is between {@link #MIN_FLY_COLOR_LENGTH} and {@link #MAX_FLY_COLOR_LENGTH} characters long.
      *
      * @param flyColor the fly color to check
-     * @return {@code true} if the trimmed color is between 3 and 40 characters, otherwise {@code false}
+     * @return {@code true} if the trimmed color is within the length limits, otherwise {@code false}
      */
     @Override
     public boolean isFlyColorLengthValid(String flyColor) {
@@ -525,8 +543,9 @@ public class FlyServiceImpl implements FlyService {
         // trimmed so spaces around the color don't count toward its length
         int colorLength = flyColor.trim().length();
 
-        if (colorLength < 3 || colorLength > 40) {
-            log.warn("Fly validation failed. Fly color is {} characters, outside the 3 to 40 limit", colorLength);
+        if (colorLength < MIN_FLY_COLOR_LENGTH || colorLength > MAX_FLY_COLOR_LENGTH) {
+            log.warn("Fly validation failed. Fly color is {} characters, outside the {} to {} limit",
+                    colorLength, MIN_FLY_COLOR_LENGTH, MAX_FLY_COLOR_LENGTH);
             return false;
         }
 
@@ -574,10 +593,10 @@ public class FlyServiceImpl implements FlyService {
     }
 
     /**
-     * Checks whether a minimum hook size is between 1 and 32.
+     * Checks whether a minimum hook size is between {@link #MIN_HOOK_SIZE} and {@link #MAX_HOOK_SIZE}.
      *
      * @param minSize the minimum hook size to check
-     * @return {@code true} if the size is not null and between 1 and 32, otherwise {@code false}
+     * @return {@code true} if the size is not null and within the hook size limits, otherwise {@code false}
      */
     @Override
     public boolean isMinSizeValidNumber(Integer minSize) {
@@ -586,8 +605,9 @@ public class FlyServiceImpl implements FlyService {
             return false;
         }
 
-        if (minSize < 1 || minSize > 32) {
-            log.warn("Fly validation failed. Min size {} is outside the 1 to 32 limit", minSize);
+        if (minSize < MIN_HOOK_SIZE || minSize > MAX_HOOK_SIZE) {
+            log.warn("Fly validation failed. Min size {} is outside the {} to {} limit",
+                    minSize, MIN_HOOK_SIZE, MAX_HOOK_SIZE);
             return false;
         }
 
@@ -595,10 +615,10 @@ public class FlyServiceImpl implements FlyService {
     }
 
     /**
-     * Checks whether a maximum hook size is between 1 and 32.
+     * Checks whether a maximum hook size is between {@link #MIN_HOOK_SIZE} and {@link #MAX_HOOK_SIZE}.
      *
      * @param maxSize the maximum hook size to check
-     * @return {@code true} if the size is not null and between 1 and 32, otherwise {@code false}
+     * @return {@code true} if the size is not null and within the hook size limits, otherwise {@code false}
      */
     @Override
     public boolean isMaxSizeValidNumber(Integer maxSize) {
@@ -607,8 +627,9 @@ public class FlyServiceImpl implements FlyService {
             return false;
         }
 
-        if (maxSize < 1 || maxSize > 32) {
-            log.warn("Fly validation failed. Max size {} is outside the 1 to 32 limit", maxSize);
+        if (maxSize < MIN_HOOK_SIZE || maxSize > MAX_HOOK_SIZE) {
+            log.warn("Fly validation failed. Max size {} is outside the {} to {} limit",
+                    maxSize, MIN_HOOK_SIZE, MAX_HOOK_SIZE);
             return false;
         }
 
@@ -616,10 +637,9 @@ public class FlyServiceImpl implements FlyService {
     }
 
     /**
-     * Checks whether a fly type is one of the allowed types.
+     * Checks whether a fly type is one of the {@link #VALID_FLY_TYPES}.
      *
-     * <p>The allowed types are "Dry", "Nymph", and "Streamer". The match is
-     * exact and case-sensitive, so "dry" is not allowed.</p>
+     * <p>The match is exact and case-sensitive, so "dry" is not allowed.</p>
      *
      * @param flyType the fly type to check
      * @return {@code true} if the type exactly matches one of the allowed fly types, otherwise {@code false}
@@ -631,24 +651,21 @@ public class FlyServiceImpl implements FlyService {
             return false;
         }
 
-        // these match the option values on the fly forms
-        List<String> validFlyTypes = List.of("Dry", "Nymph", "Streamer");
-
-        for (String validType : validFlyTypes) {
+        for (String validType : VALID_FLY_TYPES) {
             if (validType.equals(flyType)) {
                 return true;
             }
         }
 
-        log.warn("Fly validation failed. Fly type {} is not Dry, Nymph, or Streamer", flyType);
+        log.warn("Fly validation failed. Fly type {} is not one of {}", flyType, VALID_FLY_TYPES);
         return false;
     }
 
     /**
-     * Checks whether a fly name is between 1 and 150 characters long.
+     * Checks whether a fly name is between 1 and {@link #MAX_FLY_NAME_LENGTH} characters long.
      *
      * @param name the fly name to check
-     * @return {@code true} if the trimmed name is between 1 and 150 characters, otherwise {@code false}
+     * @return {@code true} if the trimmed name is within the length limits, otherwise {@code false}
      */
     @Override
     public boolean isFlyNameLengthValid(String name) {
@@ -660,8 +677,9 @@ public class FlyServiceImpl implements FlyService {
         // trimmed so a name of only spaces counts as 0 characters and fails
         int nameLength = name.trim().length();
 
-        if (nameLength < 1 || nameLength > 150) {
-            log.warn("Fly validation failed. Fly name is {} characters, outside the 1 to 150 limit", nameLength);
+        if (nameLength < 1 || nameLength > MAX_FLY_NAME_LENGTH) {
+            log.warn("Fly validation failed. Fly name is {} characters, outside the 1 to {} limit",
+                    nameLength, MAX_FLY_NAME_LENGTH);
             return false;
         }
 
@@ -750,7 +768,7 @@ public class FlyServiceImpl implements FlyService {
             return false;
         }
 
-        // last, since it only makes sense to check once both sizes are known to be valid numbers
+        // last, since it only makes sense once both sizes are known to be valid numbers
         if (!isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
             return false;
         }
