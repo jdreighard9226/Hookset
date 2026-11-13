@@ -45,13 +45,14 @@ public class WaterBodyServiceImpl implements WaterBodyService {
      */
     @Override
     public List<WaterBody> getAllWaterBodies() {
-        log.info("Loading all water bodies");
+        log.info("Loading every water body");
 
+        // water bodies aren't owned by anyone, so every user gets the same full list
         List<WaterBody> waterBodies = waterBodyRepository.findAll();
 
         // an empty water body table usually means the seed script has not been run
         if (waterBodies.size() < 1) {
-            log.warn("No water bodies found in the database");
+            log.warn("No water bodies found in the database. The seed script may not have been run");
         }
 
         log.info("Loaded {} water bodies", waterBodies.size());
@@ -62,26 +63,34 @@ public class WaterBodyServiceImpl implements WaterBodyService {
     /**
      * Returns a single water body by its URL slug.
      *
+     * <p>The slug is lowercased before the lookup, since every saved slug is
+     * lowercase. That way a URL typed in the wrong case still finds the water body.</p>
+     *
      * @param waterBodySlug the slug used in the water body's URL
      * @return the matching water body, or {@code null} if the slug is blank or no water body matches
      */
     @Override
     public WaterBody getWaterBodyFromSlug(String waterBodySlug) {
+        // a blank slug can't match anything, and this avoids calling toLowerCase on null
         if (waterBodySlug == null || waterBodySlug.isBlank()) {
             log.warn("Water body lookup failed. Slug is blank");
             return null;
         }
 
-        // lowercased so result doesn't depend on the database's case sensitivity
+        // lowercased so the result doesn't depend on the database's case sensitivity
         String lowercaseSlug = waterBodySlug.toLowerCase();
 
-        log.info("Loading water body for slug: {}", lowercaseSlug);
+        log.info("Looking up water body slug {}", lowercaseSlug);
 
         WaterBody waterBody = waterBodyRepository.getWaterBodyBySlug(lowercaseSlug);
 
         if (waterBody == null) {
-            log.warn("No water body found for slug: {}", lowercaseSlug);
+            log.warn("Water body lookup failed. No water body matches slug {} (requested as {})",
+                    lowercaseSlug, waterBodySlug);
+            return null;
         }
+
+        log.info("Slug {} matched water body ID {}", lowercaseSlug, waterBody.getId());
 
         return waterBody;
     }
@@ -104,22 +113,25 @@ public class WaterBodyServiceImpl implements WaterBodyService {
             return new ArrayList<>();
         }
 
-        log.info("Loading fish for water body ID: {}", waterBodyId);
+        log.info("Loading fish for water body ID {}", waterBodyId);
 
         WaterBody waterBody = waterBodyRepository.findById(waterBodyId).orElse(null);
 
         if (waterBody == null) {
-            log.warn("Water body not found for ID: {}", waterBodyId);
+            log.warn("Fish lookup failed. Water body ID {} does not exist", waterBodyId);
             return new ArrayList<>();
         }
 
+        // the @ManyToMany is a Set, so it's copied into a List to match what callers expect
+        // a new list also means callers can't change the water body's fish by editing the result
         List<Fish> fish = new ArrayList<>(waterBody.getFishes());
 
+        // every seeded water body should have at least one fish, so an empty list is worth flagging
         if (fish.size() < 1) {
-            log.warn("No fish found for water body ID: {}", waterBodyId);
+            log.warn("No fish found for water body ID {}", waterBodyId);
         }
 
-        log.info("Loaded {} fish for water body ID: {}", fish.size(), waterBodyId);
+        log.info("Loaded {} fish for water body ID {}", fish.size(), waterBodyId);
 
         return fish;
     }
