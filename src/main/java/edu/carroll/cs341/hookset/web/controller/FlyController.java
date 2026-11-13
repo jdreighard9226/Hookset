@@ -77,7 +77,7 @@ public class FlyController {
     public String index(@RequestParam(defaultValue = "all") String filter,
                         @AuthenticationPrincipal HooksetUserDetails user,
                         Model model) {
-        log.info("Loading flies page with filter: {}", filter);
+        log.info("User ID {} loading the flies page with filter: {}", user.getId(), filter);
 
         List<Fly> flies;
 
@@ -95,6 +95,8 @@ public class FlyController {
         model.addAttribute("flies", flyDtos);
         model.addAttribute("filter", filter);
 
+        log.info("Showing {} flies to user ID {} with filter: {}", flyDtos.size(), user.getId(), filter);
+
         return "flies/index";
     }
 
@@ -104,17 +106,28 @@ public class FlyController {
      * @param slug the URL slug of the fly to show
      * @param user the logged-in user, whose custom flies can also match the slug
      * @param model the model used to pass the fly to the view
-     * @return the name of the fly details view to render
+     * @return the name of the fly details view, or a redirect to the fly list if no fly matches the slug
      */
     @GetMapping("/details/{slug}")
     public String getDetails(@PathVariable String slug,
                              @AuthenticationPrincipal HooksetUserDetails user,
                              Model model) {
-        log.info("Loading fly details page for slug: {}", slug);
+        log.info("User ID {} loading the details page for fly slug: {}", user.getId(), slug);
 
+        // only finds default flies and this user's custom flies, so another user's custom fly comes back null too
         Fly fly = flyService.getFlyFromSlug(slug, user.getId());
+
+        // a bad or old link lands back on the fly list instead of crashing in the mapper
+        if (fly == null) {
+            log.warn("User ID {} requested details for fly slug {}, which does not exist or is not visible to them. Redirecting to the fly list",
+                    user.getId(), slug);
+            return "redirect:/flies";
+        }
+
         FlyDto flyDto = flyMapper.toDto(fly);
         model.addAttribute("fly", flyDto);
+
+        log.info("Showing fly ID {} to user ID {}", flyDto.getId(), user.getId());
 
         return "flies/details";
     }
@@ -127,7 +140,7 @@ public class FlyController {
      */
     @GetMapping("/add")
     public String getAddFly(Model model) {
-        log.info("Loading add fly page");
+        log.info("Loading the add fly page");
 
         model.addAttribute("flyForm", new FlyForm());
 
@@ -152,7 +165,7 @@ public class FlyController {
                              BindingResult result,
                              @AuthenticationPrincipal HooksetUserDetails user,
                              Model model) {
-        log.info("Add fly form submitted");
+        log.info("User ID {} submitted the add fly form for fly name: {}", user.getId(), flyForm.getName());
 
         boolean hasCustomErrors = false;
 
@@ -161,6 +174,8 @@ public class FlyController {
         // only display if both sizes are filled in. Missing sizes will be caught by form
         if (flyInput.minSize() != null && flyInput.maxSize() != null) {
             if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
+                log.warn("User ID {} entered an invalid size range for a new fly: min {}, max {}",
+                        user.getId(), flyInput.minSize(), flyInput.maxSize());
                 model.addAttribute("invalidSizeRange", true);
                 hasCustomErrors = true;
             }
@@ -169,6 +184,7 @@ public class FlyController {
         // only display if the color isn't blank. Blank colors will be caught by form
         if (!flyService.isFlyColorBlank(flyInput.color())) {
             if (!flyService.isFlyColorValidString(flyInput.color())) {
+                log.warn("User ID {} entered an invalid color for a new fly: {}", user.getId(), flyInput.color());
                 model.addAttribute("invalidFlyColor", true);
                 hasCustomErrors = true;
             }
@@ -177,21 +193,26 @@ public class FlyController {
         if (!flyService.isFlyNameUnique(flyInput.name(), user.getId())) {
             // only display to user if they didn't type a blank name. Blank names will be caught by form
             if (!flyService.isFlyNameBlank(flyInput.name())) {
+                log.warn("User ID {} tried to add a fly named {}, which matches a fly they can already see",
+                        user.getId(), flyInput.name());
                 model.addAttribute("duplicateFlyName", true);
                 hasCustomErrors = true;
             }
         }
 
         if (result.hasErrors() || hasCustomErrors) {
-            log.warn("Add fly form failed validation");
+            log.warn("Add fly form from user ID {} failed validation with {} field errors",
+                    user.getId(), result.getErrorCount());
             return "flies/add";
         }
 
         if (!flyService.addFly(flyInput, user.getId())) {
-            log.warn("Add fly failed");
+            log.warn("Add fly passed form validation but the fly service rejected it for user ID {}", user.getId());
             model.addAttribute("addFlyFailed", true);
             return "flies/add";
         }
+
+        log.info("User ID {} added a custom fly named {}", user.getId(), flyInput.name());
 
         return "redirect:/flies";
     }
@@ -208,7 +229,7 @@ public class FlyController {
     public String getEditFly(@PathVariable Long id,
                              @AuthenticationPrincipal HooksetUserDetails user,
                              Model model) {
-        log.info("Loading edit fly page for fly ID: {}", id);
+        log.info("User ID {} loading the edit page for fly ID {}", user.getId(), id);
 
         Fly fly = flyService.getFlyById(id, user.getId());
 
@@ -239,7 +260,8 @@ public class FlyController {
                               BindingResult result,
                               @AuthenticationPrincipal HooksetUserDetails user,
                               Model model) {
-        log.info("Edit fly form submitted for fly ID: {}", id);
+        log.info("User ID {} submitted the edit form for fly ID {} with fly name: {}",
+                user.getId(), id, flyForm.getName());
 
         boolean hasCustomErrors = false;
 
@@ -248,6 +270,8 @@ public class FlyController {
         // only display if both sizes are filled in. Missing sizes will be caught by form
         if (flyInput.minSize() != null && flyInput.maxSize() != null) {
             if (!flyService.isSizeRangeValid(flyInput.minSize(), flyInput.maxSize())) {
+                log.warn("User ID {} entered an invalid size range for fly ID {}: min {}, max {}",
+                        user.getId(), id, flyInput.minSize(), flyInput.maxSize());
                 model.addAttribute("invalidSizeRange", true);
                 hasCustomErrors = true;
             }
@@ -256,6 +280,7 @@ public class FlyController {
         // only display if the color isn't blank. Blank colors will be caught by form
         if (!flyService.isFlyColorBlank(flyInput.color())) {
             if (!flyService.isFlyColorValidString(flyInput.color())) {
+                log.warn("User ID {} entered an invalid color for fly ID {}: {}", user.getId(), id, flyInput.color());
                 model.addAttribute("invalidFlyColor", true);
                 hasCustomErrors = true;
             }
@@ -264,23 +289,29 @@ public class FlyController {
         if (!flyService.isFlyNameUniqueForEdit(id, flyInput.name(), user.getId())) {
             // only display to user if they didn't type a blank name. Blank names will be caught by form
             if (!flyService.isFlyNameBlank(flyInput.name())) {
+                log.warn("User ID {} tried to rename fly ID {} to {}, which matches another fly they can see",
+                        user.getId(), id, flyInput.name());
                 model.addAttribute("duplicateFlyName", true);
                 hasCustomErrors = true;
             }
         }
 
         if (result.hasErrors() || hasCustomErrors) {
-            log.warn("Edit fly form failed validation for fly ID: {}", id);
+            log.warn("Edit form for fly ID {} from user ID {} failed validation with {} field errors",
+                    id, user.getId(), result.getErrorCount());
             model.addAttribute("id", id);
             return "flies/edit";
         }
 
         if (!flyService.updateFly(id, flyInput, user.getId())) {
-            log.warn("Edit fly failed for fly ID: {}", id);
+            log.warn("Edit for fly ID {} passed form validation but the fly service rejected it for user ID {}",
+                    id, user.getId());
             model.addAttribute("updateFlyFailed", true);
             model.addAttribute("id", id);
             return "flies/edit";
         }
+
+        log.info("User ID {} updated fly ID {}", user.getId(), id);
 
         return "redirect:/flies";
     }
@@ -300,16 +331,18 @@ public class FlyController {
     public String postDeleteFly(@PathVariable Long id,
                                 @AuthenticationPrincipal HooksetUserDetails user,
                                 RedirectAttributes redirectAttributes) {
-        log.info("Delete fly request for fly ID: {}", id);
+        log.info("User ID {} requested to delete fly ID {}", user.getId(), id);
 
         if (!flyService.deleteFly(id, user.getId())) {
             if (flyService.isFlyUsedByCatch(id)) {
-                log.warn("Delete fly blocked. Fly ID: {} is used by catches", id);
+                log.warn("User ID {} tried to delete fly ID {}, but it is used by at least one catch", user.getId(), id);
                 redirectAttributes.addFlashAttribute("flyInUse", true);
             } else {
-                log.warn("Delete fly failed for fly ID: {}", id);
+                log.warn("User ID {} tried to delete fly ID {}, which does not exist", user.getId(), id);
                 redirectAttributes.addFlashAttribute("deleteFlyFailed", true);
             }
+        } else {
+            log.info("User ID {} deleted fly ID {}", user.getId(), id);
         }
 
         return "redirect:/flies";
@@ -322,12 +355,6 @@ public class FlyController {
      * @return the list of fly DTOs
      */
     private List<FlyDto> mapAllFlyDtos(List<Fly> flies) {
-        if (flies.isEmpty()) {
-            log.info("No flies found");
-        } else {
-            log.info("Found {} flies", flies.size());
-        }
-
         List<FlyDto> flyDtos = new ArrayList<>();
 
         for (Fly fly : flies) {
