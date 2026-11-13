@@ -109,15 +109,19 @@ public class ProfileController {
         if (result.hasErrors() || hasCustomErrors) {
             log.warn("Password change form from user ID {} failed validation with {} field errors",
                     user.getId(), result.getErrorCount());
+
+            // the username isn't submitted with the form, so it has to be put back for the welcome message
+            profileForm.setUsername(user.getUsername());
             return "profile";
         }
-
-
 
         if (!userService.changePassword(passwordChangeInput, user.getId())) {
             log.warn("Password change passed form validation but the user service rejected it for user ID {}",
                     user.getId());
             model.addAttribute("passwordChangeFailed", true);
+
+            // the username isn't submitted with the form, so it has to be put back for the welcome message
+            profileForm.setUsername(user.getUsername());
             return "profile";
         }
 
