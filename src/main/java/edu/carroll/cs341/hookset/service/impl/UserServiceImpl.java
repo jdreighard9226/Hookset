@@ -68,21 +68,25 @@ public class UserServiceImpl implements UserService {
      *
      * @param passwordChangeInput the new password and its confirmation
      * @param userId the ID of the user whose password to change
-     * @return {@code true} if the password was changed, otherwise {@code false}
+     * @return {@code true} if the password was changed, otherwise {@code false} if the input or user ID is null,
+     *         the new password fails any check, or no user has that ID
      */
     @Override
     public boolean changePassword(PasswordChangeInput passwordChangeInput, Long userId) {
         if (passwordChangeInput == null) {
-            log.warn("Password change failed. Password change input is null");
+            log.warn("Password not changed for user ID {}. Password change input is null", userId);
             return false;
         }
 
         if (userId == null) {
-            log.warn("Password change failed. User ID is null");
+            log.warn("Password not changed. User ID is null");
             return false;
         }
 
+        log.info("User ID {} changing their password", userId);
+
         // runs every check itself so no caller can save a bad password
+        // each validator logs its own reason, and none of them log the password itself
         if (isPasswordBlank(passwordChangeInput.password())) {
             return false;
         }
@@ -106,14 +110,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId).orElse(null);
 
         if (user == null) {
-            log.warn("Password change failed. User not found with ID: {}", userId);
+            log.warn("Password not changed. User ID {} does not exist", userId);
             return false;
         }
 
+        // only the hash is saved, the plain password is never stored
         user.setHashPassword(passwordEncoder.encode(passwordChangeInput.password()));
         userRepository.save(user);
 
-        log.info("Password changed for username: {}", user.getUsername());
+        log.info("Password changed for user ID {} (username {})", userId, user.getUsername());
 
         return true;
     }
@@ -125,7 +130,8 @@ public class UserServiceImpl implements UserService {
      * the password is hashed before saving.</p>
      *
      * @param signupInput the username, password, and password confirmation for the new account
-     * @return {@code true} if the user was created, otherwise {@code false}
+     * @return {@code true} if the user was created, otherwise {@code false} if the input is null,
+     *         the username or password fails any check, or the username is already taken
      */
     @Override
     public boolean addUser(SignupInput signupInput) {
@@ -134,9 +140,10 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        log.info("Attempting signup for username: {}", signupInput.username());
+        log.info("Signup attempt for username: {}", signupInput.username());
 
         // runs every check itself so no caller can save a bad user
+        // each validator logs its own reason, and none of them log the password itself
         if (isUsernameBlank(signupInput.username())) {
             return false;
         }
@@ -177,12 +184,17 @@ public class UserServiceImpl implements UserService {
 
         // lowercase so "JD" and "jd" can't both be registered
         newUser.setUsername(signupInput.username().toLowerCase());
+
+        // admin is never taken from the input, so nobody can sign up as an admin
         newUser.setIsAdmin(false);
+
+        // only the hash is saved, the plain password is never stored
         newUser.setHashPassword(passwordEncoder.encode(signupInput.password()));
 
         userRepository.save(newUser);
 
-        log.info("User created: {}", newUser.getUsername());
+        // the database assigns the ID during save, so it's only available after this point
+        log.info("Created user ID {} with username {}", newUser.getId(), newUser.getUsername());
         return true;
     }
 
@@ -205,14 +217,18 @@ public class UserServiceImpl implements UserService {
     /**
      * Checks whether a username is longer than {@link #MAX_USERNAME_LENGTH} characters.
      *
+     * <p>A null username returns {@code false} here because it is reported by
+     * {@link #isUsernameBlank(String)} instead.</p>
+     *
      * @param username the username to check
      * @return {@code true} if the username is too long, otherwise {@code false}
      */
     @Override
     public boolean isUsernameTooLong(String username) {
+        // the column is VARCHAR(20), so a longer name would fail when saved
         if (username != null && username.length() > MAX_USERNAME_LENGTH) {
-            log.warn("Username validation failed. Username exceeds {} characters: {}",
-                    MAX_USERNAME_LENGTH, username);
+            log.warn("Username validation failed. Username {} is {} characters, over the {} limit",
+                    username, username.length(), MAX_USERNAME_LENGTH);
             return true;
         }
 
@@ -223,7 +239,7 @@ public class UserServiceImpl implements UserService {
      * Checks whether a username is already used by another account.
      *
      * <p>The comparison ignores case, since usernames are saved in lowercase.
-     * A blank username returns false because it can't match a saved user.</p>
+     * A blank username returns {@code false} because it can't match a saved user.</p>
      *
      * @param username the username to check
      * @return {@code true} if the username is taken, otherwise {@code false}
@@ -235,10 +251,12 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
+        // lowercased to match how usernames are saved, so "JD" finds "jd"
         User user = userRepository.findByUsername(username.toLowerCase());
 
         if (user != null) {
-            log.warn("Username already taken: {}", username);
+            log.warn("Username validation failed. Username {} is already taken by user ID {}",
+                    username, user.getId());
             return true;
         }
 
@@ -248,13 +266,16 @@ public class UserServiceImpl implements UserService {
     /**
      * Checks that a username has no spaces.
      *
+     * <p>A null username returns {@code true} here because it is reported by
+     * {@link #isUsernameBlank(String)} instead.</p>
+     *
      * @param username the username to check
      * @return {@code true} if the username has no spaces, otherwise {@code false}
      */
     @Override
     public boolean isUsernameSpaceFree(String username) {
         if (username != null && username.contains(" ")) {
-            log.warn("Username validation failed. Username contains spaces: {}", username);
+            log.warn("Username validation failed. Username {} contains spaces", username);
             return false;
         }
 
@@ -263,6 +284,9 @@ public class UserServiceImpl implements UserService {
 
     /**
      * Checks that a password has no spaces.
+     *
+     * <p>A null password returns {@code true} here because it is reported by
+     * {@link #isPasswordBlank(String)} instead.</p>
      *
      * @param password the password to check
      * @return {@code true} if the password has no spaces, otherwise {@code false}
@@ -281,7 +305,7 @@ public class UserServiceImpl implements UserService {
     /**
      * Checks whether a password is shorter than {@link #MIN_PASSWORD_LENGTH} characters.
      *
-     * <p>A blank password returns false here because it is reported by
+     * <p>A blank password returns {@code false} here because it is reported by
      * {@link #isPasswordBlank(String)} instead.</p>
      *
      * @param password the password to check
@@ -289,8 +313,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public boolean isPasswordTooShort(String password) {
+        // blank is skipped so a blank password only gets the blank message, not two messages
         if (password != null && !password.isBlank() && password.length() < MIN_PASSWORD_LENGTH) {
-            log.warn("Password validation failed. Password is less than {} characters", MIN_PASSWORD_LENGTH);
+            log.warn("Password validation failed. Password is {} characters, under the {} minimum",
+                    password.length(), MIN_PASSWORD_LENGTH);
             return true;
         }
 
@@ -300,8 +326,8 @@ public class UserServiceImpl implements UserService {
     /**
      * Checks whether a password is longer than {@link #MAX_PASSWORD_LENGTH} characters.
      *
-     * <p>The cap keeps every password under BCrypt's 72 byte limit, so hashing
-     * can never fail. A null password returns false here because it is reported
+     * <p>The cap keeps every password at or under BCrypt's 72 byte limit, so hashing
+     * can never fail. A null password returns {@code false} here because it is reported
      * by {@link #isPasswordBlank(String)} instead.</p>
      *
      * @param password the password to check
@@ -313,9 +339,10 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        // the password itself is never logged
+        // only the length is logged, never the password itself
         if (password.length() > MAX_PASSWORD_LENGTH) {
-            log.warn("Password validation failed. Password exceeds {} characters", MAX_PASSWORD_LENGTH);
+            log.warn("Password validation failed. Password is {} characters, over the {} limit",
+                    password.length(), MAX_PASSWORD_LENGTH);
             return true;
         }
 
@@ -343,13 +370,13 @@ public class UserServiceImpl implements UserService {
      *
      * @param password the password
      * @param confirmPassword the password confirmation
-     * @return {@code true} if the passwords match, otherwise {@code false}
+     * @return {@code true} if the passwords match, otherwise {@code false}, including when the password is null
      */
     @Override
     public boolean doPasswordsMatch(String password, String confirmPassword) {
         // only password needs a null check, equals(null) just returns false
         if (password == null || !password.equals(confirmPassword)) {
-            log.warn("Password validation failed. Passwords do not match");
+            log.warn("Password validation failed. Password and confirmation do not match");
             return false;
         }
 
