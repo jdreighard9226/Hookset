@@ -41,16 +41,17 @@ public class FishServiceImpl implements FishService {
      */
     @Override
     public List<Fish> getAllFish() {
-        log.info("Loading all fish");
+        log.info("Loading every fish species");
 
+        // fish aren't owned by anyone, so every user gets the same full list
         List<Fish> fish = fishRepository.findAll();
 
         // an empty fish table usually means the seed script has not been run
         if (fish.size() < 1) {
-            log.warn("No fish found in the database");
+            log.warn("No fish species found in the database. The seed script may not have been run");
         }
 
-        log.info("Loaded {} fish", fish.size());
+        log.info("Loaded {} fish species", fish.size());
 
         return fish;
     }
