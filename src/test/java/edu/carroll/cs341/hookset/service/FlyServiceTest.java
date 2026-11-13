@@ -39,8 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * directly. Two users are saved before each test so their IDs exist as real foreign keys.</p>
  *
  * <p>Tests run against the H2 test database and each test is rolled back by
- * {@link Transactional}. Count assertions are measured against a baseline so the tests
- * do not depend on the database starting empty.</p>
+ * {@link Transactional}.</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -81,12 +80,12 @@ public class FlyServiceTest {
     /** A second user used to test ownership rules. */
     private User otherUser;
 
-
     /**
      * Saves two test users before each test.
      */
     @BeforeEach
     public void setUpUsers() {
+        // real users so custom flies can point at real user IDs through the Fly table's foreign key
         testUser = userRepository.save(createTestUser("testuser"));
         otherUser = userRepository.save(createTestUser("otheruser"));
     }
@@ -98,19 +97,18 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetAllFliesHappyPath() {
-        // baseline instead of a hardcoded count
+        // baseline so the count check only measures the two flies this test saves
         int before = flyService.getAllFlies(testUser.getId()).size();
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
         List<Fly> flies = flyService.getAllFlies(testUser.getId());
-
         assertNotNull(flies, "getAllFlies should never return null");
         assertEquals(before + 2, flies.size(),
                 "List size should grow by two after saving a default and a custom fly");
 
+        // checks by name instead of position, since the list order isn't guaranteed
         List<String> returnedNames = getFlyNames(flies);
-
         assertTrue(returnedNames.contains("Default Fly"),
                 "Default fly should be in the returned list");
         assertTrue(returnedNames.contains("Custom Fly"),
@@ -126,7 +124,6 @@ public class FlyServiceTest {
         int before = flyRepository.findByUserIdIsNullOrUserId(testUser.getId()).size();
 
         List<Fly> flies = flyService.getAllFlies(testUser.getId());
-
         assertNotNull(flies, "getAllFlies should never return null");
         assertEquals(before, flies.size(),
                 "List size should not change when no flies are added");
@@ -137,10 +134,10 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetAllFliesCrazyPathOtherUser() {
+        // the other user's fly is the only one saved, so any leak between users shows up here
         flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
         List<Fly> flies = flyService.getAllFlies(testUser.getId());
-
         assertFalse(getFlyNames(flies).contains("Other Fly"),
                 "Another user's custom fly should not be returned");
     }
@@ -153,11 +150,11 @@ public class FlyServiceTest {
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // with a null user ID the query becomes userId IS NULL twice, so only default flies should come back
         List<Fly> flies = flyService.getAllFlies(null);
+        assertNotNull(flies, "getAllFlies should never return null");
 
         List<String> returnedNames = getFlyNames(flies);
-
-        assertNotNull(flies, "getAllFlies should never return null");
         assertTrue(returnedNames.contains("Default Fly"),
                 "Default fly should be returned for a null user ID");
         assertFalse(returnedNames.contains("Custom Fly"),
@@ -176,7 +173,6 @@ public class FlyServiceTest {
         List<Fly> flies = flyService.getAllFlies(999999L);
 
         List<String> returnedNames = getFlyNames(flies);
-
         assertTrue(returnedNames.contains("Default Fly"),
                 "Default fly should be returned for an unknown user ID");
         assertFalse(returnedNames.contains("Custom Fly"),
@@ -190,11 +186,11 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetAllHooksetFliesHappyPath() {
+        // baseline so the count check only measures the fly this test saves
         int before = flyService.getAllHooksetFlies().size();
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
         List<Fly> flies = flyService.getAllHooksetFlies();
-
         assertNotNull(flies, "getAllHooksetFlies should never return null");
         assertEquals(before + 1, flies.size(),
                 "List size should grow by one after saving a default fly");
@@ -207,10 +203,10 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetAllHooksetFliesCrappyPath() {
+        // read straight from the repository so the baseline doesn't go through the method under test
         int before = flyRepository.findByUserIdIsNull().size();
 
         List<Fly> flies = flyService.getAllHooksetFlies();
-
         assertNotNull(flies, "getAllHooksetFlies should never return null");
         assertEquals(before, flies.size(),
                 "List size should not change when no default flies are added");
@@ -228,11 +224,10 @@ public class FlyServiceTest {
         flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
         List<Fly> flies = flyService.getAllHooksetFlies();
-
-        List<String> returnedNames = getFlyNames(flies);
-
         assertEquals(before, flies.size(),
                 "Saving custom flies should not change the Hookset fly count");
+
+        List<String> returnedNames = getFlyNames(flies);
         assertFalse(returnedNames.contains("Custom Fly"),
                 "Test user's custom fly should not be a Hookset fly");
         assertFalse(returnedNames.contains("Other Fly"),
@@ -249,8 +244,7 @@ public class FlyServiceTest {
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
         List<Fly> flies = flyService.getAllUserFlies(testUser.getId());
-
-        // an exact count is safe here, since seed data only contains default flies
+        // an exact count works here, since the test user is created fresh for every test and only has this one fly
         assertNotNull(flies, "getAllUserFlies should never return null");
         assertEquals(1, flies.size(),
                 "User should have exactly one custom fly");
@@ -263,8 +257,8 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetAllUserFliesCrappyPath() {
+        // the test user is created fresh for every test, so they have no custom flies yet
         List<Fly> flies = flyService.getAllUserFlies(testUser.getId());
-
         assertNotNull(flies, "getAllUserFlies should never return null");
         assertTrue(flies.isEmpty(),
                 "A user with no custom flies should get an empty list");
@@ -275,11 +269,11 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetAllUserFliesCrazyPathOtherFliesExcluded() {
+        // one default fly and one other user's fly, the two kinds that should never count as this user's
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
         flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
         List<Fly> flies = flyService.getAllUserFlies(testUser.getId());
-
         assertNotNull(flies, "getAllUserFlies should never return null");
         assertTrue(flies.isEmpty(),
                 "Default flies and other users' flies should not be returned as the user's flies");
@@ -294,7 +288,6 @@ public class FlyServiceTest {
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
         List<Fly> flies = flyService.getAllUserFlies(null);
-
         assertNotNull(flies, "getAllUserFlies should never return null");
         assertTrue(flies.isEmpty(),
                 "A null user ID should return an empty list, not the default flies");
@@ -307,8 +300,8 @@ public class FlyServiceTest {
     public void testGetAllUserFliesCrazyPathUnknownUser() {
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // far above any ID H2 will hand out during a test run
         List<Fly> flies = flyService.getAllUserFlies(999999L);
-
         assertNotNull(flies, "getAllUserFlies should never return null");
         assertTrue(flies.isEmpty(),
                 "A user ID that does not exist should return an empty list");
@@ -324,7 +317,6 @@ public class FlyServiceTest {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
         Fly result = flyService.getFlyFromSlug("custom-fly", testUser.getId());
-
         // check every field so a lookup that returns the wrong row can't slip through
         assertNotNull(result, "Fly should be found for an existing slug");
         assertEquals(saved.getId(), result.getId(),
@@ -352,8 +344,8 @@ public class FlyServiceTest {
     public void testGetFlyFromSlugHappyPathDefaultFly() {
         Fly saved = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
+        // default flies are checked first, so this is found before custom flies are even looked at
         Fly result = flyService.getFlyFromSlug("default-fly", testUser.getId());
-
         assertNotNull(result, "Default fly should be found by its slug");
         assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved default fly");
@@ -368,7 +360,6 @@ public class FlyServiceTest {
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
         Fly result = flyService.getFlyFromSlug("does-not-exist", testUser.getId());
-
         assertNull(result, "No fly should be returned for a slug that does not exist");
     }
 
@@ -379,8 +370,8 @@ public class FlyServiceTest {
     public void testGetFlyFromSlugCrazyPathNullSlug() {
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // no fly has a null slug, so both lookups in the service come back empty
         Fly result = flyService.getFlyFromSlug(null, testUser.getId());
-
         assertNull(result, "No fly should be returned for a null slug");
     }
 
@@ -391,8 +382,8 @@ public class FlyServiceTest {
     public void testGetFlyFromSlugCrazyPathEmptySlug() {
         flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // an empty string isn't null, so this checks it doesn't match anything either
         Fly result = flyService.getFlyFromSlug("", testUser.getId());
-
         assertNull(result, "No fly should be returned for an empty slug");
     }
 
@@ -406,9 +397,9 @@ public class FlyServiceTest {
 
         // a null user ID must not turn into an IS NULL query that matches default flies
         Fly defaultResult = flyService.getFlyFromSlug("default-fly", null);
-        Fly customResult = flyService.getFlyFromSlug("custom-fly", null);
-
         assertNotNull(defaultResult, "A default fly should be found for a null user ID");
+
+        Fly customResult = flyService.getFlyFromSlug("custom-fly", null);
         assertNull(customResult, "A custom fly should not be found for a null user ID");
     }
 
@@ -417,10 +408,10 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetFlyFromSlugCrazyPathNullSlugAndUser() {
+        // a default fly exists so a lookup that matched on nulls would return it and fail
         flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
         Fly result = flyService.getFlyFromSlug(null, null);
-
         assertNull(result, "No fly should be returned when both the slug and user ID are null");
     }
 
@@ -431,8 +422,8 @@ public class FlyServiceTest {
     public void testGetFlyFromSlugCrazyPathOtherUser() {
         flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
+        // the service only searches default flies and this user's flies, never other users'
         Fly result = flyService.getFlyFromSlug("other-fly", testUser.getId());
-
         assertNull(result, "Another user's custom fly should not be found by slug");
     }
 
@@ -448,11 +439,11 @@ public class FlyServiceTest {
                 createTestFly("Woolly Bugger", "woolly-bugger", otherUser.getId()));
 
         Fly testUserResult = flyService.getFlyFromSlug("woolly-bugger", testUser.getId());
-        Fly otherUserResult = flyService.getFlyFromSlug("woolly-bugger", otherUser.getId());
-
         assertNotNull(testUserResult, "Test user should find their own fly by slug");
         assertEquals(testUserFly.getId(), testUserResult.getId(),
                 "Test user should get their own fly, not the other user's");
+
+        Fly otherUserResult = flyService.getFlyFromSlug("woolly-bugger", otherUser.getId());
         assertNotNull(otherUserResult, "Other user should find their own fly by slug");
         assertEquals(otherUserFly.getId(), otherUserResult.getId(),
                 "Other user should get their own fly, not the test user's");
@@ -467,7 +458,6 @@ public class FlyServiceTest {
         flyRepository.save(createTestFly("Parachute Adams", "parachute-adams", testUser.getId()));
 
         Fly result = flyService.getFlyFromSlug("parachute-adams", testUser.getId());
-
         // the service checks default flies first, so this pins down that order
         assertNotNull(result, "A fly should be found when a default and custom fly share a slug");
         assertEquals(defaultFly.getId(), result.getId(),
@@ -483,8 +473,8 @@ public class FlyServiceTest {
     public void testGetFlyByIdHappyPath() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // the user owns the fly, so the ownership check passes
         Fly result = flyService.getFlyById(saved.getId(), testUser.getId());
-
         assertNotNull(result, "Fly should be found for an existing ID");
         assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved fly");
@@ -499,8 +489,8 @@ public class FlyServiceTest {
     public void testGetFlyByIdHappyPathDefaultFly() {
         Fly saved = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
+        // default flies have no owner, so any user can load them
         Fly result = flyService.getFlyById(saved.getId(), testUser.getId());
-
         assertNotNull(result, "Default fly should be found by its ID");
         assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved default fly");
@@ -511,8 +501,8 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetFlyByIdCrappyPath() {
+        // far above any ID H2 will hand out during a test run
         Fly result = flyService.getFlyById(999999L, testUser.getId());
-
         assertNull(result, "No fly should be returned for an ID that does not exist");
     }
 
@@ -521,8 +511,8 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetFlyByIdCrazyPathNullId() {
+        // findById would throw on a null ID, so this proves the service checks for null first
         Fly result = flyService.getFlyById(null, testUser.getId());
-
         assertNull(result, "No fly should be returned for a null ID");
     }
 
@@ -533,6 +523,7 @@ public class FlyServiceTest {
     public void testGetFlyByIdCrazyPathOtherUser() {
         Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
+        // throws instead of returning null, so a denied fly can't be mistaken for a missing one
         assertThrows(AccessDeniedException.class,
                 () -> flyService.getFlyById(otherFly.getId(), testUser.getId()),
                 "Loading another user's fly by ID should be denied");
@@ -545,6 +536,7 @@ public class FlyServiceTest {
     public void testGetFlyByIdCrazyPathNullUserCustomFly() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // a null user ID can't equal the fly's owner, so this is denied like any other user
         assertThrows(AccessDeniedException.class,
                 () -> flyService.getFlyById(saved.getId(), null),
                 "A null user ID should not be able to load a custom fly");
@@ -557,8 +549,8 @@ public class FlyServiceTest {
     public void testGetFlyByIdCrazyPathNullUserDefaultFly() {
         Fly saved = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
+        // default flies skip the ownership check, so a null user ID still sees them
         Fly result = flyService.getFlyById(saved.getId(), null);
-
         assertNotNull(result, "A default fly should be visible even with a null user ID");
         assertEquals(saved.getId(), result.getId(),
                 "Returned fly ID should match the saved default fly");
@@ -569,8 +561,8 @@ public class FlyServiceTest {
      */
     @Test
     public void testGetFlyByIdCrazyPathNullIdAndUser() {
+        // the null fly ID check runs first, so the null user ID is never looked at
         Fly result = flyService.getFlyById(null, null);
-
         assertNull(result, "No fly should be returned when both the fly ID and user ID are null");
     }
 
@@ -585,15 +577,14 @@ public class FlyServiceTest {
         FlyInput flyInput = createTestFlyInput("Parachute Adams Test", "Dry");
 
         boolean result = flyService.addFly(flyInput, testUser.getId());
-
-        List<Fly> userFlies = flyService.getAllUserFlies(testUser.getId());
-
         assertTrue(result, "addFly should return true for a valid fly");
+
+        // read back through the service, since the test user is fresh and this is their only fly
+        List<Fly> userFlies = flyService.getAllUserFlies(testUser.getId());
         assertEquals(1, userFlies.size(),
                 "User should have one custom fly after adding one");
 
         Fly saved = userFlies.getFirst();
-
         assertEquals(testUser.getId(), saved.getUserId(),
                 "Added fly should belong to the user passed in");
         assertEquals("Parachute Adams Test", saved.getName(),
@@ -617,10 +608,10 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyHappyPathStreamer() {
+        // only the image is checked here, the happy path above already covers the other fields
         flyService.addFly(createTestFlyInput("Test Streamer", "Streamer"), testUser.getId());
 
         Fly saved = flyService.getAllUserFlies(testUser.getId()).getFirst();
-
         assertEquals("streamer.png", saved.getImage(),
                 "A streamer should use the streamer image");
     }
@@ -630,10 +621,10 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyHappyPathNymph() {
+        // nymph is the image getFlyImage falls back to, so this checks that fallback
         flyService.addFly(createTestFlyInput("Test Nymph", "Nymph"), testUser.getId());
 
         Fly saved = flyService.getAllUserFlies(testUser.getId()).getFirst();
-
         assertEquals("nymph.png", saved.getImage(),
                 "A nymph should use the nymph image");
     }
@@ -643,17 +634,17 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrappyPathDuplicateName() {
-        // a name that can't collide with a default fly, so the first add is guaranteed to work
+        // the first add has to succeed, so the second add is the only thing being tested
         boolean firstResult = flyService.addFly(createTestFlyInput("Test Bugger", "Streamer"), testUser.getId());
+        assertTrue(firstResult, "The first fly with a new name should be saved");
 
+        // baseline taken after the first add, so the count only measures the second one
         int before = flyRepository.findAll().size();
 
         boolean secondResult = flyService.addFly(createTestFlyInput("Test Bugger", "Streamer"), testUser.getId());
+        assertFalse(secondResult, "A second fly with the same name for the same user should be rejected");
 
         int after = flyRepository.findAll().size();
-
-        assertTrue(firstResult, "The first fly with a new name should be saved");
-        assertFalse(secondResult, "A second fly with the same name for the same user should be rejected");
         assertEquals(before, after, "No fly should be saved for a duplicate name");
     }
 
@@ -662,15 +653,15 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrappyPathDefaultFlyName() {
+        // default flies are visible to everyone, so their names are taken for everyone
         flyRepository.save(createTestFly("Test Default", "test-default", null));
 
         int before = flyRepository.findAll().size();
 
         boolean result = flyService.addFly(createTestFlyInput("Test Default", "Dry"), testUser.getId());
+        assertFalse(result, "A fly with a default fly's name should be rejected");
 
         int after = flyRepository.findAll().size();
-
-        assertFalse(result, "A fly with a default fly's name should be rejected");
         assertEquals(before, after, "No fly should be saved when the name matches a default fly");
     }
 
@@ -683,10 +674,9 @@ public class FlyServiceTest {
         flyRepository.save(createTestFly("Shared Name", "shared-name", otherUser.getId()));
 
         boolean result = flyService.addFly(createTestFlyInput("Shared Name", "Dry"), testUser.getId());
+        assertTrue(result, "A name used only by another user should be allowed");
 
         List<Fly> userFlies = flyService.getAllUserFlies(testUser.getId());
-
-        assertTrue(result, "A name used only by another user should be allowed");
         assertEquals(1, userFlies.size(), "Fly should be saved for the test user");
         assertEquals(testUser.getId(), userFlies.getFirst().getUserId(),
                 "Saved fly should belong to the test user, not the other user");
@@ -699,11 +689,11 @@ public class FlyServiceTest {
     public void testAddFlyCrazyPathNullInput() {
         int before = flyRepository.findAll().size();
 
+        // the null check on the input runs before anything else, so nothing is ever built
         boolean result = flyService.addFly(null, testUser.getId());
+        assertFalse(result, "A null fly input should not be saved");
 
         int after = flyRepository.findAll().size();
-
-        assertFalse(result, "A null fly input should not be saved");
         assertEquals(before, after, "No fly should be saved for a null input");
     }
 
@@ -716,10 +706,9 @@ public class FlyServiceTest {
 
         // a valid fly so the only thing wrong is the missing user
         boolean result = flyService.addFly(createTestFlyInput("Test Fly", "Dry"), null);
+        assertFalse(result, "A fly with no user should not be saved");
 
         int after = flyRepository.findAll().size();
-
-        assertFalse(result, "A fly with no user should not be saved");
         assertEquals(before, after, "No fly should be saved for a null user ID");
     }
 
@@ -728,6 +717,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrazyPathNullName() {
+        // assertAddFlyRejected checks both the false result and that the fly count didn't change
         assertAddFlyRejected(createTestFlyInput(null, "Dry", "Olive", 12, 18),
                 "A fly with a null name should not be saved");
     }
@@ -737,6 +727,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrazyPathBlankName() {
+        // only spaces, which isn't null but is still blank
         assertAddFlyRejected(createTestFlyInput("   ", "Dry", "Olive", 12, 18),
                 "A fly with a blank name should not be saved");
     }
@@ -755,6 +746,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrazyPathBlankType() {
+        // gets past a null check but fails the blank check
         assertAddFlyRejected(createTestFlyInput("Test Fly", "   ", "Olive", 12, 18),
                 "A fly with a blank type should not be saved");
     }
@@ -783,6 +775,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrazyPathNullMinSize() {
+        // sizes are Integer, not int, so a missing size can actually be null
         assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Olive", null, 18),
                 "A fly with a null min size should not be saved");
     }
@@ -801,6 +794,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrazyPathAllFieldsNull() {
+        // the name check runs first and fails, so this mostly proves nothing crashes on all nulls
         assertAddFlyRejected(createTestFlyInput(null, null, null, null, null),
                 "A fly with every field null should not be saved");
     }
@@ -810,6 +804,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrazyPathMinGreaterThanMax() {
+        // both sizes are valid on their own, only the range between them is wrong
         assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Olive", 18, 12),
                 "A fly with a min size larger than its max size should not be saved");
     }
@@ -829,12 +824,51 @@ public class FlyServiceTest {
      */
     @Test
     public void testAddFlyCrazyPathWhitespaceName() {
+        // leading, trailing, and repeated inner spaces all in one name
         flyService.addFly(createTestFlyInput("  Parachute    Adams Test  ", "Dry"), testUser.getId());
 
         Fly saved = flyService.getAllUserFlies(testUser.getId()).getFirst();
-
         assertEquals("parachute-adams-test", saved.getSlug(),
                 "Slug should trim the name and collapse inner whitespace to one hyphen");
+    }
+
+    /**
+     * Crazy path: addFly rejects a name over 150 characters.
+     */
+    @Test
+    public void testAddFlyCrazyPathNameTooLong() {
+        // one over the VARCHAR(150) name column
+        assertAddFlyRejected(createTestFlyInput("a".repeat(151), "Dry", "Olive", 12, 18),
+                "A fly name over 150 characters should not be saved");
+    }
+
+    /**
+     * Crazy path: addFly rejects a color that is only a number.
+     */
+    @Test
+    public void testAddFlyCrazyPathNumberColor() {
+        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "123", 12, 18),
+                "A fly color that is only a number should not be saved");
+    }
+
+    /**
+     * Crazy path: addFly rejects a color that is too short.
+     */
+    @Test
+    public void testAddFlyCrazyPathColorTooShort() {
+        // one under the 3 character minimum
+        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Re", 12, 18),
+                "A fly color under 3 characters should not be saved");
+    }
+
+    /**
+     * Crazy path: addFly rejects a size outside 1-32.
+     */
+    @Test
+    public void testAddFlyCrazyPathSizeOutOfRange() {
+        // both sizes are out of range, 0 is under the minimum and 40 is over the maximum
+        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Olive", 0, 40),
+                "A fly with sizes outside 1-32 should not be saved");
     }
 
     // ---------- updateFly ----------
@@ -850,11 +884,10 @@ public class FlyServiceTest {
         FlyInput flyInput = createTestFlyInput("New Name", "Streamer", "Black", 4, 8);
 
         boolean result = flyService.updateFly(saved.getId(), flyInput, testUser.getId());
-
-        // reload from the repository so the asserts check what was saved, not the object in memory
-        Fly updated = flyRepository.findById(saved.getId()).orElse(null);
-
         assertTrue(result, "updateFly should return true for a successful update");
+
+        // looked up again by ID, which inside one test transaction is the same fly the service changed
+        Fly updated = flyRepository.findById(saved.getId()).orElse(null);
         assertNotNull(updated, "Updated fly should still exist");
         assertEquals("New Name", updated.getName(), "Fly name should be updated");
         assertEquals("new-name", updated.getSlug(), "Fly slug should be regenerated from the new name");
@@ -871,8 +904,8 @@ public class FlyServiceTest {
      */
     @Test
     public void testUpdateFlyCrappyPathMissingFly() {
+        // far above any ID H2 will hand out during a test run
         boolean result = flyService.updateFly(999999L, createTestFlyInput("New Name", "Dry"), testUser.getId());
-
         assertFalse(result, "Updating a fly ID that does not exist should return false");
     }
 
@@ -884,8 +917,8 @@ public class FlyServiceTest {
         Fly saved = flyRepository.save(createTestFly("First Fly", "first-fly", testUser.getId()));
         flyRepository.save(createTestFly("Second Fly", "second-fly", testUser.getId()));
 
+        // the second fly's name is already used by the same user, so renaming the first fly to it is a duplicate
         boolean result = flyService.updateFly(saved.getId(), createTestFlyInput("Second Fly", "Dry"), testUser.getId());
-
         assertFalse(result, "Renaming to another of the user's fly names should be rejected");
         assertFlyNameUnchanged(saved.getId(), "First Fly");
     }
@@ -900,10 +933,9 @@ public class FlyServiceTest {
 
         boolean result = flyService.updateFly(saved.getId(),
                 createTestFlyInput("Same Name", "Dry", "Black", 12, 18), testUser.getId());
+        assertTrue(result, "Keeping the same name should be allowed");
 
         Fly updated = flyRepository.findById(saved.getId()).orElse(null);
-
-        assertTrue(result, "Keeping the same name should be allowed");
         assertNotNull(updated, "Updated fly should still exist");
         assertEquals("Black", updated.getColor(), "Other fields should still be updated");
     }
@@ -915,10 +947,10 @@ public class FlyServiceTest {
     public void testUpdateFlyCrazyPathOtherUser() {
         Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
+        // ownership is checked before the input, so this throws even though the input itself is valid
         assertThrows(AccessDeniedException.class,
                 () -> flyService.updateFly(otherFly.getId(), createTestFlyInput("Hijacked Name", "Dry"), testUser.getId()),
                 "Updating another user's fly should be denied");
-
         // the exception alone doesn't prove nothing changed, so check the saved row too
         assertFlyNameUnchanged(otherFly.getId(), "Other Fly");
     }
@@ -930,10 +962,10 @@ public class FlyServiceTest {
     public void testUpdateFlyCrazyPathDefaultFly() {
         Fly defaultFly = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
+        // default flies have no owner, so nobody can edit them
         assertThrows(AccessDeniedException.class,
                 () -> flyService.updateFly(defaultFly.getId(), createTestFlyInput("Hijacked Name", "Dry"), testUser.getId()),
                 "Updating a default fly should be denied");
-
         assertFlyNameUnchanged(defaultFly.getId(), "Default Fly");
     }
 
@@ -942,8 +974,8 @@ public class FlyServiceTest {
      */
     @Test
     public void testUpdateFlyCrazyPathNullFlyId() {
+        // findById would throw on a null ID, so this proves the service checks for null first
         boolean result = flyService.updateFly(null, createTestFlyInput("New Name", "Dry"), testUser.getId());
-
         assertFalse(result, "Updating a null fly ID should return false");
     }
 
@@ -954,8 +986,8 @@ public class FlyServiceTest {
     public void testUpdateFlyCrazyPathNullInput() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // the user owns this fly, so the null input is the only reason for the failure
         boolean result = flyService.updateFly(saved.getId(), null, testUser.getId());
-
         assertFalse(result, "A null fly input should not update the fly");
         assertFlyNameUnchanged(saved.getId(), "Custom Fly");
     }
@@ -967,10 +999,10 @@ public class FlyServiceTest {
     public void testUpdateFlyCrazyPathNullUser() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // a null user ID can't equal the fly's owner, so this is denied like any other user
         assertThrows(AccessDeniedException.class,
                 () -> flyService.updateFly(saved.getId(), createTestFlyInput("Hijacked Name", "Dry"), null),
                 "A null user ID should not be able to update a fly");
-
         assertFlyNameUnchanged(saved.getId(), "Custom Fly");
     }
 
@@ -985,7 +1017,6 @@ public class FlyServiceTest {
         assertThrows(AccessDeniedException.class,
                 () -> flyService.updateFly(defaultFly.getId(), createTestFlyInput("Hijacked Name", "Dry"), null),
                 "A null user ID should not be able to update a default fly");
-
         assertFlyNameUnchanged(defaultFly.getId(), "Default Fly");
     }
 
@@ -994,6 +1025,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testUpdateFlyCrazyPathNullName() {
+        // assertUpdateFlyRejected checks both the false result and that the saved name didn't change
         assertUpdateFlyRejected(createTestFlyInput(null, "Dry", "Olive", 12, 18),
                 "A null name should not update the fly");
     }
@@ -1039,32 +1071,79 @@ public class FlyServiceTest {
      */
     @Test
     public void testUpdateFlyCrazyPathMinGreaterThanMax() {
+        // both sizes are valid on their own, only the range between them is wrong
         assertUpdateFlyRejected(createTestFlyInput("New Name", "Dry", "Olive", 18, 12),
                 "A min size larger than the max size should not update the fly");
+    }
+
+    /**
+     * Crazy path: updateFly rejects a type that isn't on the list.
+     */
+    @Test
+    public void testUpdateFlyCrazyPathUnknownType() {
+        // a real fly type, just not one Hookset supports
+        assertUpdateFlyRejected(createTestFlyInput("New Name", "Wet Fly", "Olive", 12, 18),
+                "Updating to a type that isn't on the list should be rejected");
+    }
+
+    /**
+     * Crazy path: updateFly rejects a color that is only a number.
+     */
+    @Test
+    public void testUpdateFlyCrazyPathNumberColor() {
+        assertUpdateFlyRejected(createTestFlyInput("New Name", "Dry", "123", 12, 18),
+                "Updating to a color that is only a number should be rejected");
+    }
+
+    /**
+     * Crazy path: updateFly rejects a size outside 1-32.
+     */
+    @Test
+    public void testUpdateFlyCrazyPathSizeOutOfRange() {
+        // one over the largest hook size
+        assertUpdateFlyRejected(createTestFlyInput("New Name", "Dry", "Olive", 12, 33),
+                "Updating to a size over 32 should be rejected");
     }
 
     // ---------- deleteFly ----------
 
     /**
-     * Happy path: the user's fly is deleted.
+     * Happy path: deleting an unused custom fly returns true and removes it.
      */
     @Test
     public void testDeleteFlyHappyPath() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
-        flyService.deleteFly(saved.getId(), testUser.getId());
-
-        assertTrue(flyRepository.findById(saved.getId()).isEmpty(),
-                "Deleted fly should no longer exist");
+        // no catches use this fly, so nothing blocks the delete
+        boolean result = flyService.deleteFly(saved.getId(), testUser.getId());
+        assertTrue(result, "Deleting an unused custom fly should return true");
+        assertNull(flyRepository.findById(saved.getId()).orElse(null),
+                "The fly should be gone after it is deleted");
     }
 
     /**
-     * Crappy path: deleting a fly ID that does not exist does nothing and does not throw.
+     * Crappy path: deleting a fly ID that does not exist returns false instead of throwing.
      */
     @Test
     public void testDeleteFlyCrappyPath() {
-        assertDoesNotThrow(() -> flyService.deleteFly(999999L, testUser.getId()),
-                "Deleting a fly ID that does not exist should not throw");
+        // far above any ID H2 will hand out during a test run
+        // a missing fly returns false instead of throwing, since there's nothing to protect
+        boolean result = flyService.deleteFly(999999L, testUser.getId());
+        assertFalse(result, "Deleting a fly ID that does not exist should return false");
+    }
+
+    /**
+     * Crappy path: a fly used by a catch is not deleted.
+     */
+    @Test
+    public void testDeleteFlyCrappyPathUsedByCatch() {
+        Fly saved = flyRepository.save(createTestFly("Used Fly", "used-fly", testUser.getId()));
+        catchRepository.save(createTestCatch(saved));
+
+        // the user owns the fly, so the catch is the only thing blocking the delete
+        boolean result = flyService.deleteFly(saved.getId(), testUser.getId());
+        assertFalse(result, "A fly used by a catch should not be deleted");
+        assertFlyNameUnchanged(saved.getId(), "Used Fly");
     }
 
     /**
@@ -1074,6 +1153,7 @@ public class FlyServiceTest {
     public void testDeleteFlyCrazyPathOtherUser() {
         Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
+        // the denied delete has to leave the fly in place, not just throw
         assertThrows(AccessDeniedException.class,
                 () -> flyService.deleteFly(otherFly.getId(), testUser.getId()),
                 "Deleting another user's fly should be denied");
@@ -1088,6 +1168,7 @@ public class FlyServiceTest {
     public void testDeleteFlyCrazyPathDefaultFly() {
         Fly defaultFly = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
 
+        // default flies have no owner, so nobody can delete them
         assertThrows(AccessDeniedException.class,
                 () -> flyService.deleteFly(defaultFly.getId(), testUser.getId()),
                 "Deleting a default fly should be denied");
@@ -1096,15 +1177,16 @@ public class FlyServiceTest {
     }
 
     /**
-     * Crazy path: a null fly ID does nothing and does not throw.
+     * Crazy path: a null fly ID returns false and deletes nothing.
      */
     @Test
     public void testDeleteFlyCrazyPathNullId() {
         // a real fly exists so a null that matched something would delete it
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
-        assertDoesNotThrow(() -> flyService.deleteFly(null, testUser.getId()),
-                "Deleting a null fly ID should not throw");
+        // findById would throw on a null ID, so this proves the service checks for null first
+        boolean result = flyService.deleteFly(null, testUser.getId());
+        assertFalse(result, "Deleting with a null fly ID should return false");
         assertTrue(flyRepository.findById(saved.getId()).isPresent(),
                 "No fly should be deleted for a null ID");
     }
@@ -1116,6 +1198,7 @@ public class FlyServiceTest {
     public void testDeleteFlyCrazyPathNullUser() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
+        // a null user ID can't equal the fly's owner, so this is denied like any other user
         assertThrows(AccessDeniedException.class,
                 () -> flyService.deleteFly(saved.getId(), null),
                 "A null user ID should not be able to delete a fly");
@@ -1143,8 +1226,24 @@ public class FlyServiceTest {
      */
     @Test
     public void testDeleteFlyCrazyPathNullIdAndUser() {
+        // the null fly ID check runs first, so the null user ID is never looked at
         assertDoesNotThrow(() -> flyService.deleteFly(null, null),
                 "Deleting with both IDs null should not throw");
+    }
+
+    /**
+     * Crazy path: another user's fly that is used by a catch is still denied, not just rejected.
+     */
+    @Test
+    public void testDeleteFlyCrazyPathOtherUserUsedFly() {
+        // ownership is checked before the catch check, so this throws instead of returning false
+        Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
+        catchRepository.save(createTestCatch(otherFly));
+
+        assertThrows(AccessDeniedException.class,
+                () -> flyService.deleteFly(otherFly.getId(), testUser.getId()),
+                "Deleting another user's fly should be denied even when it is used by a catch");
+        assertFlyNameUnchanged(otherFly.getId(), "Other Fly");
     }
 
     // ---------- isSizeRangeValid ----------
@@ -1163,6 +1262,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsSizeRangeValidCrappyPath() {
+        // both sizes are valid hook sizes, only the order is wrong
         assertFalse(flyService.isSizeRangeValid(18, 12),
                 "A min size larger than the max size should be invalid");
     }
@@ -1182,6 +1282,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsSizeRangeValidCrazyPathNullMin() {
+        // null is skipped on purpose so the user only gets the missing size message
         assertTrue(flyService.isSizeRangeValid(null, 12),
                 "A null min size should pass so the missing field check reports it");
     }
@@ -1211,6 +1312,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameUniqueHappyPath() {
+        // nothing is saved first, so no visible fly could have this name
         assertTrue(flyService.isFlyNameUnique("Brand New Fly", testUser.getId()),
                 "A name the user has not used should be unique");
     }
@@ -1220,6 +1322,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameUniqueCrappyPath() {
+        // saved directly with the slug generateFlySlug would make for this name
         flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
 
         assertFalse(flyService.isFlyNameUnique("Woolly Bugger", testUser.getId()),
@@ -1233,6 +1336,7 @@ public class FlyServiceTest {
     public void testIsFlyNameUniqueCrazyPathCaseAndWhitespace() {
         flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
 
+        // both names turn into the slug woolly-bugger, which is how names are compared
         assertFalse(flyService.isFlyNameUnique("  WOOLLY   BUGGER  ", testUser.getId()),
                 "A duplicate name should not be unique regardless of case or whitespace");
     }
@@ -1252,6 +1356,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameUniqueCrazyPathNullName() {
+        // strict on bad input, same as the blank case
         assertFalse(flyService.isFlyNameUnique(null, testUser.getId()),
                 "A null name should not be unique");
     }
@@ -1333,6 +1438,7 @@ public class FlyServiceTest {
     public void testIsFlyNameUniqueForEditHappyPathNewName() {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
 
+        // an unused name skips the keep-your-own-name shortcut and checks the full list
         assertTrue(flyService.isFlyNameUniqueForEdit(saved.getId(), "Brand New Fly", testUser.getId()),
                 "Renaming to an unused name should be allowed");
     }
@@ -1343,6 +1449,7 @@ public class FlyServiceTest {
     @Test
     public void testIsFlyNameUniqueForEditCrappyPath() {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
+        // a second fly the user owns, whose name the first fly tries to take
         flyRepository.save(createTestFly("Second Fly", "second-fly", testUser.getId()));
 
         assertFalse(flyService.isFlyNameUniqueForEdit(saved.getId(), "Second Fly", testUser.getId()),
@@ -1356,6 +1463,7 @@ public class FlyServiceTest {
     public void testIsFlyNameUniqueForEditCrazyPathCaseAndWhitespace() {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
 
+        // still turns into the slug woolly-bugger, so it counts as keeping the current name
         assertTrue(flyService.isFlyNameUniqueForEdit(saved.getId(), "  woolly bugger  ", testUser.getId()),
                 "Keeping the current name with different case or whitespace should be allowed");
     }
@@ -1366,6 +1474,7 @@ public class FlyServiceTest {
     @Test
     public void testIsFlyNameUniqueForEditCrazyPathDefaultFlyName() {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
+        // default flies are visible to everyone, so their names are taken for everyone
         flyRepository.save(createTestFly("Test Default", "test-default", null));
 
         assertFalse(flyService.isFlyNameUniqueForEdit(saved.getId(), "Test Default", testUser.getId()),
@@ -1378,6 +1487,7 @@ public class FlyServiceTest {
     @Test
     public void testIsFlyNameUniqueForEditCrazyPathOtherUserName() {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
+        // custom flies are private, so another user's names shouldn't block this user
         flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
         assertTrue(flyService.isFlyNameUniqueForEdit(saved.getId(), "Other Fly", testUser.getId()),
@@ -1411,6 +1521,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameUniqueForEditCrazyPathMissingFly() {
+        // the fly being edited has to exist so its current slug can be compared
         assertFalse(flyService.isFlyNameUniqueForEdit(999999L, "Woolly Bugger", testUser.getId()),
                 "Checking a fly ID that does not exist should return false");
     }
@@ -1420,6 +1531,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameUniqueForEditCrazyPathNullFlyId() {
+        // findById would throw on a null ID, so this proves the service checks for null first
         assertFalse(flyService.isFlyNameUniqueForEdit(null, "Woolly Bugger", testUser.getId()),
                 "Checking a null fly ID should return false");
     }
@@ -1432,6 +1544,7 @@ public class FlyServiceTest {
         Fly saved = flyRepository.save(createTestFly("Woolly Bugger", "woolly-bugger", testUser.getId()));
         flyRepository.save(createTestFly("Test Default", "test-default", null));
 
+        // a null user ID still sees default flies, so their names stay blocked
         assertFalse(flyService.isFlyNameUniqueForEdit(saved.getId(), "Test Default", null),
                 "A default fly name should be blocked even with a null user ID");
     }
@@ -1461,6 +1574,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameBlankCrappyPathNull() {
+        // strict on bad input, null counts as blank
         assertTrue(flyService.isFlyNameBlank(null),
                 "A null name should be blank");
     }
@@ -1498,6 +1612,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameBlankCrazyPathSingleCharacter() {
+        // boundary case, the smallest name that isn't blank
         assertFalse(flyService.isFlyNameBlank("A"),
                 "A single character name should not be blank");
     }
@@ -1518,6 +1633,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameLengthValidCrappyPath() {
+        // one over the VARCHAR(150) name column
         String longName = "a".repeat(151);
 
         assertFalse(flyService.isFlyNameLengthValid(longName),
@@ -1541,6 +1657,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameLengthValidCrazyPathSingleCharacter() {
+        // boundary case, the shortest allowed name
         assertTrue(flyService.isFlyNameLengthValid("A"),
                 "A single character name should be allowed");
     }
@@ -1559,6 +1676,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameLengthValidCrazyPathSpaces() {
+        // trimmed down to an empty string, so this has 0 characters
         assertFalse(flyService.isFlyNameLengthValid("     "),
                 "A name of only spaces should be too short once trimmed");
     }
@@ -1568,6 +1686,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyNameLengthValidCrazyPathPaddedMax() {
+        // 154 characters before trimming, 150 after
         String paddedName = "  " + "a".repeat(150) + "  ";
 
         assertTrue(flyService.isFlyNameLengthValid(paddedName),
@@ -1590,6 +1709,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyTypeValidHappyPath() {
+        // all three option values on the fly form's type dropdown
         assertTrue(flyService.isFlyTypeValid("Dry"), "Dry should be a valid type");
         assertTrue(flyService.isFlyTypeValid("Nymph"), "Nymph should be a valid type");
         assertTrue(flyService.isFlyTypeValid("Streamer"), "Streamer should be a valid type");
@@ -1600,6 +1720,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyTypeValidCrappyPath() {
+        // a real fly type, just not one Hookset supports
         assertFalse(flyService.isFlyTypeValid("Wet Fly"),
                 "A type that isn't on the list should not be valid");
     }
@@ -1628,6 +1749,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyTypeValidCrazyPathPadded() {
+        // types aren't trimmed, so the spaces make this not match
         assertFalse(flyService.isFlyTypeValid(" Dry "),
                 "A type with spaces around it should not be valid");
     }
@@ -1714,6 +1836,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyColorLengthValidCrappyPath() {
+        // one over the VARCHAR(40) color column
         String longColor = "a".repeat(41);
 
         assertFalse(flyService.isFlyColorLengthValid(longColor),
@@ -1725,6 +1848,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyColorLengthValidCrazyPathExactlyMax() {
+        // boundary case, catches a > that should have been >= or the other way around
         String maxColor = "a".repeat(40);
 
         assertTrue(flyService.isFlyColorLengthValid(maxColor),
@@ -1736,6 +1860,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyColorLengthValidCrazyPathExactlyMin() {
+        // boundary case, three letters is the shortest allowed color
         assertTrue(flyService.isFlyColorLengthValid("Red"),
                 "A color of exactly 3 characters should be allowed");
     }
@@ -1745,6 +1870,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyColorLengthValidCrazyPathTooShort() {
+        // one under the 3 character minimum
         assertFalse(flyService.isFlyColorLengthValid("Re"),
                 "A color of 2 characters should be too short");
     }
@@ -1802,6 +1928,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyColorValidStringCrazyPathPaddedNumber() {
+        // trimmed before the digit check, so the spaces don't count as non-digits
         assertFalse(flyService.isFlyColorValidString("  42  "),
                 "A number with spaces around it should still not be valid");
     }
@@ -1811,6 +1938,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyColorValidStringCrazyPathLettersAndDigits() {
+        // one letter is enough to pass, since only all-digit colors are blocked
         assertTrue(flyService.isFlyColorValidString("Olive2"),
                 "A color with letters and digits should be valid");
     }
@@ -1868,6 +1996,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMinSizeValidNumberCrappyPath() {
+        // one over the largest hook size
         assertFalse(flyService.isMinSizeValidNumber(33),
                 "A size over 32 should not be valid");
     }
@@ -1877,6 +2006,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMinSizeValidNumberCrazyPathExactlyMin() {
+        // boundary case, the smallest hook size
         assertTrue(flyService.isMinSizeValidNumber(1),
                 "A size of 1 should be valid");
     }
@@ -1886,6 +2016,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMinSizeValidNumberCrazyPathExactlyMax() {
+        // boundary case, the largest hook size
         assertTrue(flyService.isMinSizeValidNumber(32),
                 "A size of 32 should be valid");
     }
@@ -1895,6 +2026,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMinSizeValidNumberCrazyPathZero() {
+        // one under the smallest hook size
         assertFalse(flyService.isMinSizeValidNumber(0),
                 "A size of 0 should not be valid");
     }
@@ -1933,6 +2065,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMaxSizeValidNumberCrappyPath() {
+        // one over the largest hook size
         assertFalse(flyService.isMaxSizeValidNumber(33),
                 "A size over 32 should not be valid");
     }
@@ -1942,6 +2075,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMaxSizeValidNumberCrazyPathExactlyMin() {
+        // boundary case, the smallest hook size
         assertTrue(flyService.isMaxSizeValidNumber(1),
                 "A size of 1 should be valid");
     }
@@ -1951,6 +2085,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMaxSizeValidNumberCrazyPathExactlyMax() {
+        // boundary case, the largest hook size
         assertTrue(flyService.isMaxSizeValidNumber(32),
                 "A size of 32 should be valid");
     }
@@ -1960,6 +2095,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsMaxSizeValidNumberCrazyPathZero() {
+        // one under the smallest hook size
         assertFalse(flyService.isMaxSizeValidNumber(0),
                 "A size of 0 should not be valid");
     }
@@ -1990,6 +2126,7 @@ public class FlyServiceTest {
     @Test
     public void testIsFlyUsedByCatchHappyPath() {
         Fly saved = flyRepository.save(createTestFly("Used Fly", "used-fly", testUser.getId()));
+        // the catch is what makes the fly count as in use
         catchRepository.save(createTestCatch(saved));
 
         assertTrue(flyService.isFlyUsedByCatch(saved.getId()),
@@ -2025,6 +2162,7 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyUsedByCatchCrazyPathMissingFly() {
+        // far above any ID H2 will hand out during a test run
         assertFalse(flyService.isFlyUsedByCatch(999999L),
                 "A fly ID that doesn't exist should not be in use");
     }
@@ -2034,136 +2172,99 @@ public class FlyServiceTest {
      */
     @Test
     public void testIsFlyUsedByCatchCrazyPathNull() {
+        // the service returns false before existsByFlyId is ever called with null
         assertFalse(flyService.isFlyUsedByCatch(null),
                 "A null fly ID should not be in use");
     }
 
-    // ---------- deleteFly return value and catch check ----------
+    // ---------- isFlyOwner ----------
 
     /**
-     * Happy path: deleting an unused custom fly returns true.
+     * Happy path: a user owns the custom fly they made.
      */
     @Test
-    public void testDeleteFlyHappyPathReturnsTrue() {
+    public void testIsFlyOwnerHappyPath() {
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
-        boolean result = flyService.deleteFly(saved.getId(), testUser.getId());
-
-        assertTrue(result, "Deleting an unused custom fly should return true");
-        assertNull(flyRepository.findById(saved.getId()).orElse(null),
-                "The fly should be gone after it is deleted");
+        // the fly's user ID matches the user passed in, so this is the one case that returns true
+        assertTrue(flyService.isFlyOwner(saved.getId(), testUser.getId()),
+                "A user should own the custom fly they made");
     }
 
     /**
-     * Crappy path: a fly used by a catch is not deleted.
+     * Crappy path: a user does not own another user's custom fly.
      */
     @Test
-    public void testDeleteFlyCrappyPathUsedByCatch() {
-        Fly saved = flyRepository.save(createTestFly("Used Fly", "used-fly", testUser.getId()));
-        catchRepository.save(createTestCatch(saved));
+    public void testIsFlyOwnerCrappyPath() {
+        Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
 
-        boolean result = flyService.deleteFly(saved.getId(), testUser.getId());
-
-        assertFalse(result, "A fly used by a catch should not be deleted");
-        assertFlyNameUnchanged(saved.getId(), "Used Fly");
+        // the fly exists, so a false here can only come from the owner check
+        assertFalse(flyService.isFlyOwner(otherFly.getId(), testUser.getId()),
+                "A user should not own another user's custom fly");
     }
 
     /**
-     * Crazy path: a fly ID that doesn't exist returns false.
+     * Crazy path: nobody owns a default fly.
      */
     @Test
-    public void testDeleteFlyCrazyPathMissingFlyReturnsFalse() {
-        assertFalse(flyService.deleteFly(999999L, testUser.getId()),
-                "Deleting a fly that doesn't exist should return false");
+    public void testIsFlyOwnerCrazyPathDefaultFly() {
+        Fly defaultFly = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
+
+        // default flies have a null user ID, so they never belong to anyone
+        assertFalse(flyService.isFlyOwner(defaultFly.getId(), testUser.getId()),
+                "Nobody should own a default fly");
+    }
+
+    /**
+     * Crazy path: a fly ID that does not exist is not owned by anyone.
+     */
+    @Test
+    public void testIsFlyOwnerCrazyPathMissingFly() {
+        // far above any ID H2 will hand out during a test run
+        assertFalse(flyService.isFlyOwner(999999L, testUser.getId()),
+                "A fly that does not exist should not be owned by anyone");
     }
 
     /**
      * Crazy path: a null fly ID returns false.
      */
     @Test
-    public void testDeleteFlyCrazyPathNullIdReturnsFalse() {
-        assertFalse(flyService.deleteFly(null, testUser.getId()),
-                "Deleting with a null fly ID should return false");
+    public void testIsFlyOwnerCrazyPathNullFlyId() {
+        // findById would throw on a null ID, so this proves the service checks for null first
+        assertFalse(flyService.isFlyOwner(null, testUser.getId()),
+                "A null fly ID should not be owned by anyone");
     }
 
     /**
-     * Crazy path: another user's fly that is used by a catch is still denied, not just rejected.
+     * Crazy path: a null user ID does not own a custom fly.
      */
     @Test
-    public void testDeleteFlyCrazyPathOtherUserUsedFly() {
-        // ownership is checked before the catch check, so this throws instead of returning false
-        Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
-        catchRepository.save(createTestCatch(otherFly));
+    public void testIsFlyOwnerCrazyPathNullUser() {
+        Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
-        assertThrows(AccessDeniedException.class,
-                () -> flyService.deleteFly(otherFly.getId(), testUser.getId()),
-                "Deleting another user's fly should be denied even when it is used by a catch");
-        assertFlyNameUnchanged(otherFly.getId(), "Other Fly");
-    }
-
-    // ---------- addFly and updateFly with the new checks ----------
-
-    /**
-     * Crazy path: addFly rejects a name over 150 characters.
-     */
-    @Test
-    public void testAddFlyCrazyPathNameTooLong() {
-        assertAddFlyRejected(createTestFlyInput("a".repeat(151), "Dry", "Olive", 12, 18),
-                "A fly name over 150 characters should not be saved");
+        assertFalse(flyService.isFlyOwner(saved.getId(), null),
+                "A null user ID should not own a custom fly");
     }
 
     /**
-     * Crazy path: addFly rejects a color that is only a number.
+     * Crazy path: a null user ID does not own a default fly, even though both are null.
      */
     @Test
-    public void testAddFlyCrazyPathNumberColor() {
-        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "123", 12, 18),
-                "A fly color that is only a number should not be saved");
+    public void testIsFlyOwnerCrazyPathNullUserDefaultFly() {
+        // a null user ID and a default fly's null owner must not count as a match
+        Fly defaultFly = flyRepository.save(createTestFly("Default Fly", "default-fly", null));
+
+        assertFalse(flyService.isFlyOwner(defaultFly.getId(), null),
+                "A null user ID should not own a default fly");
     }
 
     /**
-     * Crazy path: addFly rejects a color that is too short.
+     * Crazy path: a null fly ID and a null user ID together return false.
      */
     @Test
-    public void testAddFlyCrazyPathColorTooShort() {
-        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Re", 12, 18),
-                "A fly color under 3 characters should not be saved");
-    }
-
-    /**
-     * Crazy path: addFly rejects a size outside 1-32.
-     */
-    @Test
-    public void testAddFlyCrazyPathSizeOutOfRange() {
-        assertAddFlyRejected(createTestFlyInput("Test Fly", "Dry", "Olive", 0, 40),
-                "A fly with sizes outside 1-32 should not be saved");
-    }
-
-    /**
-     * Crazy path: updateFly rejects a type that isn't on the list.
-     */
-    @Test
-    public void testUpdateFlyCrazyPathUnknownType() {
-        assertUpdateFlyRejected(createTestFlyInput("New Name", "Wet Fly", "Olive", 12, 18),
-                "Updating to a type that isn't on the list should be rejected");
-    }
-
-    /**
-     * Crazy path: updateFly rejects a color that is only a number.
-     */
-    @Test
-    public void testUpdateFlyCrazyPathNumberColor() {
-        assertUpdateFlyRejected(createTestFlyInput("New Name", "Dry", "123", 12, 18),
-                "Updating to a color that is only a number should be rejected");
-    }
-
-    /**
-     * Crazy path: updateFly rejects a size outside 1-32.
-     */
-    @Test
-    public void testUpdateFlyCrazyPathSizeOutOfRange() {
-        assertUpdateFlyRejected(createTestFlyInput("New Name", "Dry", "Olive", 12, 33),
-                "Updating to a size over 32 should be rejected");
+    public void testIsFlyOwnerCrazyPathNullFlyIdAndUser() {
+        assertFalse(flyService.isFlyOwner(null, null),
+                "Both IDs null should not count as owning anything");
     }
 
     // ---------- Helpers ----------
@@ -2175,13 +2276,13 @@ public class FlyServiceTest {
      * @param message the failure message for the result check
      */
     private void assertAddFlyRejected(FlyInput flyInput, String message) {
+        // count before and after, so the test catches a fly being saved even when the result is false
         int before = flyRepository.findAll().size();
 
         boolean result = flyService.addFly(flyInput, testUser.getId());
+        assertFalse(result, message);
 
         int after = flyRepository.findAll().size();
-
-        assertFalse(result, message);
         assertEquals(before, after, "No fly should be saved when the input is rejected");
     }
 
@@ -2192,10 +2293,10 @@ public class FlyServiceTest {
      * @param message the failure message for the result check
      */
     private void assertUpdateFlyRejected(FlyInput flyInput, String message) {
+        // a fly the test user owns, so ownership never causes the failure
         Fly saved = flyRepository.save(createTestFly("Custom Fly", "custom-fly", testUser.getId()));
 
         boolean result = flyService.updateFly(saved.getId(), flyInput, testUser.getId());
-
         assertFalse(result, message);
         assertFlyNameUnchanged(saved.getId(), "Custom Fly");
     }
@@ -2207,7 +2308,7 @@ public class FlyServiceTest {
      * @param expectedName the name the fly should still have
      */
     private void assertFlyNameUnchanged(Long flyId, String expectedName) {
-        // reload from the repository so the check reads what was saved, not the object in memory
+        // looked up again by ID, which inside one test transaction is the same fly the service would have changed
         Fly unchanged = flyRepository.findById(flyId).orElse(null);
 
         assertNotNull(unchanged, "Fly should still exist");
@@ -2297,6 +2398,7 @@ public class FlyServiceTest {
 
         Catch testCatch = new Catch();
 
+        // always the test user, since these tests only care which fly the catch uses
         testCatch.setUserId(testUser.getId());
         testCatch.setFly(fly);
         testCatch.setFish(fish);
@@ -2329,7 +2431,7 @@ public class FlyServiceTest {
     private WaterBody createTestWaterBody() {
         WaterBody waterBody = new WaterBody();
 
-        // slug is unique in the table, so this one is named so it won't collide with seed data
+        // slug is unique in the table, so this test class gives its water body its own slug
         waterBody.setName("Fly Service Test River");
         waterBody.setType("River");
         waterBody.setState("Montana");
