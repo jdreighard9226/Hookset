@@ -113,16 +113,22 @@ public class CatchController {
     /**
      * Handles GET requests for the page listing every logged catch.
      *
+     * @param user the logged-in user, used only to log who loaded the page
      * @param model the model used to pass the catches to the view
      * @return the name of the catch index view to render
      */
     @GetMapping
-    public String index(Model model) {
-        log.info("Loading all catches page");
+    public String index(@AuthenticationPrincipal HooksetUserDetails user, Model model) {
+        log.info("User ID {} loading the all catches page", user.getId());
 
+        // every user's catches, since this page is the shared list
         List<Catch> catches = catchService.getAllCatches();
+
+        // the view only gets DTOs, so entities stay out of the templates and they only see the fields meant for display
         List<CatchDto> catchDtos = mapAllCatchDtos(catches);
         model.addAttribute("catches", catchDtos);
+
+        log.info("Showing {} catches to user ID {} on the all catches page", catchDtos.size(), user.getId());
 
         return "catches/index";
     }
@@ -136,11 +142,14 @@ public class CatchController {
      */
     @GetMapping("/mine")
     public String getUserCatches(@AuthenticationPrincipal HooksetUserDetails user, Model model) {
-        log.info("Loading user catches page");
+        log.info("User ID {} loading their own catches page", user.getId());
 
+        // the user ID comes from the login, not the URL, so users can only list their own catches here
         List<Catch> catches = catchService.getAllUserCatches(user.getId());
         List<CatchDto> catchDtos = mapAllCatchDtos(catches);
         model.addAttribute("catches", catchDtos);
+
+        log.info("Showing {} of their own catches to user ID {}", catchDtos.size(), user.getId());
 
         return "catches/user-catches";
     }
@@ -160,19 +169,26 @@ public class CatchController {
     public String getCatchDetails(@AuthenticationPrincipal HooksetUserDetails user,
                                   @PathVariable Long catchId,
                                   Model model) {
-        log.info("Loading catch details page for catch ID: {}", catchId);
+        log.info("User ID {} loading the details page for catch ID {}", user.getId(), catchId);
 
         Catch catchRecord = catchService.getCatchById(catchId);
 
+        // a bad or old link lands back on the catch list instead of an error page
         if (catchRecord == null) {
-            log.warn("Catch details not found for catch ID: {}", catchId);
+            log.warn("User ID {} requested details for catch ID {}, which does not exist. Redirecting to all catches",
+                    user.getId(), catchId);
             return "redirect:/catches";
         }
 
         CatchDto catchDto = catchMapper.toDto(catchRecord);
 
+        // decides whether the view shows the edit button
+        boolean isOwner = catchService.isCatchOwner(catchId, user.getId());
+
         model.addAttribute("catchRecord", catchDto);
-        model.addAttribute("isOwner", catchService.isCatchOwner(catchId, user.getId()));
+        model.addAttribute("isOwner", isOwner);
+
+        log.info("Showing catch ID {} to user ID {} (owner: {})", catchId, user.getId(), isOwner);
 
         return "catches/details";
     }
@@ -186,8 +202,9 @@ public class CatchController {
      */
     @GetMapping("/add")
     public String getAddCatch(Model model, @AuthenticationPrincipal HooksetUserDetails user) {
-        log.info("Loading add catch page");
+        log.info("User ID {} loading the add catch page", user.getId());
 
+        // empty form for the view to bind to
         CatchForm catchForm = new CatchForm();
 
         // most catches are logged right after they happen, so start at now
@@ -195,6 +212,8 @@ public class CatchController {
         catchForm.setDateCaught(now);
 
         model.addAttribute("catchForm", catchForm);
+
+        // fills the fly, water body, and fish dropdowns
         addFormOptions(model, catchForm, user.getId());
 
         return "catches/add";
@@ -218,24 +237,37 @@ public class CatchController {
                                BindingResult result,
                                @AuthenticationPrincipal HooksetUserDetails user,
                                Model model) {
-        log.info("Add catch form submitted");
+        log.info("User ID {} submitted the add catch form with fly ID {}, fish ID {}, water body ID {}",
+                user.getId(), catchForm.getFlyId(), catchForm.getFishId(), catchForm.getWaterBodyId());
 
+        // the service takes a record, not the web form, so it doesn't depend on where input came from
         CatchInput catchInput = catchMapper.toInput(catchForm);
+
+        // runs even when the annotations already failed, so the user sees every error at once
         boolean hasCustomErrors = addCustomErrors(catchInput, model, user.getId());
 
         if (result.hasErrors() || hasCustomErrors) {
-            log.warn("Add catch form failed validation");
+            log.warn("Add catch form from user ID {} failed validation with {} field errors",
+                    user.getId(), result.getErrorCount());
+
+            // dropdowns have to be refilled since the page is rendered again, not redirected
             addFormOptions(model, catchForm, user.getId());
             return "catches/add";
         }
 
+        // the service runs every check again, so bad data can't be saved even if the controller missed something
         if (!catchService.addCatch(catchInput, user.getId())) {
-            log.warn("Add catch failed");
+            log.warn("Add catch passed form validation but the catch service rejected it for user ID {}",
+                    user.getId());
             model.addAttribute("addCatchFailed", true);
             addFormOptions(model, catchForm, user.getId());
             return "catches/add";
         }
 
+        log.info("User ID {} added a catch with fly ID {}, fish ID {}, water body ID {}",
+                user.getId(), catchInput.flyId(), catchInput.fishId(), catchInput.waterBodyId());
+
+        // redirect after a successful POST so refreshing the page doesn't submit the catch twice
         return "redirect:/catches/mine";
     }
 
@@ -254,21 +286,26 @@ public class CatchController {
     public String getEditCatch(@PathVariable Long catchId,
                                @AuthenticationPrincipal HooksetUserDetails user,
                                Model model) {
-        log.info("Loading edit catch page for catch ID: {}", catchId);
+        log.info("User ID {} loading the edit page for catch ID {}", user.getId(), catchId);
 
         // false for catches that don't exist or belong to someone else
         if (!catchService.isCatchOwner(catchId, user.getId())) {
-            log.warn("Catch ID {} not found or not owned by the current user", catchId);
+            log.warn("User ID {} tried to open the edit page for catch ID {}, which does not exist or is not theirs. Redirecting to their catches",
+                    user.getId(), catchId);
             return "redirect:/catches/mine";
         }
 
         // the ownership check already confirmed this catch exists
         Catch catchRecord = catchService.getCatchById(catchId);
 
+        // prefills the form with the catch's current values
         CatchForm catchForm = catchMapper.toForm(catchRecord);
 
+        // the view needs the ID to build the form's POST URL
         model.addAttribute("catchId", catchId);
         model.addAttribute("catchForm", catchForm);
+
+        // the catch's saved water body decides which fish show up in the fish dropdown
         addFormOptions(model, catchForm, user.getId());
 
         return "catches/edit";
@@ -295,32 +332,45 @@ public class CatchController {
                                 BindingResult result,
                                 @AuthenticationPrincipal HooksetUserDetails user,
                                 Model model) {
-        log.info("Edit catch form submitted for catch ID: {}", catchId);
+        log.info("User ID {} submitted the edit form for catch ID {} with fly ID {}, fish ID {}, water body ID {}",
+                user.getId(), catchId, catchForm.getFlyId(), catchForm.getFishId(), catchForm.getWaterBodyId());
 
         // checked before validation so someone can't probe other users' catches through error messages
         if (!catchService.isCatchOwner(catchId, user.getId())) {
-            log.warn("Catch ID {} not found or not owned by the current user", catchId);
+            log.warn("User ID {} tried to edit catch ID {}, which does not exist or is not theirs. Redirecting to their catches",
+                    user.getId(), catchId);
             return "redirect:/catches/mine";
         }
 
+        // the service takes a record, not the web form, so it doesn't depend on where input came from
         CatchInput catchInput = catchMapper.toInput(catchForm);
+
+        // runs even when the annotations already failed, so the user sees every error at once
         boolean hasCustomErrors = addCustomErrors(catchInput, model, user.getId());
 
         if (result.hasErrors() || hasCustomErrors) {
-            log.warn("Edit catch form failed validation for catch ID: {}", catchId);
+            log.warn("Edit form for catch ID {} from user ID {} failed validation with {} field errors",
+                    catchId, user.getId(), result.getErrorCount());
+
+            // the page is rendered again, so it needs the ID and dropdowns put back
             model.addAttribute("catchId", catchId);
             addFormOptions(model, catchForm, user.getId());
             return "catches/edit";
         }
 
+        // the service runs every check again, including ownership, before saving
         if (!catchService.updateCatch(catchId, catchInput, user.getId())) {
-            log.warn("Edit catch failed for catch ID: {}", catchId);
+            log.warn("Edit for catch ID {} passed form validation but the catch service rejected it for user ID {}",
+                    catchId, user.getId());
             model.addAttribute("catchId", catchId);
             model.addAttribute("editCatchFailed", true);
             addFormOptions(model, catchForm, user.getId());
             return "catches/edit";
         }
 
+        log.info("User ID {} updated catch ID {}", user.getId(), catchId);
+
+        // redirect after a successful POST so refreshing the page doesn't submit the edit twice
         return "redirect:/catches/mine";
     }
 
@@ -331,13 +381,17 @@ public class CatchController {
      * tags, not a full page.</p>
      *
      * @param waterBodyId the ID of the picked water body
+     * @param user the logged-in user, used only to log who picked the water body
      * @param model the model used to pass the fish to the fragment
      * @return the fish options fragment
      */
     @GetMapping("/fish-options")
-    public String getFishOptions(@RequestParam(required = false) Long waterBodyId, Model model) {
-        log.info("Loading fish options for water body ID: {}", waterBodyId);
+    public String getFishOptions(@RequestParam(required = false) Long waterBodyId,
+                                 @AuthenticationPrincipal HooksetUserDetails user,
+                                 Model model) {
+        log.info("User ID {} picked water body ID {}, loading its fish options", user.getId(), waterBodyId);
 
+        // starts empty so picking the blank "Select Water Body" option clears the fish dropdown
         List<Fish> fish = new ArrayList<>();
 
         if (waterBodyId != null) {
@@ -351,6 +405,9 @@ public class CatchController {
         }
 
         model.addAttribute("fish", fishDtos);
+
+        log.info("Returning {} fish options for water body ID {} to user ID {}",
+                fishDtos.size(), waterBodyId, user.getId());
 
         // only the fragment is rendered, htmx drops it straight into the fish dropdown
         return "catches/fish-options :: options";
@@ -373,20 +430,26 @@ public class CatchController {
         boolean hasCustomErrors = false;
 
         // null IDs are already reported by @NotNull on the form, so only check IDs that were sent
+        // a fly is valid if it's a default fly or one of this user's custom flies
         if (catchInput.flyId() != null
                 && !catchService.isFlyValid(catchInput.flyId(), userId)) {
+            log.warn("User ID {} picked fly ID {}, which does not exist or is not available to them",
+                    userId, catchInput.flyId());
             model.addAttribute("flyInvalid", true);
             hasCustomErrors = true;
         }
 
+        // catches a fish ID that doesn't exist, like one edited in the page source
         if (catchInput.fishId() != null
                 && !catchService.isFishValid(catchInput.fishId())) {
+            log.warn("User ID {} picked fish ID {}, which does not exist", userId, catchInput.fishId());
             model.addAttribute("fishInvalid", true);
             hasCustomErrors = true;
         }
 
         if (catchInput.waterBodyId() != null
                 && !catchService.isWaterBodyValid(catchInput.waterBodyId())) {
+            log.warn("User ID {} picked water body ID {}, which does not exist", userId, catchInput.waterBodyId());
             model.addAttribute("waterBodyInvalid", true);
             hasCustomErrors = true;
         }
@@ -396,6 +459,8 @@ public class CatchController {
                 && catchInput.fishId() != null
                 && catchInput.waterBodyId() != null
                 && !catchService.isFishInWaterBody(catchInput.fishId(), catchInput.waterBodyId())) {
+            log.warn("User ID {} picked fish ID {}, which is not found in water body ID {}",
+                    userId, catchInput.fishId(), catchInput.waterBodyId());
             model.addAttribute("fishNotInWaterBody", true);
             hasCustomErrors = true;
         }
@@ -416,6 +481,7 @@ public class CatchController {
      * @param userId the ID of the logged-in user, used to include their custom flies
      */
     private void addFormOptions(Model model, CatchForm catchForm, Long userId) {
+        // default flies plus this user's custom flies, never other users' custom flies
         List<Fly> flies = flyService.getAllFlies(userId);
         List<FlyDto> flyDtos = new ArrayList<>();
 
@@ -430,6 +496,7 @@ public class CatchController {
             waterBodyDtos.add(waterBodyMapper.toDto(waterBodyEntity));
         }
 
+        // fills the fish dropdown for a water body that's already picked, like on the edit page or after a failed submit
         List<Fish> fish = new ArrayList<>();
 
         if (catchForm.getWaterBodyId() != null) {
@@ -447,6 +514,7 @@ public class CatchController {
         model.addAttribute("fish", fishDtos);
 
         // seconds are dropped because the picker only works in minutes
+        // the view uses this as the date input's max so future dates can't be picked, @PastOrPresent still checks it on the server
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
         model.addAttribute("maxDateCaught", now.format(DATE_INPUT_FORMAT));
     }
@@ -458,12 +526,6 @@ public class CatchController {
      * @return the list of catch DTOs
      */
     private List<CatchDto> mapAllCatchDtos(List<Catch> catches) {
-        if (catches.isEmpty()) {
-            log.info("No catches found");
-        } else {
-            log.info("Found {} catches", catches.size());
-        }
-
         List<CatchDto> catchDtos = new ArrayList<>();
 
         for (Catch catchEntity : catches) {
