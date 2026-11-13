@@ -60,8 +60,10 @@ public class SignupController {
      */
     @GetMapping
     public String getSignup(Model model) {
-        log.info("Loading signup page");
+        // signup is open to everyone in the security config, so there's no user to log here
+        log.info("Loading the signup page");
 
+        // empty form for the view to bind to
         model.addAttribute("signupForm", new SignupForm());
 
         return "signup";
@@ -84,40 +86,55 @@ public class SignupController {
     public String postSignup(@Valid @ModelAttribute SignupForm signupForm,
                              BindingResult result,
                              Model model) {
-        log.info("Signup form submitted");
+        // nobody is logged in yet, so the submitted username is the only way to tell signups apart
+        log.info("Signup form submitted for username: {}", signupForm.getUsername());
+
+        // the service takes a record, not the web form, so it doesn't depend on where input came from
+        SignupInput signupInput = userMapper.toSignupInput(signupForm);
 
         boolean hasCustomErrors = false;
 
         // no annotation checks for spaces, so this is the only place that message comes from
-        if (!userService.isUsernameSpaceFree(signupForm.getUsername())) {
+        if (!userService.isUsernameSpaceFree(signupInput.username())) {
+            log.warn("Signup for username {} failed. Username has spaces", signupInput.username());
             model.addAttribute("usernameHasSpaces", true);
             hasCustomErrors = true;
         }
 
         // needs the database, so no annotation can check it
-        if (userService.isUsernameTaken(signupForm.getUsername())) {
+        // ignores case, so "JD" is reported as taken if "jd" already exists
+        if (userService.isUsernameTaken(signupInput.username())) {
+            log.warn("Signup for username {} failed. Username is already taken", signupInput.username());
             model.addAttribute("usernameTaken", true);
             hasCustomErrors = true;
         }
 
-        if (!userService.isPasswordSpaceFree(signupForm.getPassword())) {
+        // the password itself is never logged, only that it had spaces
+        if (!userService.isPasswordSpaceFree(signupInput.password())) {
+            log.warn("Signup for username {} failed. Password has spaces", signupInput.username());
             model.addAttribute("passwordHasSpaces", true);
             hasCustomErrors = true;
         }
 
+        // annotation errors and custom errors are both checked here, so the user sees every error at once
         if (result.hasErrors() || hasCustomErrors) {
-            log.warn("Signup form failed validation");
+            log.warn("Signup form for username {} failed validation with {} field errors",
+                    signupInput.username(), result.getErrorCount());
             return "signup";
         }
 
-        SignupInput signupInput = userMapper.toSignupInput(signupForm);
-
+        // the service runs every check again and saves the username in lowercase
         if (!userService.addUser(signupInput)) {
-            log.warn("Signup failed");
+            log.warn("Signup for username {} passed form validation but the user service rejected it",
+                    signupInput.username());
             model.addAttribute("signupFailed", true);
             return "signup";
         }
 
+        log.info("New account created for username: {}", signupInput.username());
+
+        // signup doesn't log the user in, so they go to the login page next
+        // redirecting after a successful POST also stops a refresh from submitting the signup twice
         return "redirect:/login";
     }
 }
