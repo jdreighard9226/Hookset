@@ -17,6 +17,10 @@ import entities.jpa.entity.User;
  * The user is looked up in the database and wrapped in a
  * {@link HooksetUserDetails} object so Spring Security can check the
  * password and create the authenticated session.</p>
+ *
+ * <p>This service only finds the user. The password is checked by Spring
+ * Security after this returns, so a user being found does not mean the
+ * login succeeded.</p>
  */
 @Service
 public class LoginServiceImpl implements LoginService {
@@ -43,12 +47,12 @@ public class LoginServiceImpl implements LoginService {
      * the user capitalizes it.</p>
      *
      * @param username the username entered on the login form
-     * @return the user details used by Spring Security
+     * @return the user details used by Spring Security to check the password
      * @throws UsernameNotFoundException if the username is null or no user has that username
      */
     @Override
     public UserDetails loadUserByUsername(String username) {
-        log.info("Attempting login for username: {}", username);
+        log.info("Login attempt for username: {}", username);
 
         // Spring Security expects this exception for any username that can't log in
         if (username == null) {
@@ -59,13 +63,16 @@ public class LoginServiceImpl implements LoginService {
         // usernames are saved in lowercase, so the lookup has to match
         User user = userRepository.findByUsername(username.toLowerCase());
 
-        // Spring Security expects this exception when the user does not exist
+        // Spring Security turns this into the same "bad credentials" error as a wrong password,
+        // so the login page never tells someone whether a username exists
         if (user == null) {
-            log.warn("Login failed. User not found: {}", username);
+            log.warn("Login failed. No account exists for username: {}", username);
             throw new UsernameNotFoundException("User not found");
         }
 
-        log.info("User found for login: {}", username);
+        // the password hasn't been checked yet, Spring Security does that with the details returned here
+        log.info("Found user ID {} for username {}, handing off to Spring Security for the password check",
+                user.getId(), username);
 
         return new HooksetUserDetails(user);
     }
