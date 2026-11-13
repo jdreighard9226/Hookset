@@ -29,8 +29,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Integration tests for {@link edu.carroll.cs341.hookset.service.impl.CatchServiceImpl}.
  *
- * <p>Each service method is tested against a happy path, which covers valid input with
- * an expected result. Crappy and crazy paths will be added separately.</p>
+ * <p>Each service method is tested against a happy path and a crappy path. Happy paths
+ * cover valid input with an expected result. Crappy paths cover input the service is
+ * designed to reject, such as another user's catch, a fish that isn't in the water body,
+ * or a date in the future.</p>
  *
  * <p>The service never reads the login itself, so each test passes the user's ID
  * directly. A user, a default fly, a fish, and a water body holding that fish are saved
@@ -85,7 +87,6 @@ public class CatchServiceTest {
     /** The water body each test catch is logged in, with the test fish linked to it. */
     private WaterBody testWaterBody;
 
-
     /**
      * Saves a user, a default fly, a fish, and a water body holding that fish before each test.
      */
@@ -111,7 +112,6 @@ public class CatchServiceTest {
         Catch saved = catchRepository.save(createTestCatch("Caught on the first cast"));
 
         List<Catch> catches = catchService.getAllCatches();
-
         assertNotNull(catches, "getAllCatches should never return null");
         assertEquals(1, catches.size(),
                 "The one saved catch should be the only catch returned");
@@ -119,6 +119,18 @@ public class CatchServiceTest {
         // checks by ID instead of position, since the list order isn't guaranteed
         assertTrue(getCatchIds(catches).contains(saved.getId()),
                 "Saved catch should be in the returned list");
+    }
+
+    /**
+     * Crappy path: no catches are saved, so an empty list is returned instead of null.
+     */
+    @Test
+    public void testGetAllCatchesCrappyPath() {
+        // setup saves no catches and the test database starts empty, so there's nothing to return
+        List<Catch> catches = catchService.getAllCatches();
+        assertNotNull(catches, "getAllCatches should never return null");
+        assertTrue(catches.isEmpty(),
+                "No catches should be returned when none have been saved");
     }
 
     // ---------- getAllUserCatches ----------
@@ -132,17 +144,30 @@ public class CatchServiceTest {
         Catch secondCatch = catchRepository.save(createTestCatch("Evening catch"));
 
         List<Catch> catches = catchService.getAllUserCatches(testUser.getId());
-
         assertNotNull(catches, "getAllUserCatches should never return null");
         assertEquals(2, catches.size(),
                 "Both of the user's catches should be returned");
 
         List<Long> returnedIds = getCatchIds(catches);
-
         assertTrue(returnedIds.contains(firstCatch.getId()),
                 "User's first catch should be in the returned list");
         assertTrue(returnedIds.contains(secondCatch.getId()),
                 "User's second catch should be in the returned list");
+    }
+
+    /**
+     * Crappy path: a user with no catches gets an empty list, even when another user has catches.
+     */
+    @Test
+    public void testGetAllUserCatchesCrappyPath() {
+        // another user's catch exists so a query that ignored the user ID would return it and fail
+        User otherUser = userRepository.save(createTestUser("otheruser"));
+        catchRepository.save(createOtherUserCatch(otherUser, "Someone else's catch"));
+
+        List<Catch> catches = catchService.getAllUserCatches(testUser.getId());
+        assertNotNull(catches, "getAllUserCatches should never return null");
+        assertTrue(catches.isEmpty(),
+                "A user with no catches should get an empty list");
     }
 
     // ---------- getCatchById ----------
@@ -155,7 +180,6 @@ public class CatchServiceTest {
         Catch saved = catchRepository.save(createTestCatch("Big one by the bank"));
 
         Catch result = catchService.getCatchById(saved.getId());
-
         assertNotNull(result, "A saved catch should be found by its ID");
         assertEquals(saved.getId(), result.getId(),
                 "Returned catch should have the ID that was looked up");
@@ -163,6 +187,19 @@ public class CatchServiceTest {
                 "Returned catch should have the notes it was saved with");
         assertEquals(testUser.getId(), result.getUserId(),
                 "Returned catch should belong to the user who logged it");
+    }
+
+    /**
+     * Crappy path: a catch ID that does not exist returns null, even when other catches exist.
+     */
+    @Test
+    public void testGetCatchByIdCrappyPath() {
+        // a real catch exists so a lookup that ignored the ID would return it and fail
+        catchRepository.save(createTestCatch("The only catch"));
+
+        // far above any ID H2 will hand out during a test run
+        Catch result = catchService.getCatchById(999999L);
+        assertNull(result, "No catch should be returned for an ID that does not exist");
     }
 
     // ---------- addCatch ----------
@@ -175,17 +212,14 @@ public class CatchServiceTest {
         CatchInput catchInput = createTestCatchInput(new BigDecimal("18.50"), "Caught below the riffle");
 
         boolean result = catchService.addCatch(catchInput, testUser.getId());
-
         assertTrue(result, "Valid catch input should be saved");
 
         // read straight from the repository so the check doesn't go through the service
         List<Catch> userCatches = catchRepository.findByUserId(testUser.getId());
-
         assertEquals(1, userCatches.size(),
                 "User should have exactly one catch after adding one");
 
         Catch saved = userCatches.getFirst();
-
         assertEquals(testUser.getId(), saved.getUserId(),
                 "Catch owner should come from the user ID passed in");
         assertEquals(testFly.getId(), saved.getFly().getId(),
@@ -204,6 +238,25 @@ public class CatchServiceTest {
                 "Catch should have the notes from the input");
     }
 
+    /**
+     * Crappy path: a fish that doesn't live in the chosen water body is rejected and nothing is saved.
+     */
+    @Test
+    public void testAddCatchCrappyPath() {
+        // a real fish that just isn't linked to the test water body, so every other check passes
+        Fish otherFish = fishRepository.save(createTestFish("Lake Only Fish"));
+        CatchInput catchInput = new CatchInput(testFly.getId(), otherFish.getId(), testWaterBody.getId(),
+                new BigDecimal("12.00"), LocalDateTime.of(2026, 6, 15, 8, 30), "Wrong water");
+
+        boolean result = catchService.addCatch(catchInput, testUser.getId());
+        assertFalse(result, "A fish that isn't in the water body should not be saved");
+
+        // read straight from the repository so the check doesn't go through the service
+        List<Catch> userCatches = catchRepository.findByUserId(testUser.getId());
+        assertTrue(userCatches.isEmpty(),
+                "No catch should be saved when the input is rejected");
+    }
+
     // ---------- updateCatch ----------
 
     /**
@@ -215,12 +268,10 @@ public class CatchServiceTest {
         CatchInput catchInput = createTestCatchInput(new BigDecimal("22.25"), "New notes");
 
         boolean result = catchService.updateCatch(saved.getId(), catchInput, testUser.getId());
-
         assertTrue(result, "The owner should be able to update their catch");
 
-        // reload from the repository so the check reads what was saved, not the object in memory
+        // looked up again by ID, which inside one test transaction is the same catch the service changed
         Catch updated = catchRepository.findById(saved.getId()).orElse(null);
-
         assertNotNull(updated, "Catch should still exist after it is updated");
         assertEquals("New notes", updated.getNotes(),
                 "Catch notes should change to the new value");
@@ -228,6 +279,28 @@ public class CatchServiceTest {
                 "Catch fish length should change to the new value");
         assertEquals(testUser.getId(), updated.getUserId(),
                 "Updating a catch should not change who owns it");
+    }
+
+    /**
+     * Crappy path: a user can't update another user's catch, and the catch is left unchanged.
+     */
+    @Test
+    public void testUpdateCatchCrappyPath() {
+        User otherUser = userRepository.save(createTestUser("otheruser"));
+        Catch otherCatch = catchRepository.save(createOtherUserCatch(otherUser, "Other user's notes"));
+
+        // valid input, so ownership is the only reason this can fail
+        CatchInput catchInput = createTestCatchInput(new BigDecimal("22.25"), "Hijacked notes");
+
+        boolean result = catchService.updateCatch(otherCatch.getId(), catchInput, testUser.getId());
+        assertFalse(result, "A user should not be able to update another user's catch");
+
+        Catch unchanged = catchRepository.findById(otherCatch.getId()).orElse(null);
+        assertNotNull(unchanged, "The other user's catch should still exist");
+        assertEquals("Other user's notes", unchanged.getNotes(),
+                "The other user's catch should not change when the update is rejected");
+        assertEquals(otherUser.getId(), unchanged.getUserId(),
+                "The other user should still own their catch");
     }
 
     // ---------- isCatchOwner ----------
@@ -241,6 +314,19 @@ public class CatchServiceTest {
 
         assertTrue(catchService.isCatchOwner(saved.getId(), testUser.getId()),
                 "The user who logged the catch should be its owner");
+    }
+
+    /**
+     * Crappy path: a user does not own another user's catch.
+     */
+    @Test
+    public void testIsCatchOwnerCrappyPath() {
+        User otherUser = userRepository.save(createTestUser("otheruser"));
+        Catch otherCatch = catchRepository.save(createOtherUserCatch(otherUser, "Not mine"));
+
+        // the catch exists, so a false here can only come from the owner check
+        assertFalse(catchService.isCatchOwner(otherCatch.getId(), testUser.getId()),
+                "A user should not own another user's catch");
     }
 
     // ---------- isFlyValid ----------
@@ -265,6 +351,19 @@ public class CatchServiceTest {
                 "A user's own custom fly should be valid for that user");
     }
 
+    /**
+     * Crappy path: a user can't log a catch with another user's custom fly.
+     */
+    @Test
+    public void testIsFlyValidCrappyPath() {
+        User otherUser = userRepository.save(createTestUser("otheruser"));
+        Fly otherFly = flyRepository.save(createTestFly("Other Fly", "other-fly", otherUser.getId()));
+
+        // the fly exists, so a false here can only come from the custom fly owner check
+        assertFalse(catchService.isFlyValid(otherFly.getId(), testUser.getId()),
+                "Another user's custom fly should not be valid for this user");
+    }
+
     // ---------- isFishValid ----------
 
     /**
@@ -274,6 +373,16 @@ public class CatchServiceTest {
     public void testIsFishValidHappyPath() {
         assertTrue(catchService.isFishValid(testFish.getId()),
                 "A saved fish should be valid");
+    }
+
+    /**
+     * Crappy path: a fish ID that does not exist is not valid.
+     */
+    @Test
+    public void testIsFishValidCrappyPath() {
+        // far above any ID H2 will hand out during a test run
+        assertFalse(catchService.isFishValid(999999L),
+                "A fish ID that does not exist should not be valid");
     }
 
     // ---------- isWaterBodyValid ----------
@@ -287,6 +396,16 @@ public class CatchServiceTest {
                 "A saved water body should be valid");
     }
 
+    /**
+     * Crappy path: a water body ID that does not exist is not valid.
+     */
+    @Test
+    public void testIsWaterBodyValidCrappyPath() {
+        // far above any ID H2 will hand out during a test run
+        assertFalse(catchService.isWaterBodyValid(999999L),
+                "A water body ID that does not exist should not be valid");
+    }
+
     // ---------- isFishInWaterBody ----------
 
     /**
@@ -296,6 +415,18 @@ public class CatchServiceTest {
     public void testIsFishInWaterBodyHappyPath() {
         assertTrue(catchService.isFishInWaterBody(testFish.getId(), testWaterBody.getId()),
                 "A fish linked to the water body should be found in it");
+    }
+
+    /**
+     * Crappy path: a real fish that isn't linked to the water body is not found in it.
+     */
+    @Test
+    public void testIsFishInWaterBodyCrappyPath() {
+        // both the fish and the water body exist, so a false here can only come from the missing link
+        Fish otherFish = fishRepository.save(createTestFish("Lake Only Fish"));
+
+        assertFalse(catchService.isFishInWaterBody(otherFish.getId(), testWaterBody.getId()),
+                "A fish that isn't linked to the water body should not be found in it");
     }
 
     // ---------- isFishLengthValid ----------
@@ -309,6 +440,16 @@ public class CatchServiceTest {
                 "A normal fish length should be valid");
     }
 
+    /**
+     * Crappy path: a fish length of zero is not valid.
+     */
+    @Test
+    public void testIsFishLengthValidCrappyPath() {
+        // a length has to be greater than zero, so zero itself is the first value that fails
+        assertFalse(catchService.isFishLengthValid(BigDecimal.ZERO),
+                "A fish length of zero should not be valid");
+    }
+
     // ---------- isDateCaughtValid ----------
 
     /**
@@ -320,6 +461,18 @@ public class CatchServiceTest {
                 "A date in the past should be valid");
     }
 
+    /**
+     * Crappy path: a date in the future is not valid.
+     */
+    @Test
+    public void testIsDateCaughtValidCrappyPath() {
+        // built from now, so it's always in the future no matter when the test runs
+        LocalDateTime tomorrow = LocalDateTime.now().plusDays(1);
+
+        assertFalse(catchService.isDateCaughtValid(tomorrow),
+                "A date in the future should not be valid");
+    }
+
     // ---------- isNotesValid ----------
 
     /**
@@ -329,6 +482,18 @@ public class CatchServiceTest {
     public void testIsNotesValidHappyPath() {
         assertTrue(catchService.isNotesValid("Rose to a hopper on the far bank"),
                 "Short notes should be valid");
+    }
+
+    /**
+     * Crappy path: notes over 1000 characters are not valid.
+     */
+    @Test
+    public void testIsNotesValidCrappyPath() {
+        // one over the 1000 character notes column
+        String longNotes = "a".repeat(1001);
+
+        assertFalse(catchService.isNotesValid(longNotes),
+                "Notes over 1000 characters should not be valid");
     }
 
     // ---------- Helpers ----------
@@ -351,6 +516,24 @@ public class CatchServiceTest {
         testCatch.setNotes(notes);
 
         return testCatch;
+    }
+
+    /**
+     * Builds a catch logged by another user with the test fly, fish, and water body.
+     *
+     * <p>Used by the tests that check one user can't see or change another user's catch.</p>
+     *
+     * @param otherUser the saved user who logged the catch
+     * @param notes the notes to assign to the catch
+     * @return a new, unsaved catch
+     */
+    private Catch createOtherUserCatch(User otherUser, String notes) {
+        Catch otherCatch = createTestCatch(notes);
+
+        // everything else matches the test user's catches, only the owner is different
+        otherCatch.setUserId(otherUser.getId());
+
+        return otherCatch;
     }
 
     /**
