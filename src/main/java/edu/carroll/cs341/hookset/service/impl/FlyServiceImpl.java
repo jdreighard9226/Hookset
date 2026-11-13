@@ -6,7 +6,6 @@ import edu.carroll.cs341.hookset.service.FlyService;
 import edu.carroll.cs341.hookset.service.input.FlyInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import entities.jpa.entity.Fly;
@@ -57,9 +56,11 @@ public class FlyServiceImpl implements FlyService {
      */
     @Override
     public List<Fly> getAllFlies(Long userId) {
-        log.info("Getting default and custom flies for user ID: {}", userId);
+        log.info("Loading default flies and custom flies for user ID {}", userId);
 
         List<Fly> flies = flyRepository.findByUserIdIsNullOrUserId(userId);
+
+        log.info("Loaded {} default and custom flies for user ID {}", flies.size(), userId);
         return flies;
     }
 
@@ -70,9 +71,11 @@ public class FlyServiceImpl implements FlyService {
      */
     @Override
     public List<Fly> getAllHooksetFlies() {
-        log.info("Getting default Hookset flies");
+        log.info("Loading default Hookset flies");
 
         List<Fly> flies = flyRepository.findByUserIdIsNull();
+
+        log.info("Loaded {} default Hookset flies", flies.size());
         return flies;
     }
 
@@ -86,13 +89,15 @@ public class FlyServiceImpl implements FlyService {
     public List<Fly> getAllUserFlies(Long userId) {
         // a null user ID would turn this into an IS NULL query and return the default flies
         if (userId == null) {
-            log.warn("Could not load user flies. User ID is null");
+            log.warn("Could not load custom flies. User ID is null");
             return new ArrayList<>();
         }
 
-        log.info("Getting custom flies for user ID: {}", userId);
+        log.info("Loading custom flies for user ID {}", userId);
 
         List<Fly> flies = flyRepository.findByUserId(userId);
+
+        log.info("Loaded {} custom flies for user ID {}", flies.size(), userId);
         return flies;
     }
 
@@ -108,16 +113,17 @@ public class FlyServiceImpl implements FlyService {
      */
     @Override
     public Fly getFlyFromSlug(String slug, Long userId) {
-        log.info("Looking up fly with slug: {}", slug);
+        log.info("Looking up fly slug {} for user ID {}", slug, userId);
 
         // check the default flies first since everyone can see them
         Fly fly = flyRepository.findBySlugAndUserIdIsNull(slug);
 
         if (fly != null) {
+            log.info("Slug {} matched default fly ID {}", slug, fly.getId());
             return fly;
         }
 
-        log.info("No Hookset fly exists for slug: {}", slug);
+        log.info("No default fly matches slug {}, checking custom flies for user ID {}", slug, userId);
 
         // a null user ID would turn this into an IS NULL query and match default flies again
         if (userId != null) {
@@ -125,10 +131,11 @@ public class FlyServiceImpl implements FlyService {
         }
 
         if (fly == null) {
-            log.warn("Fly not found with slug: {} in user flies or Hookset flies", slug);
+            log.warn("No default fly or custom fly for user ID {} matches slug {}", userId, slug);
             return null;
         }
 
+        log.info("Slug {} matched custom fly ID {} for user ID {}", slug, fly.getId(), userId);
         return fly;
     }
 
@@ -146,23 +153,24 @@ public class FlyServiceImpl implements FlyService {
     @Override
     public Fly getFlyById(Long id, Long userId) {
         if (id == null) {
-            log.warn("Fly lookup failed. Fly ID is null");
+            log.warn("Could not load fly for user ID {}. Fly ID is null", userId);
             return null;
         }
 
         Fly fly = flyRepository.findById(id).orElse(null);
 
         if (fly == null) {
-            log.warn("Fly not found with ID: {}", id);
+            log.warn("User ID {} requested fly ID {}, which does not exist", userId, id);
             return null;
         }
 
         // default flies have a null user ID and are visible to everyone
         if (fly.getUserId() != null && !fly.getUserId().equals(userId)) {
-            log.warn("Access denied. User ID: {} does not own fly ID: {}", userId, id);
+            log.warn("Access denied. User ID {} tried to load fly ID {}, which belongs to another user", userId, id);
             throw new AccessDeniedException("You cannot view this fly");
         }
 
+        log.info("Loaded fly ID {} for user ID {}", id, userId);
         return fly;
     }
 
@@ -186,29 +194,32 @@ public class FlyServiceImpl implements FlyService {
 
         // runs every check itself so no caller can save a bad fly
         if (!isFlyInputValid(flyInput)) {
+            log.warn("Fly not saved for user ID {}. The input failed validation", userId);
             return false;
         }
 
         if (!isFlyNameUnique(flyInput.name(), userId)) {
+            log.warn("Fly not saved for user ID {}. The name {} matches a fly they can already see",
+                    userId, flyInput.name());
             return false;
         }
 
         // owner, slug, and image are all set inside toFly, never taken from the input
         Fly fly = toFly(flyInput, userId);
 
-        log.info("Adding custom fly: {} for user ID: {}", fly.getName(), userId);
+        log.info("Saving custom fly {} for user ID {}", fly.getName(), userId);
 
         flyRepository.save(fly);
 
-        log.info("Custom fly saved with slug: {}", fly.getSlug());
+        log.info("Saved custom fly ID {} with slug {} for user ID {}", fly.getId(), fly.getSlug(), userId);
         return true;
     }
 
     /**
      * Updates a custom fly owned by a user.
      *
-     * <p>Ownership is checked before the input, so a bad edit can't reveal
-     * whether another user's fly exists.</p>
+     * <p>Ownership is checked before the input, so input errors are never
+     * reported for a fly the user doesn't own.</p>
      *
      * @param flyId the ID of the fly to update
      * @param flyInput the new fly details
@@ -219,30 +230,33 @@ public class FlyServiceImpl implements FlyService {
     @Override
     public boolean updateFly(Long flyId, FlyInput flyInput, Long userId) {
         if (flyId == null) {
-            log.warn("Fly update failed. Fly ID is null");
+            log.warn("Fly not updated for user ID {}. Fly ID is null", userId);
             return false;
         }
 
-        log.info("Updating fly with ID: {} for user ID: {}", flyId, userId);
+        log.info("User ID {} updating fly ID {}", userId, flyId);
 
         Fly fly = flyRepository.findById(flyId).orElse(null);
 
         if (fly == null) {
-            log.warn("Fly update failed. Fly not found with ID: {}", flyId);
+            log.warn("Fly not updated. User ID {} tried to update fly ID {}, which does not exist", userId, flyId);
             return false;
         }
 
         // default flies have a null user ID and can never be edited
-        if (fly.getUserId() == null || !fly.getUserId().equals(userId)) {
-            log.warn("Update denied. User ID: {} does not own fly ID: {}", userId, flyId);
+        if (!isFlyOwner(flyId, userId)) {
+            log.warn("Update denied. User ID {} tried to update fly ID {}, which is not theirs", userId, flyId);
             throw new AccessDeniedException("You cannot edit this fly");
         }
 
         if (!isFlyInputValid(flyInput)) {
+            log.warn("Fly ID {} not updated for user ID {}. The input failed validation", flyId, userId);
             return false;
         }
 
         if (!isFlyNameUniqueForEdit(flyId, flyInput.name(), userId)) {
+            log.warn("Fly ID {} not updated for user ID {}. The name {} matches another fly they can see",
+                    flyId, userId, flyInput.name());
             return false;
         }
 
@@ -257,14 +271,9 @@ public class FlyServiceImpl implements FlyService {
         fly.setSlug(generateFlySlug(fly.getName()));
         fly.setImage(getFlyImage(fly.getType()));
 
-        try {
-            flyRepository.save(fly);
-        } catch (DataIntegrityViolationException e) {
-            log.error("Failed to save fly due to database constraints", e);
-            return false;
-        }
+        flyRepository.save(fly);
 
-        log.info("Fly updated with ID: {}", flyId);
+        log.info("Updated fly ID {} for user ID {}, slug is now {}", flyId, userId, fly.getSlug());
         return true;
     }
 
@@ -276,58 +285,58 @@ public class FlyServiceImpl implements FlyService {
      *
      * @param id the ID of the fly to delete
      * @param userId the ID of the user deleting the fly
-     * @return true if the fly was deleted, false otherwise
+     * @return {@code true} if the fly was deleted, otherwise {@code false}
      * @throws AccessDeniedException if the fly belongs to another user or is a default fly
      */
     @Override
     public boolean deleteFly(Long id, Long userId) {
         if (id == null) {
-            log.warn("Fly delete failed. Fly ID is null");
+            log.warn("Fly not deleted for user ID {}. Fly ID is null", userId);
             return false;
         }
 
-        log.info("Deleting fly with ID: {} for user ID: {}", id, userId);
+        log.info("User ID {} deleting fly ID {}", userId, id);
 
         Fly fly = flyRepository.findById(id).orElse(null);
 
         if (fly == null) {
-            log.warn("Fly not found with ID: {}", id);
+            log.warn("Fly not deleted. User ID {} tried to delete fly ID {}, which does not exist", userId, id);
             return false;
         }
 
-        // default flies have a null user ID, so this also blocks deleting them
-        if (fly.getUserId() == null || !fly.getUserId().equals(userId)) {
-            log.warn("Delete denied. User ID: {} does not own fly ID: {}", userId, id);
+        // default flies have a null user ID and can never be deleted
+        if (!isFlyOwner(id, userId)) {
+            log.warn("Delete denied. User ID {} tried to delete fly ID {}, which is not theirs", userId, id);
             throw new AccessDeniedException("You cannot delete this fly");
         }
 
         if (isFlyUsedByCatch(id)) {
-            log.warn("Fly delete failed. Fly ID: {} is used by at least one catch", id);
+            log.warn("Fly ID {} not deleted for user ID {}. It is used by at least one catch", id, userId);
             return false;
         }
 
         flyRepository.delete(fly);
 
-        log.info("Fly deleted with ID: {}", id);
+        log.info("Deleted fly ID {} for user ID {}", id, userId);
         return true;
     }
 
     /**
      * Checks whether any catch was logged with a fly.
      *
-     * @param flyId the ID of the fly to check
-     * @return true if at least one catch uses the fly, false otherwise
+     * @param id the ID of the fly to check
+     * @return {@code true} if at least one catch uses the fly, otherwise {@code false}
      */
     @Override
-    public boolean isFlyUsedByCatch(Long flyId) {
-        if (flyId == null) {
-            log.warn("Fly in use check failed. Fly ID is null");
+    public boolean isFlyUsedByCatch(Long id) {
+        if (id == null) {
+            log.warn("Could not check whether a fly is used by a catch. Fly ID is null");
             return false;
         }
 
-        boolean isUsed = catchRepository.existsByFlyId(flyId);
+        boolean isUsed = catchRepository.existsByFlyId(id);
 
-        log.info("Fly ID: {} used by a catch: {}", flyId, isUsed);
+        log.info("Fly ID {} is used by a catch: {}", id, isUsed);
         return isUsed;
     }
 
@@ -348,7 +357,7 @@ public class FlyServiceImpl implements FlyService {
         if (minSize != null && maxSize != null) {
 
             if (minSize > maxSize) {
-                log.warn("Fly validation failed. Min size {} exceeds max size {}", minSize, maxSize);
+                log.warn("Fly validation failed. Min size {} is larger than max size {}", minSize, maxSize);
 
                 return false;
             }
@@ -371,7 +380,7 @@ public class FlyServiceImpl implements FlyService {
     @Override
     public boolean isFlyNameUnique(String name, Long userId) {
         if (name == null || name.isBlank()) {
-            log.warn("Fly validation failed. Fly name is blank");
+            log.warn("Fly validation failed. Fly name is blank for user ID {}", userId);
             return false;
         }
 
@@ -382,7 +391,8 @@ public class FlyServiceImpl implements FlyService {
         // two names with the same slug would collide in the URL
         for (Fly fly : visibleFlies) {
             if (newSlug.equals(fly.getSlug())) {
-                log.warn("Fly validation failed. Duplicate fly slug: {} for user ID: {}", newSlug, userId);
+                log.warn("Fly validation failed. Slug {} is already used by fly ID {}, which user ID {} can see",
+                        newSlug, fly.getId(), userId);
                 return false;
             }
         }
@@ -396,28 +406,28 @@ public class FlyServiceImpl implements FlyService {
      * <p>The fly keeping its own name is allowed. Otherwise this uses the same
      * slug rules as {@link #isFlyNameUnique(String, Long)}.</p>
      *
-     * @param flyId the ID of the fly being edited
+     * @param id the ID of the fly being edited
      * @param name the new name for the fly
      * @param userId the ID of the user editing the fly
      * @return {@code true} if the name is unchanged or no other visible fly has the same slug, otherwise {@code false}
      */
     @Override
-    public boolean isFlyNameUniqueForEdit(Long flyId, String name, Long userId) {
+    public boolean isFlyNameUniqueForEdit(Long id, String name, Long userId) {
         // findById throws on a null ID instead of returning empty, so this has to be checked first
-        if (flyId == null) {
-            log.warn("Fly edit validation failed. Fly ID is null");
+        if (id == null) {
+            log.warn("Fly edit validation failed. Fly ID is null for user ID {}", userId);
             return false;
         }
 
-        Fly flyBeingEdited = flyRepository.findById(flyId).orElse(null);
+        Fly flyBeingEdited = flyRepository.findById(id).orElse(null);
 
         if (flyBeingEdited == null) {
-            log.warn("Fly edit validation failed. Fly not found with ID: {}", flyId);
+            log.warn("Fly edit validation failed. Fly ID {} does not exist", id);
             return false;
         }
 
         if (name == null || name.isBlank()) {
-            log.warn("Fly edit validation failed. Fly name is blank for fly ID: {}", flyId);
+            log.warn("Fly edit validation failed. New name for fly ID {} is blank", id);
             return false;
         }
 
@@ -434,7 +444,8 @@ public class FlyServiceImpl implements FlyService {
         // two names with the same slug would collide in the URL
         for (Fly fly : visibleFlies) {
             if (newSlug.equals(fly.getSlug())) {
-                log.warn("Fly edit validation failed. Duplicate fly slug: {} for user ID: {}", newSlug, userId);
+                log.warn("Fly edit validation failed. Renaming fly ID {} to slug {} would match fly ID {}, which user ID {} can see",
+                        id, newSlug, fly.getId(), userId);
                 return false;
             }
         }
@@ -451,24 +462,23 @@ public class FlyServiceImpl implements FlyService {
     @Override
     public boolean isFlyNameBlank(String name) {
         if (name == null || name.isBlank()) {
-            log.warn("Fly name validation failed. Fly name is blank");
+            log.warn("Fly validation failed. Fly name is blank");
             return true;
         }
 
         return false;
     }
 
-
     /**
      * Checks whether a fly color is blank.
      *
      * @param flyColor the fly color to check
-     * @return true if the color is null, empty, or only whitespace, false otherwise
+     * @return {@code true} if the color is null, empty, or only whitespace, otherwise {@code false}
      */
     @Override
     public boolean isFlyColorBlank(String flyColor) {
         if (flyColor == null || flyColor.isBlank()) {
-            log.warn("Fly color is blank");
+            log.warn("Fly validation failed. Fly color is blank");
             return true;
         }
 
@@ -479,19 +489,19 @@ public class FlyServiceImpl implements FlyService {
      * Checks whether a fly color is between 3 and 40 characters long.
      *
      * @param flyColor the fly color to check
-     * @return true if the trimmed color is between 3 and 40 characters, false otherwise
+     * @return {@code true} if the trimmed color is between 3 and 40 characters, otherwise {@code false}
      */
     @Override
     public boolean isFlyColorLengthValid(String flyColor) {
         if (flyColor == null) {
-            log.warn("Fly color length check failed: color is null");
+            log.warn("Fly validation failed. Fly color is null, so its length can't be checked");
             return false;
         }
 
         int colorLength = flyColor.trim().length();
 
         if (colorLength < 3 || colorLength > 40) {
-            log.warn("Fly color length check failed: length {} is outside 3-40", colorLength);
+            log.warn("Fly validation failed. Fly color is {} characters, outside the 3 to 40 limit", colorLength);
             return false;
         }
 
@@ -502,12 +512,12 @@ public class FlyServiceImpl implements FlyService {
      * Checks whether a fly color is a real word and not just a number.
      *
      * @param flyColor the fly color to check
-     * @return true if the color is not blank and is not made up entirely of digits, false otherwise
+     * @return {@code true} if the color is not blank and is not made up entirely of digits, otherwise {@code false}
      */
     @Override
     public boolean isFlyColorValidString(String flyColor) {
         if (flyColor == null || flyColor.isBlank()) {
-            log.warn("Fly color string check failed: color is blank");
+            log.warn("Fly validation failed. Fly color is blank, so it can't be checked for digits");
             return false;
         }
 
@@ -524,7 +534,7 @@ public class FlyServiceImpl implements FlyService {
         }
 
         if (isAllDigits) {
-            log.warn("Fly color string check failed: '{}' is only a number", flyColor);
+            log.warn("Fly validation failed. Fly color {} is only a number", flyColor);
             return false;
         }
 
@@ -535,17 +545,17 @@ public class FlyServiceImpl implements FlyService {
      * Checks whether a minimum hook size is between 1 and 32.
      *
      * @param minSize the minimum hook size to check
-     * @return true if the size is not null and between 1 and 32, false otherwise
+     * @return {@code true} if the size is not null and between 1 and 32, otherwise {@code false}
      */
     @Override
     public boolean isMinSizeValidNumber(Integer minSize) {
         if (minSize == null) {
-            log.warn("Minimum size check failed: size is null");
+            log.warn("Fly validation failed. Min size is null");
             return false;
         }
 
         if (minSize < 1 || minSize > 32) {
-            log.warn("Minimum size check failed: {} is outside 1-32", minSize);
+            log.warn("Fly validation failed. Min size {} is outside the 1 to 32 limit", minSize);
             return false;
         }
 
@@ -556,17 +566,17 @@ public class FlyServiceImpl implements FlyService {
      * Checks whether a maximum hook size is between 1 and 32.
      *
      * @param maxSize the maximum hook size to check
-     * @return true if the size is not null and between 1 and 32, false otherwise
+     * @return {@code true} if the size is not null and between 1 and 32, otherwise {@code false}
      */
     @Override
     public boolean isMaxSizeValidNumber(Integer maxSize) {
         if (maxSize == null) {
-            log.warn("Maximum size check failed: size is null");
+            log.warn("Fly validation failed. Max size is null");
             return false;
         }
 
         if (maxSize < 1 || maxSize > 32) {
-            log.warn("Maximum size check failed: {} is outside 1-32", maxSize);
+            log.warn("Fly validation failed. Max size {} is outside the 1 to 32 limit", maxSize);
             return false;
         }
 
@@ -577,12 +587,12 @@ public class FlyServiceImpl implements FlyService {
      * Checks whether a fly type is one of the allowed types.
      *
      * @param flyType the fly type to check
-     * @return true if the type matches one of the allowed fly types, false otherwise
+     * @return {@code true} if the type matches one of the allowed fly types, otherwise {@code false}
      */
     @Override
     public boolean isFlyTypeValid(String flyType) {
         if (flyType == null || flyType.isBlank()) {
-            log.warn("Fly type check failed: type is blank");
+            log.warn("Fly validation failed. Fly type is blank");
             return false;
         }
 
@@ -594,7 +604,7 @@ public class FlyServiceImpl implements FlyService {
             }
         }
 
-        log.warn("Fly type check failed: '{}' is not an allowed type", flyType);
+        log.warn("Fly validation failed. Fly type {} is not Dry, Nymph, or Streamer", flyType);
         return false;
     }
 
@@ -602,19 +612,52 @@ public class FlyServiceImpl implements FlyService {
      * Checks whether a fly name is between 1 and 150 characters long.
      *
      * @param name the fly name to check
-     * @return true if the trimmed name is between 1 and 150 characters, false otherwise
+     * @return {@code true} if the trimmed name is between 1 and 150 characters, otherwise {@code false}
      */
     @Override
     public boolean isFlyNameLengthValid(String name) {
         if (name == null) {
-            log.warn("Fly name length check failed: name is null");
+            log.warn("Fly validation failed. Fly name is null, so its length can't be checked");
             return false;
         }
 
         int nameLength = name.trim().length();
 
         if (nameLength < 1 || nameLength > 150) {
-            log.warn("Fly name length check failed: length {} is outside 1-150", nameLength);
+            log.warn("Fly validation failed. Fly name is {} characters, outside the 1 to 150 limit", nameLength);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks whether a fly exists and is a custom fly that belongs to a user.
+     *
+     * <p>Default flies have no owner, so this is always {@code false} for them.</p>
+     *
+     * @param id the ID of the fly to check
+     * @param userId the ID of the user to check ownership against
+     * @return {@code true} if the fly exists and the user made it, otherwise {@code false}
+     */
+    @Override
+    public boolean isFlyOwner(Long id, Long userId) {
+        // findById throws on a null ID instead of returning empty, so this has to be checked first
+        if (id == null) {
+            log.warn("Fly ownership check failed for user ID {}. Fly ID is null", userId);
+            return false;
+        }
+
+        Fly fly = flyRepository.findById(id).orElse(null);
+
+        if (fly == null) {
+            log.warn("Fly ownership check failed for user ID {}. Fly ID {} does not exist", userId, id);
+            return false;
+        }
+
+        // default flies have a null user ID, so they never belong to anyone and can't be edited
+        if (userId == null || !userId.equals(fly.getUserId())) {
+            log.warn("Fly ownership check failed. Fly ID {} does not belong to user ID {}", id, userId);
             return false;
         }
 

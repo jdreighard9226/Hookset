@@ -153,7 +153,19 @@ public interface FlyService {
     boolean isMinSizeValidNumber(Integer minSize);
 
     boolean isMaxSizeValidNumber(Integer maxSize);
+
     boolean isFlyTypeValid(String flyType);
 
     boolean isFlyNameLengthValid(String name);
+
+    /**
+     * Checks whether a fly exists and is a custom fly that belongs to a user.
+     *
+     * <p>Default flies have no owner, so this is always {@code false} for them.</p>
+     *
+     * @param flyId the ID of the fly to check
+     * @param userId the ID of the user to check ownership against
+     * @return {@code true} if the fly exists and the user made it, otherwise {@code false}
+     */
+    boolean isFlyOwner(Long flyId, Long userId);
 }
