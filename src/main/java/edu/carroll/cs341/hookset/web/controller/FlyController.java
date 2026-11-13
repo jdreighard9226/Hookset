@@ -167,9 +167,9 @@ public class FlyController {
                              Model model) {
         log.info("User ID {} submitted the add fly form for fly name: {}", user.getId(), flyForm.getName());
 
-        boolean hasCustomErrors = false;
-
         FlyInput flyInput = flyMapper.toInput(flyForm);
+
+        boolean hasCustomErrors = false;
 
         // only display if both sizes are filled in. Missing sizes will be caught by form
         if (flyInput.minSize() != null && flyInput.maxSize() != null) {
@@ -220,10 +220,13 @@ public class FlyController {
     /**
      * Handles GET requests for the edit fly page.
      *
+     * <p>Users can only edit their own custom flies. Anyone else, and anyone
+     * trying to edit a default fly, is sent back to the fly list.</p>
+     *
      * @param id the ID of the fly to edit
      * @param user the logged-in user
      * @param model the model used to pass the filled fly form to the view
-     * @return the name of the edit fly view to render
+     * @return the name of the edit fly view, or a redirect if the fly can't be edited
      */
     @GetMapping("/edit/{id}")
     public String getEditFly(@PathVariable Long id,
@@ -231,6 +234,14 @@ public class FlyController {
                              Model model) {
         log.info("User ID {} loading the edit page for fly ID {}", user.getId(), id);
 
+        // false for flies that don't exist, belong to someone else, or are default flies
+        if (!flyService.isFlyOwner(id, user.getId())) {
+            log.warn("User ID {} tried to open the edit page for fly ID {}, which does not exist or is not theirs. Redirecting to the fly list",
+                    user.getId(), id);
+            return "redirect:/flies";
+        }
+
+        // the ownership check already confirmed this fly exists and belongs to this user
         Fly fly = flyService.getFlyById(id, user.getId());
 
         FlyForm flyForm = flyMapper.toForm(fly);
@@ -243,16 +254,16 @@ public class FlyController {
     /**
      * Handles POST requests to save changes to a custom fly.
      *
-     * <p>The form is checked against its annotations and the service's
-     * business rules. If either finds errors, the edit page is shown again
-     * with those errors.</p>
+     * <p>Ownership is checked first. The form is then checked against its
+     * annotations and the service's business rules. If either finds errors,
+     * the edit page is shown again with those errors.</p>
      *
      * @param id the ID of the fly being edited
      * @param flyForm the submitted fly form
      * @param result the binding result holding any validation errors
      * @param user the logged-in user editing the fly
      * @param model the model used to pass error flags to the view
-     * @return a redirect to the fly list on success, or the edit fly view if there are errors
+     * @return a redirect to the fly list on success or if the fly can't be edited, or the edit fly view if there are errors
      */
     @PostMapping("/edit/{id}")
     public String postEditFly(@PathVariable Long id,
@@ -263,9 +274,16 @@ public class FlyController {
         log.info("User ID {} submitted the edit form for fly ID {} with fly name: {}",
                 user.getId(), id, flyForm.getName());
 
-        boolean hasCustomErrors = false;
+        // checked before validation so someone can't probe other users' flies through error messages
+        if (!flyService.isFlyOwner(id, user.getId())) {
+            log.warn("User ID {} tried to edit fly ID {}, which does not exist or is not theirs. Redirecting to the fly list",
+                    user.getId(), id);
+            return "redirect:/flies";
+        }
 
         FlyInput flyInput = flyMapper.toInput(flyForm);
+
+        boolean hasCustomErrors = false;
 
         // only display if both sizes are filled in. Missing sizes will be caught by form
         if (flyInput.minSize() != null && flyInput.maxSize() != null) {
@@ -319,8 +337,8 @@ public class FlyController {
     /**
      * Handles POST requests to delete a custom fly.
      *
-     * <p>If the fly is used by any catches it isn't deleted, and a message is
-     * passed to the fly list to tell the user why.</p>
+     * <p>Ownership is checked first. If the fly is used by any catches it isn't
+     * deleted, and a message is passed to the fly list to tell the user why.</p>
      *
      * @param id the ID of the fly to delete
      * @param user the logged-in user deleting the fly
@@ -333,14 +351,17 @@ public class FlyController {
                                 RedirectAttributes redirectAttributes) {
         log.info("User ID {} requested to delete fly ID {}", user.getId(), id);
 
+        // checked first so deleting someone else's fly looks the same as deleting one that doesn't exist
+        if (!flyService.isFlyOwner(id, user.getId())) {
+            log.warn("User ID {} tried to delete fly ID {}, which does not exist or is not theirs", user.getId(), id);
+            redirectAttributes.addFlashAttribute("deleteFlyFailed", true);
+            return "redirect:/flies";
+        }
+
+        // ownership is confirmed, so the only reason left for this to fail is the fly being used by a catch
         if (!flyService.deleteFly(id, user.getId())) {
-            if (flyService.isFlyUsedByCatch(id)) {
-                log.warn("User ID {} tried to delete fly ID {}, but it is used by at least one catch", user.getId(), id);
-                redirectAttributes.addFlashAttribute("flyInUse", true);
-            } else {
-                log.warn("User ID {} tried to delete fly ID {}, which does not exist", user.getId(), id);
-                redirectAttributes.addFlashAttribute("deleteFlyFailed", true);
-            }
+            log.warn("User ID {} tried to delete fly ID {}, but it is used by at least one catch", user.getId(), id);
+            redirectAttributes.addFlashAttribute("flyInUse", true);
         } else {
             log.info("User ID {} deleted fly ID {}", user.getId(), id);
         }
