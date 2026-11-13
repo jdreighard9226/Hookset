@@ -1,12 +1,14 @@
 package edu.carroll.cs341.hookset.web.controller;
 
 import edu.carroll.cs341.hookset.service.WaterBodyService;
+import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import edu.carroll.cs341.hookset.web.dto.FishDto;
 import edu.carroll.cs341.hookset.web.dto.WaterBodyDto;
 import edu.carroll.cs341.hookset.web.mapper.FishMapper;
 import edu.carroll.cs341.hookset.web.mapper.WaterBodyMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,24 +62,28 @@ public class WaterBodyController {
     /**
      * Handles GET requests to the water body list page.
      *
+     * @param user the logged-in user, used only to log who loaded the page
      * @param model the model used to pass the water bodies to the view
      * @return the name of the water body list view to render
      */
     @GetMapping
-    public String index(Model model) {
-        log.info("Loading water bodies page");
+    public String index(@AuthenticationPrincipal HooksetUserDetails user, Model model) {
+        log.info("User ID {} loading the water bodies page", user.getId());
 
+        // every water body in the database, since this page lists them all
         List<WaterBody> waterBodyEntities = waterBodyService.getAllWaterBodies();
 
+        // the view only gets DTOs, so entities stay out of the templates and they only see the fields meant for display
         List<WaterBodyDto> waterBodies = new ArrayList<>();
 
         for (WaterBody waterBody : waterBodyEntities) {
             waterBodies.add(waterBodyMapper.toDto(waterBody));
         }
 
-        log.info("Found {} water bodies", waterBodies.size());
-
+        // each water body's slug is used by the view to build its link to the details page
         model.addAttribute("waterBodies", waterBodies);
+
+        log.info("Showing {} water bodies to user ID {}", waterBodies.size(), user.getId());
 
         return "waterbodies/index";
     }
@@ -86,18 +92,23 @@ public class WaterBodyController {
      * Handles GET requests to a water body's details page.
      *
      * @param slug the slug of the water body taken from the URL
+     * @param user the logged-in user, used only to log who loaded the page
      * @param model the model used to pass the water body and its fish species to the view
      * @return the name of the water body details view, or a redirect to the list if no water body matches
      */
     @GetMapping("/details/{slug}")
-    public String getDetails(@PathVariable String slug, Model model) {
-        log.info("Loading water body details page for slug: {}", slug);
+    public String getDetails(@PathVariable String slug,
+                             @AuthenticationPrincipal HooksetUserDetails user,
+                             Model model) {
+        log.info("User ID {} loading the details page for water body slug: {}", user.getId(), slug);
 
+        // the service lowercases the slug, so a URL typed in the wrong case still finds the water body
         WaterBody waterBodyEntity = waterBodyService.getWaterBodyFromSlug(slug);
 
         // a mistyped or old URL would otherwise crash the mapper on null
         if (waterBodyEntity == null) {
-            log.warn("Water body details not found for slug: {}", slug);
+            log.warn("User ID {} requested details for water body slug {}, which does not exist. Redirecting to the water bodies page",
+                    user.getId(), slug);
             return "redirect:/waterbodies";
         }
 
@@ -112,10 +123,11 @@ public class WaterBodyController {
             fishDtos.add(fishMapper.toDto(fish));
         }
 
-        log.info("Found {} fish for water body slug: {}", fishDtos.size(), slug);
-
         model.addAttribute("waterBody", waterBody);
         model.addAttribute("fishes", fishDtos);
+
+        log.info("Showing water body ID {} with {} fish species to user ID {}",
+                waterBodyEntity.getId(), fishDtos.size(), user.getId());
 
         return "waterbodies/details";
     }
