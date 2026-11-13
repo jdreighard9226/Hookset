@@ -63,7 +63,7 @@ public class ProfileController {
      */
     @GetMapping
     public String getProfile(@AuthenticationPrincipal HooksetUserDetails user, Model model) {
-        log.info("Loading profile page for username: {}", user.getUsername());
+        log.info("User ID {} loading their profile page", user.getId());
 
         ProfileForm profileForm = new ProfileForm();
 
@@ -93,28 +93,35 @@ public class ProfileController {
                               BindingResult result,
                               @AuthenticationPrincipal HooksetUserDetails user,
                               Model model) {
-        log.info("Profile form submitted");
+        log.info("User ID {} submitted the password change form", user.getId());
+
+        PasswordChangeInput passwordChangeInput = userMapper.toPasswordChangeInput(profileForm);
 
         boolean hasCustomErrors = false;
 
         // no annotation checks for spaces, so this is the only place that message comes from
-        if (!userService.isPasswordSpaceFree(profileForm.getPassword())) {
+        if (!userService.isPasswordSpaceFree(passwordChangeInput.password())) {
+            log.warn("User ID {} entered a new password with spaces", user.getId());
             model.addAttribute("passwordHasSpaces", true);
             hasCustomErrors = true;
         }
 
         if (result.hasErrors() || hasCustomErrors) {
-            log.warn("Profile form failed validation");
+            log.warn("Password change form from user ID {} failed validation with {} field errors",
+                    user.getId(), result.getErrorCount());
             return "profile";
         }
 
-        PasswordChangeInput passwordChangeInput = userMapper.toPasswordChangeInput(profileForm);
+
 
         if (!userService.changePassword(passwordChangeInput, user.getId())) {
-            log.warn("Password change failed");
+            log.warn("Password change passed form validation but the user service rejected it for user ID {}",
+                    user.getId());
             model.addAttribute("passwordChangeFailed", true);
             return "profile";
         }
+
+        log.info("User ID {} changed their password", user.getId());
 
         return "redirect:/";
     }
