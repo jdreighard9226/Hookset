@@ -1,26 +1,31 @@
 package edu.carroll.cs341.hookset.service;
 
-import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
-import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
+import edu.carroll.cs341.hookset.service.input.SignupInput;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import entities.jpa.entity.User;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration tests for {@link edu.carroll.cs341.hookset.service.impl.LoginServiceImpl}.
+ * Integration tests for {@link LoginService}.
  *
  * <p>Each service method is tested against a happy path, a crappy path, and a crazy
- * path. The happy path loads a real saved user. The crappy path asks for a username
- * that does not exist. The crazy path passes a null username.</p>
+ * path. The happy paths load a real saved user, including when more than one user
+ * exists. The crappy paths ask for usernames that do not exist or are blank. The
+ * crazy path passes a null username.</p>
+ *
+ * <p>Tests only rely on what {@link LoginService} promises through
+ * {@link UserDetailsService}. Test users are created through
+ * {@link UserService#addUser(SignupInput)}, the same way signup creates them, so no
+ * repositories are used.</p>
  *
  * <p>Tests run against the H2 test database and each test is rolled back by
  * {@link Transactional}.</p>
@@ -34,48 +39,67 @@ public class LoginServiceTest {
     @Autowired
     private LoginService loginService;
 
-    /** Repository used to set up user test data. */
+    /** Service used to create test users the same way signup does. */
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
-    /** Password encoder used to hash test user passwords the same way signup does. */
+    /** Password encoder used to check that the loaded password is the hash of the test password. */
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /** The saved user each test logs in as. */
-    private User testUser;
+    /** The username of the user saved before each test. */
+    private static final String TEST_USERNAME = "testuser";
+
+    /** The plain text password every test user signs up with. */
+    private static final String TEST_PASSWORD = "test-password";
 
     /**
-     * Saves a test user before each test.
+     * Creates a test user through signup before each test.
      */
     @BeforeEach
     public void setUpUser() {
-        testUser = userRepository.save(createTestUser("testuser"));
+        SignupInput signupInput = new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD);
+        boolean userAdded = userService.addUser(signupInput);
+
+        // every test depends on this user existing, so fail here instead of later
+        assertTrue(userAdded, "The test user should be created by signup");
     }
 
     // ---------- loadUserByUsername ----------
 
     /**
-     * Happy path: an existing user is loaded and wrapped in HooksetUserDetails.
+     * Happy path: an existing user is loaded with their username and password hash.
      */
     @Test
     public void testLoadUserByUsernameHappyPath() {
-        UserDetails userDetails = loginService.loadUserByUsername("testuser");
-
+        UserDetails userDetails = loginService.loadUserByUsername(TEST_USERNAME);
         assertNotNull(userDetails, "An existing user should be loaded");
 
-        // the rest of the app casts to HooksetUserDetails to get the ID, so it has to be that type
-        assertInstanceOf(HooksetUserDetails.class, userDetails,
-                "Loaded user should be a HooksetUserDetails");
-
-        HooksetUserDetails hooksetUserDetails = (HooksetUserDetails) userDetails;
-
-        assertEquals("testuser", hooksetUserDetails.getUsername(),
+        assertEquals(TEST_USERNAME, userDetails.getUsername(),
                 "Loaded username should match the saved user");
-        assertEquals(testUser.getId(), hooksetUserDetails.getId(),
-                "Loaded user ID should match the saved user");
-        assertEquals(testUser.getHashPassword(), hooksetUserDetails.getPassword(),
-                "Loaded password should be the saved hash, so Spring Security can check it");
+
+        // Spring Security checks the login against this hash, so it has to match the real password
+        assertTrue(passwordEncoder.matches(TEST_PASSWORD, userDetails.getPassword()),
+                "Loaded password should be the saved hash of the test password");
+    }
+
+    /**
+     * Happy path: with more than one user saved, each username loads its own user.
+     */
+    @Test
+    public void testLoadUserByUsernameHappyPathMultipleUsers() {
+        SignupInput otherSignupInput = new SignupInput("otheruser", TEST_PASSWORD, TEST_PASSWORD);
+        boolean otherUserAdded = userService.addUser(otherSignupInput);
+        assertTrue(otherUserAdded, "The second test user should be created by signup");
+
+        // a lookup that ignored the username would hand back the same account both times
+        UserDetails testUserDetails = loginService.loadUserByUsername(TEST_USERNAME);
+        assertEquals(TEST_USERNAME, testUserDetails.getUsername(),
+                "The first username should load the first user");
+
+        UserDetails otherUserDetails = loginService.loadUserByUsername("otheruser");
+        assertEquals("otheruser", otherUserDetails.getUsername(),
+                "The second username should load the second user");
     }
 
     /**
@@ -90,6 +114,20 @@ public class LoginServiceTest {
     }
 
     /**
+     * Crappy path: an empty or whitespace-only username throws UsernameNotFoundException.
+     */
+    @Test
+    public void testLoadUserByUsernameCrappyPathBlank() {
+        assertThrows(UsernameNotFoundException.class,
+                () -> loginService.loadUserByUsername(""),
+                "An empty username should throw UsernameNotFoundException");
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> loginService.loadUserByUsername("   "),
+                "A whitespace-only username should throw UsernameNotFoundException");
+    }
+
+    /**
      * Crazy path: a null username throws UsernameNotFoundException instead of crashing.
      */
     @Test
@@ -97,25 +135,5 @@ public class LoginServiceTest {
         assertThrows(UsernameNotFoundException.class,
                 () -> loginService.loadUserByUsername(null),
                 "A null username should throw UsernameNotFoundException");
-    }
-
-    // ---------- Helpers ----------
-
-    /**
-     * Builds a user with fixed test values and the given username.
-     *
-     * <p>The password is hashed with the app's password encoder, the same way signup stores it.</p>
-     *
-     * @param username the username to assign to the user
-     * @return a new, unsaved user
-     */
-    private User createTestUser(String username) {
-        User user = new User();
-
-        user.setUsername(username);
-        user.setIsAdmin(false);
-        user.setHashPassword(passwordEncoder.encode("test-password"));
-
-        return user;
     }
 }
