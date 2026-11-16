@@ -58,10 +58,11 @@ public class LoginServiceTest {
      */
     @BeforeEach
     public void setUpUser() {
+        // the user is added through the service, since tests can't use repositories
         SignupInput signupInput = new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD);
         boolean userAdded = userService.addUser(signupInput);
 
-        // every test depends on this user existing, so fail here instead of later
+        // setup check, if this fails then addUser or the test data is broken, not loadUserByUsername
         assertTrue(userAdded, "The test user should be created by signup");
     }
 
@@ -73,8 +74,11 @@ public class LoginServiceTest {
     @Test
     public void testLoadUserByUsernameHappyPath() {
         UserDetails userDetails = loginService.loadUserByUsername(TEST_USERNAME);
+
+        // the user was saved in setup, so it should always be found
         assertNotNull(userDetails, "An existing user should be loaded");
 
+        // a lookup could find a user without it being the right one, so the username is checked too
         assertEquals(TEST_USERNAME, userDetails.getUsername(),
                 "Loaded username should match the saved user");
 
@@ -88,8 +92,12 @@ public class LoginServiceTest {
      */
     @Test
     public void testLoadUserByUsernameHappyPathMultipleUsers() {
-        SignupInput otherSignupInput = new SignupInput("otheruser", TEST_PASSWORD, TEST_PASSWORD);
+        final String otherUsername = "otheruser";
+
+        SignupInput otherSignupInput = new SignupInput(otherUsername, TEST_PASSWORD, TEST_PASSWORD);
         boolean otherUserAdded = userService.addUser(otherSignupInput);
+
+        // setup check, if this fails then addUser or the test data is broken, not loadUserByUsername
         assertTrue(otherUserAdded, "The second test user should be created by signup");
 
         // a lookup that ignored the username would hand back the same account both times
@@ -97,8 +105,8 @@ public class LoginServiceTest {
         assertEquals(TEST_USERNAME, testUserDetails.getUsername(),
                 "The first username should load the first user");
 
-        UserDetails otherUserDetails = loginService.loadUserByUsername("otheruser");
-        assertEquals("otheruser", otherUserDetails.getUsername(),
+        UserDetails otherUserDetails = loginService.loadUserByUsername(otherUsername);
+        assertEquals(otherUsername, otherUserDetails.getUsername(),
                 "The second username should load the second user");
     }
 
@@ -107,9 +115,12 @@ public class LoginServiceTest {
      */
     @Test
     public void testLoadUserByUsernameCrappyPath() {
+        // never signed up, so there is no account for it
+        final String missingUsername = "doesnotexist";
+
         // Spring Security relies on this exact exception to fail the login cleanly
         assertThrows(UsernameNotFoundException.class,
-                () -> loginService.loadUserByUsername("doesnotexist"),
+                () -> loginService.loadUserByUsername(missingUsername),
                 "A username that does not exist should throw UsernameNotFoundException");
     }
 
@@ -118,6 +129,7 @@ public class LoginServiceTest {
      */
     @Test
     public void testLoadUserByUsernameCrappyPathBlank() {
+        // blank isn't null, so it gets past a null check, but it still can't match any account
         assertThrows(UsernameNotFoundException.class,
                 () -> loginService.loadUserByUsername(""),
                 "An empty username should throw UsernameNotFoundException");
@@ -132,6 +144,7 @@ public class LoginServiceTest {
      */
     @Test
     public void testLoadUserByUsernameCrazyPathNull() {
+        // a NullPointerException here would break the login page instead of showing a failed login
         assertThrows(UsernameNotFoundException.class,
                 () -> loginService.loadUserByUsername(null),
                 "A null username should throw UsernameNotFoundException");
