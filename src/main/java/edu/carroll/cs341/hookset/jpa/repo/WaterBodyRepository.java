@@ -6,10 +6,9 @@ import entities.jpa.entity.WaterBody;
 /**
  * Repository for reading and writing water body records.
  *
- * <p>Water bodies are loaded into the database by the
- * fish-waterbody-importer.sql script. Besides the standard Spring Data JPA
- * methods, this repository provides a lookup by URL slug so pages can find a
- * water body from its address.</p>
+ * <p>Besides the standard Spring Data JPA methods, this repository provides a
+ * lookup by URL slug so pages can find a water body from its address, and a
+ * check used to stop two water bodies from sharing a slug.</p>
  */
 public interface WaterBodyRepository extends JpaRepository<WaterBody, Long> {
 
@@ -20,4 +19,12 @@ public interface WaterBodyRepository extends JpaRepository<WaterBody, Long> {
      * @return the matching water body, or {@code null} if none exists
      */
     WaterBody getWaterBodyBySlug(String slug);
+
+    /**
+     * Checks whether a water body with the given slug already exists.
+     *
+     * @param slug the slug to match
+     * @return {@code true} if a water body with that slug exists, otherwise {@code false}
+     */
+    boolean existsBySlug(String slug);
 }
