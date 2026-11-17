@@ -1,7 +1,7 @@
 package edu.carroll.cs341.hookset.service;
 
-import edu.carroll.cs341.hookset.jpa.repo.FishRepository;
-import edu.carroll.cs341.hookset.jpa.repo.WaterBodyRepository;
+import edu.carroll.cs341.hookset.service.input.FishInput;
+import edu.carroll.cs341.hookset.service.input.WaterBodyInput;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,18 +16,18 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration tests for {@link edu.carroll.cs341.hookset.service.impl.WaterBodyServiceImpl}.
+ * Integration tests for {@link WaterBodyService}.
  *
- * <p>Each service method is tested against a happy path, a crappy path, and one or more
- * crazy paths. Happy paths cover valid input with an expected result. Crappy paths cover
- * failures the service is designed to handle, such as a missing slug or a water body with
- * no fish. Crazy paths cover unusual input such as null, empty, whitespace, and wrong-case
- * slugs, null and negative IDs, many fish across several water bodies, and a fish linked
- * to more than one water body.</p>
+ * <p>Each service method is tested against a happy path and a crappy path. Happy
+ * paths cover valid input with an expected result. Crappy paths cover bad input
+ * that should find nothing or be rejected, or an empty database.</p>
  *
- * <p>Tests run against the H2 test database and each test is rolled back by
- * {@link Transactional}. Count assertions are measured against a baseline so the tests
- * do not depend on the database starting empty.</p>
+ * <p>Test water bodies are created through
+ * {@link WaterBodyService#addWaterBody(WaterBodyInput)} and test fish through
+ * {@link FishService#addFish(FishInput)}, so no repositories are used.</p>
+ *
+ * <p>Tests run against the H2 test database, which starts empty, and each test is
+ * rolled back by {@link Transactional}.</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -38,390 +38,497 @@ public class WaterBodyServiceTest {
     @Autowired
     private WaterBodyService waterBodyService;
 
-    /** Repository used to set up water body test data. */
+    /** Service used to create the fish that test water bodies are linked to. */
     @Autowired
-    private WaterBodyRepository waterBodyRepository;
+    private FishService fishService;
 
-    /** Repository used to set up fish test data. */
-    @Autowired
-    private FishRepository fishRepository;
+    /** The name given to every test water body. */
+    private static final String TEST_NAME = "Test River";
 
+    /** The type given to every test water body. */
+    private static final String TEST_TYPE = "River";
+
+    /** The state given to every test water body. */
+    private static final String TEST_STATE = "Montana";
+
+    /** The description given to every test water body. */
+    private static final String TEST_DESCRIPTION = "A river used for testing";
+
+    /** The slug given to the main test water body. */
+    private static final String TEST_SLUG = "test-river";
+
+    /** The family given to every test fish. */
+    private static final String TEST_FAMILY = "test-family";
+
+    /** The species given to the main test fish. */
+    private static final String TEST_SPECIES = "test-species";
+
+    /** The image given to every test fish. */
+    private static final String TEST_IMAGE = "test-image";
 
     // ---------- getAllWaterBodies ----------
 
     /**
-     * Happy path: a saved water body is returned in the full list.
+     * Happy path: one added water body is returned in the list.
      */
     @Test
-    public void testGetAllWaterBodiesHappyPath() {
-        // baseline instead of a hardcoded count, so seed data doesn't break the test
-        int before = waterBodyService.getAllWaterBodies().size();
-        WaterBody testWaterBody = createTestWaterBody("test-river");
-        waterBodyRepository.save(testWaterBody);
+    public void testGetAllWaterBodiesHappyPathOneWaterBody() {
+        // the water body is added through the service, since tests can't use repositories
+        boolean waterBodyAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+
+        // setup check, if this fails then addWaterBody or the test data is broken, not getAllWaterBodies
+        assertTrue(waterBodyAdded, "The test water body should be added");
 
         List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
         assertNotNull(waterBodies, "getAllWaterBodies should never return null");
-        assertEquals(before + 1, waterBodies.size(),
-                "List size should grow by one after saving a water body");
+
+        // the database starts empty, so the added water body should be the only one
+        assertEquals(1, waterBodies.size(), "The list should only have the one added water body");
+
+        // only one water body exists, so position 0 is safe here
+        WaterBody returnedWaterBody = waterBodies.get(0);
+
+        // every field is checked so a water body returned with the wrong details doesn't pass
+        assertEquals(TEST_NAME, returnedWaterBody.getName(), "The returned name should match the one added");
+        assertEquals(TEST_TYPE, returnedWaterBody.getType(), "The returned type should match the one added");
+        assertEquals(TEST_STATE, returnedWaterBody.getState(), "The returned state should match the one added");
+        assertEquals(TEST_DESCRIPTION, returnedWaterBody.getDescription(),
+                "The returned description should match the one added");
+        assertEquals(TEST_SLUG, returnedWaterBody.getSlug(), "The returned slug should match the one added");
+    }
+
+    /**
+     * Happy path: many water bodies are added and every one of them is returned.
+     */
+    @Test
+    public void testGetAllWaterBodiesHappyPathManyWaterBodies() {
+        // each water body gets its own slug so they can be told apart in the results,
+        // and so addWaterBody doesn't reject them for sharing a slug
+        List<String> addedSlugs = new ArrayList<>();
+
+        final int waterBodyCount = 100;
+        for (int i = 1; i <= waterBodyCount; i++) {
+            String slug = TEST_SLUG + "-" + i;
+            boolean waterBodyAdded = waterBodyService.addWaterBody(
+                    new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, slug, List.of()));
+
+            // setup check, if this fails then addWaterBody or the test data is broken, not getAllWaterBodies
+            assertTrue(waterBodyAdded, "Water body with slug " + slug + " should be added");
+            addedSlugs.add(slug);
+        }
+
+        List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
+        assertNotNull(waterBodies, "getAllWaterBodies should never return null");
+
+        // the database starts empty, so the list should only have the water bodies added above
+        assertEquals(waterBodyCount, waterBodies.size(),
+                "The list should have all " + waterBodyCount + " added water bodies");
 
         // checks by slug instead of position, since the list order isn't guaranteed
-        List<String> returnedSlugs = getWaterBodySlugs(waterBodies);
-        assertTrue(returnedSlugs.contains(testWaterBody.getSlug()),
-                "Saved water body should be in the returned list");
-    }
-
-    /**
-     * Crappy path: no water bodies are added, so the list does not grow and is never null.
-     */
-    @Test
-    public void testGetAllWaterBodiesCrappyPath() {
-        // read straight from the repository so the baseline doesn't go through the method under test
-        int before = waterBodyRepository.findAll().size();
-
-        List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
-        assertNotNull(waterBodies, "getAllWaterBodies should never return null");
-        assertEquals(before, waterBodies.size(),
-                "List size should not change when no water bodies are added");
-    }
-
-    /**
-     * Crazy path: many water bodies are saved and every one of them is returned.
-     */
-    @Test
-    public void testGetAllWaterBodiesCrazyPath() {
-        int before = waterBodyService.getAllWaterBodies().size();
-
-        List<WaterBody> testWaterBodies = new ArrayList<>();
-        for (int i = 1; i <= 25; i++) {
-            WaterBody temp = createTestWaterBody("test-river-" + i);
-            testWaterBodies.add(temp);
+        List<String> returnedSlugs = new ArrayList<>();
+        for (WaterBody returnedWaterBody : waterBodies) {
+            returnedSlugs.add(returnedWaterBody.getSlug());
         }
-        waterBodyRepository.saveAll(testWaterBodies);
-
-        List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
-        assertNotNull(waterBodies, "getAllWaterBodies should never return null");
-        assertEquals(before + 25, waterBodies.size(),
-                "List size should grow by 25 after saving 25 water bodies");
 
         // the count alone could pass with the wrong water bodies, so check each one is actually there
-        List<String> returnedSlugs = getWaterBodySlugs(waterBodies);
-        for (WaterBody testWaterBody : testWaterBodies) {
-            assertTrue(returnedSlugs.contains(testWaterBody.getSlug()),
-                    "Missing water body with slug: " + testWaterBody.getSlug());
+        for (String slug : addedSlugs) {
+            assertTrue(returnedSlugs.contains(slug), "Water body with slug " + slug + " should be in the list");
         }
+    }
+
+    /**
+     * Crappy path: with no water bodies added, an empty list is returned instead of null.
+     */
+    @Test
+    public void testGetAllWaterBodiesCrappyPathNoWaterBodies() {
+        // nothing is added, so this checks the database's starting state
+        List<WaterBody> waterBodies = waterBodyService.getAllWaterBodies();
+
+        // callers loop over this list, so null would crash them where an empty list wouldn't
+        assertNotNull(waterBodies, "getAllWaterBodies should never return null");
+        assertTrue(waterBodies.isEmpty(), "The list should be empty when no water bodies have been added");
     }
 
     // ---------- getWaterBodyFromSlug ----------
 
     /**
-     * Happy path: a saved water body is found by its slug.
+     * Happy path: a valid slug returns the water body saved with it.
      */
     @Test
     public void testGetWaterBodyFromSlugHappyPath() {
-        WaterBody saved = waterBodyRepository.save(createTestWaterBody("test-river"));
+        boolean waterBodyAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
 
-        WaterBody result = waterBodyService.getWaterBodyFromSlug("test-river");
-        // check every field so a lookup that returns the wrong row can't slip through
-        assertNotNull(result, "Water body should be found for an existing slug");
-        assertEquals(saved.getId(), result.getId(),
-                "Returned water body ID should match the saved water body");
-        assertEquals("Test River", result.getName(),
-                "Returned water body name should match the saved name");
-        assertEquals("test-river", result.getSlug(),
-                "Returned water body slug should match the requested slug");
-        assertEquals("Montana", result.getState(),
-                "Returned water body state should match the saved state");
-        assertEquals("River", result.getType(),
-                "Returned water body type should match the saved type");
+        // setup check, if this fails then addWaterBody or the test data is broken, not getWaterBodyFromSlug
+        assertTrue(waterBodyAdded, "The test water body should be added");
+
+        WaterBody returnedWaterBody = waterBodyService.getWaterBodyFromSlug(TEST_SLUG);
+
+        // the water body was just added with this slug, so it should always be found
+        assertNotNull(returnedWaterBody, "A water body should be found for a saved slug");
+
+        // the database assigns the ID, so a saved water body should always have one
+        assertNotNull(returnedWaterBody.getId(), "The returned water body should have an ID");
+
+        // every field is checked so the wrong water body or wrong details don't pass
+        assertEquals(TEST_NAME, returnedWaterBody.getName(), "The returned name should match the one added");
+        assertEquals(TEST_TYPE, returnedWaterBody.getType(), "The returned type should match the one added");
+        assertEquals(TEST_STATE, returnedWaterBody.getState(), "The returned state should match the one added");
+        assertEquals(TEST_DESCRIPTION, returnedWaterBody.getDescription(),
+                "The returned description should match the one added");
+        assertEquals(TEST_SLUG, returnedWaterBody.getSlug(), "The returned slug should match the one looked up");
     }
 
     /**
-     * Crappy path: a slug that does not exist returns null even when other water bodies exist.
+     * Crappy path: a slug that no water body has returns null.
      */
     @Test
-    public void testGetWaterBodyFromSlugCrappyPath() {
-        // a real water body exists so a lookup that ignores the slug would return it and fail
-        waterBodyRepository.save(createTestWaterBody("test-river"));
+    public void testGetWaterBodyFromSlugCrappyPathMissingSlug() {
+        final String missingSlug = "missing-river";
 
-        WaterBody result = waterBodyService.getWaterBodyFromSlug("does-not-exist");
-        assertNull(result, "No water body should be returned for a slug that does not exist");
+        // a water body is saved so a lookup that ignored the slug would return it and fail this test
+        boolean waterBodyAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+
+        // setup check, if this fails then addWaterBody or the test data is broken, not getWaterBodyFromSlug
+        assertTrue(waterBodyAdded, "The test water body should be added");
+
+        WaterBody returnedWaterBody = waterBodyService.getWaterBodyFromSlug(missingSlug);
+
+        // no water body was saved with this slug, so nothing should come back
+        assertNull(returnedWaterBody, "A slug that no water body has should return null");
     }
 
     /**
-     * Crazy path: a null slug returns null.
+     * Crappy path: a slug with a space in it returns null.
      */
     @Test
-    public void testGetWaterBodyFromSlugCrazyPathNull() {
-        waterBodyRepository.save(createTestWaterBody("test-river"));
+    public void testGetWaterBodyFromSlugCrappyPathSpaces() {
+        // same as the saved slug but with a space instead of the hyphen
+        final String spacesSlug = "test river";
 
-        WaterBody result = waterBodyService.getWaterBodyFromSlug(null);
-        assertNull(result, "No water body should be returned for a null slug");
+        // a water body is saved so a lookup that ignored the slug would return it and fail this test
+        boolean waterBodyAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+
+        // setup check, if this fails then addWaterBody or the test data is broken, not getWaterBodyFromSlug
+        assertTrue(waterBodyAdded, "The test water body should be added");
+
+        WaterBody returnedWaterBody = waterBodyService.getWaterBodyFromSlug(spacesSlug);
+
+        // slugs have to match exactly, so a space doesn't get treated like the hyphen in the saved slug
+        assertNull(returnedWaterBody, "A slug with a space in it should not match a saved slug");
     }
 
     /**
-     * Crazy path: an empty slug returns null.
+     * Crappy path: an empty slug returns null.
      */
     @Test
-    public void testGetWaterBodyFromSlugCrazyPathEmpty() {
-        waterBodyRepository.save(createTestWaterBody("test-river"));
+    public void testGetWaterBodyFromSlugCrappyPathBlank() {
+        final String blankSlug = "";
 
-        WaterBody result = waterBodyService.getWaterBodyFromSlug("");
-        assertNull(result, "No water body should be returned for an empty slug");
-    }
+        // a water body is saved so a lookup that ignored the slug would return it and fail this test
+        boolean waterBodyAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
 
-    /**
-     * Crazy path: a whitespace-only slug returns null.
-     */
-    @Test
-    public void testGetWaterBodyFromSlugCrazyPathWhitespace() {
-        waterBodyRepository.save(createTestWaterBody("test-river"));
+        // setup check, if this fails then addWaterBody or the test data is broken, not getWaterBodyFromSlug
+        assertTrue(waterBodyAdded, "The test water body should be added");
 
-        WaterBody result = waterBodyService.getWaterBodyFromSlug("   ");
-        assertNull(result, "No water body should be returned for a whitespace-only slug");
-    }
+        WaterBody returnedWaterBody = waterBodyService.getWaterBodyFromSlug(blankSlug);
 
-    /**
-     * Crazy path: a slug with the wrong case still finds the water body.
-     */
-    @Test
-    public void testGetWaterBodyFromSlugCrazyPathWrongCase() {
-        WaterBody saved = waterBodyRepository.save(createTestWaterBody("test-river"));
-
-        WaterBody result = waterBodyService.getWaterBodyFromSlug("TEST-RIVER");
-        assertNotNull(result, "Slug lookup should be case-insensitive and match the wrong case");
-        assertEquals(saved.getId(), result.getId(),
-                "Wrong-case slug should return the saved water body");
+        // the interface says a blank slug returns null, since it can't match anything
+        assertNull(returnedWaterBody, "An empty slug should return null");
     }
 
     // ---------- getAllFishForWaterBody ----------
 
     /**
-     * Happy path: a fish linked to a water body is returned for that water body.
+     * Happy path: a water body with no fish linked returns an empty list instead of null.
      */
     @Test
-    public void testGetAllFishForWaterBodyHappyPath() {
-        Fish savedFish = fishRepository.save(createTestFish("test-species"));
-        WaterBody savedWaterBody = waterBodyRepository.save(createTestWaterBody("test-river"));
-        linkFishToWaterBody(savedFish, savedWaterBody);
+    public void testGetAllFishForWaterBodyHappyPathNoFish() {
+        // added with no fish IDs, since fish are optional on a water body
+        boolean waterBodyAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+
+        // setup check, if this fails then addWaterBody or the test data is broken, not getAllFishForWaterBody
+        assertTrue(waterBodyAdded, "The test water body should be added");
+
+        // addWaterBody doesn't return the water body, so the slug lookup is how the test gets its ID
+        WaterBody savedWaterBody = waterBodyService.getWaterBodyFromSlug(TEST_SLUG);
+        assertNotNull(savedWaterBody, "The test water body should be found by its slug");
+
+        List<Fish> fish = waterBodyService.getAllFishForWaterBody(savedWaterBody.getId());
+
+        // callers loop over this list, so null would crash them where an empty list wouldn't
+        assertNotNull(fish, "getAllFishForWaterBody should never return null");
+        assertTrue(fish.isEmpty(), "A water body with no fish linked should return an empty list");
+    }
+
+    /**
+     * Happy path: a water body with one fish linked returns that fish.
+     */
+    @Test
+    public void testGetAllFishForWaterBodyHappyPathOneFish() {
+        boolean fishAdded = fishService.addFish(new FishInput(TEST_FAMILY, TEST_SPECIES, TEST_IMAGE));
+
+        // setup check, if this fails then addFish or the test data is broken, not getAllFishForWaterBody
+        assertTrue(fishAdded, "The test fish should be added");
+
+        // addFish doesn't return the fish, and the database starts empty, so it's the only fish in the list
+        Fish savedFish = fishService.getAllFish().get(0);
+
+        boolean waterBodyAdded = waterBodyService.addWaterBody(new WaterBodyInput(
+                TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of(savedFish.getId())));
+
+        // setup check, if this fails then addWaterBody or the test data is broken, not getAllFishForWaterBody
+        assertTrue(waterBodyAdded, "The test water body should be added with the fish linked");
+
+        // addWaterBody doesn't return the water body, so the slug lookup is how the test gets its ID
+        WaterBody savedWaterBody = waterBodyService.getWaterBodyFromSlug(TEST_SLUG);
+        assertNotNull(savedWaterBody, "The test water body should be found by its slug");
 
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(savedWaterBody.getId());
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
-        assertEquals(1, fish.size(),
-                "Water body should have exactly one linked fish");
 
-        // check every field so a mapping that joins the wrong columns can't slip through
-        assertEquals(savedFish.getId(), fish.getFirst().getId(),
-                "Returned fish ID should match the linked fish");
-        assertEquals("test-species", fish.getFirst().getSpecies(),
-                "Returned fish species should match the linked fish");
-        assertEquals("test-family", fish.getFirst().getFamily(),
-                "Returned fish family should match the linked fish");
-        assertEquals("test-image", fish.getFirst().getImage(),
-                "Returned fish image should match the linked fish");
+        // only one fish was linked, so it should be the only one returned
+        assertEquals(1, fish.size(), "The water body should have exactly the one linked fish");
+
+        // only one fish exists, so position 0 is safe here
+        Fish returnedFish = fish.get(0);
+
+        // every field is checked so a link that pointed at the wrong fish doesn't pass
+        assertEquals(savedFish.getId(), returnedFish.getId(), "The returned fish ID should match the linked fish");
+        assertEquals(TEST_FAMILY, returnedFish.getFamily(), "The returned family should match the linked fish");
+        assertEquals(TEST_SPECIES, returnedFish.getSpecies(), "The returned species should match the linked fish");
+        assertEquals(TEST_IMAGE, returnedFish.getImage(), "The returned image should match the linked fish");
     }
 
     /**
-     * Crappy path: a water body with no linked fish returns an empty list.
+     * Happy path: a water body with many fish linked returns every one of them.
      */
     @Test
-    public void testGetAllFishForWaterBodyCrappyPathNoFish() {
-        WaterBody savedWaterBody = waterBodyRepository.save(createTestWaterBody("test-river"));
+    public void testGetAllFishForWaterBodyHappyPathManyFish() {
+        // each fish gets its own species so they can be told apart in the results,
+        // and so addFish doesn't reject them as duplicates of the same family and species
+        List<String> addedSpecies = new ArrayList<>();
+
+        final int fishCount = 100;
+        for (int i = 1; i <= fishCount; i++) {
+            String species = TEST_SPECIES + "-" + i;
+            boolean fishAdded = fishService.addFish(new FishInput(TEST_FAMILY, species, TEST_IMAGE));
+
+            // setup check, if this fails then addFish or the test data is broken, not getAllFishForWaterBody
+            assertTrue(fishAdded, "Fish with species " + species + " should be added");
+            addedSpecies.add(species);
+        }
+
+        // addFish doesn't return IDs, and the database starts empty, so every fish here is one added above
+        List<Long> fishIds = new ArrayList<>();
+        for (Fish savedFish : fishService.getAllFish()) {
+            fishIds.add(savedFish.getId());
+        }
+
+        boolean waterBodyAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, fishIds));
+
+        // setup check, if this fails then addWaterBody or the test data is broken, not getAllFishForWaterBody
+        assertTrue(waterBodyAdded, "The test water body should be added with every fish linked");
+
+        // addWaterBody doesn't return the water body, so the slug lookup is how the test gets its ID
+        WaterBody savedWaterBody = waterBodyService.getWaterBodyFromSlug(TEST_SLUG);
+        assertNotNull(savedWaterBody, "The test water body should be found by its slug");
 
         List<Fish> fish = waterBodyService.getAllFishForWaterBody(savedWaterBody.getId());
         assertNotNull(fish, "getAllFishForWaterBody should never return null");
-        assertTrue(fish.isEmpty(),
-                "A water body with no linked fish should return an empty list");
-    }
 
-    /**
-     * Crappy path: a fish linked to a different water body is not returned.
-     */
-    @Test
-    public void testGetAllFishForWaterBodyCrappyPathOtherWaterBody() {
-        Fish savedFish = fishRepository.save(createTestFish("test-species"));
-        WaterBody linkedWaterBody = waterBodyRepository.save(createTestWaterBody("linked-river"));
-        WaterBody emptyWaterBody = waterBodyRepository.save(createTestWaterBody("empty-river"));
-        linkFishToWaterBody(savedFish, linkedWaterBody);
+        // every added fish was linked, so every one should come back
+        assertEquals(fishCount, fish.size(), "The water body should have all " + fishCount + " linked fish");
 
-        // asks about the empty water body, so a lookup that ignores the ID would fail here
-        List<Fish> fish = waterBodyService.getAllFishForWaterBody(emptyWaterBody.getId());
-        assertNotNull(fish, "getAllFishForWaterBody should never return null");
-        assertTrue(fish.isEmpty(),
-                "A fish linked to another water body should not be returned");
-    }
-
-    /**
-     * Crappy path: a water body ID that does not exist returns an empty list.
-     */
-    @Test
-    public void testGetAllFishForWaterBodyCrappyPathMissingWaterBody() {
-        // far above any ID H2 will hand out during a test run
-        List<Fish> fish = waterBodyService.getAllFishForWaterBody(999999L);
-        assertNotNull(fish, "getAllFishForWaterBody should never return null");
-        assertTrue(fish.isEmpty(),
-                "A water body ID that does not exist should return an empty list");
-    }
-
-    /**
-     * Crazy path: a null water body ID returns an empty list.
-     */
-    @Test
-    public void testGetAllFishForWaterBodyCrazyPathNull() {
-        // a real link exists so a null that matched everything would return it and fail
-        Fish savedFish = fishRepository.save(createTestFish("test-species"));
-        WaterBody savedWaterBody = waterBodyRepository.save(createTestWaterBody("test-river"));
-        linkFishToWaterBody(savedFish, savedWaterBody);
-
-        List<Fish> fish = waterBodyService.getAllFishForWaterBody(null);
-        assertNotNull(fish, "getAllFishForWaterBody should never return null");
-        assertTrue(fish.isEmpty(),
-                "A null water body ID should return an empty list");
-    }
-
-    /**
-     * Crazy path: a negative water body ID returns an empty list.
-     */
-    @Test
-    public void testGetAllFishForWaterBodyCrazyPathNegativeId() {
-        List<Fish> fish = waterBodyService.getAllFishForWaterBody(-1L);
-        assertNotNull(fish, "getAllFishForWaterBody should never return null");
-        assertTrue(fish.isEmpty(),
-                "A negative water body ID should return an empty list");
-    }
-
-    /**
-     * Crazy path: many fish across two water bodies, and only the requested water body's fish are returned.
-     */
-    @Test
-    public void testGetAllFishForWaterBodyCrazyPathManyFish() {
-        WaterBody targetWaterBody = waterBodyRepository.save(createTestWaterBody("target-river"));
-        WaterBody otherWaterBody = waterBodyRepository.save(createTestWaterBody("other-river"));
-
-        List<Fish> targetFish = new ArrayList<>();
-        for (int i = 1; i <= 25; i++) {
-            Fish temp = fishRepository.save(createTestFish("target-species-" + i));
-            linkFishToWaterBody(temp, targetWaterBody);
-            targetFish.add(temp);
-        }
-
-        // different counts on each side so a mixed-up result can't accidentally have the right size
-        List<Fish> otherFish = new ArrayList<>();
-        for (int i = 1; i <= 5; i++) {
-            Fish temp = fishRepository.save(createTestFish("other-species-" + i));
-            linkFishToWaterBody(temp, otherWaterBody);
-            otherFish.add(temp);
-        }
-
-        List<Fish> fish = waterBodyService.getAllFishForWaterBody(targetWaterBody.getId());
-        assertNotNull(fish, "getAllFishForWaterBody should never return null");
-        assertEquals(25, fish.size(),
-                "Only the 25 fish linked to the target water body should be returned");
-
+        // checks by species instead of position, since the list order isn't guaranteed
         List<String> returnedSpecies = new ArrayList<>();
         for (Fish returnedFish : fish) {
             returnedSpecies.add(returnedFish.getSpecies());
         }
 
-        for (Fish linkedFish : targetFish) {
-            assertTrue(returnedSpecies.contains(linkedFish.getSpecies()),
-                    "Missing fish with species: " + linkedFish.getSpecies());
-        }
-
-        for (Fish unlinkedFish : otherFish) {
-            assertFalse(returnedSpecies.contains(unlinkedFish.getSpecies()),
-                    "Fish from another water body was returned: " + unlinkedFish.getSpecies());
+        // the count alone could pass with the wrong fish, so check each one is actually there
+        for (String species : addedSpecies) {
+            assertTrue(returnedSpecies.contains(species), "Fish with species " + species + " should be in the list");
         }
     }
 
     /**
-     * Crazy path: a fish linked to two water bodies is returned for each of them.
+     * Crappy path: an ID that no water body has returns an empty list instead of null.
      */
     @Test
-    public void testGetAllFishForWaterBodyCrazyPathSharedFish() {
-        Fish sharedFish = fishRepository.save(createTestFish("shared-species"));
-        WaterBody firstWaterBody = waterBodyRepository.save(createTestWaterBody("first-river"));
-        WaterBody secondWaterBody = waterBodyRepository.save(createTestWaterBody("second-river"));
-        linkFishToWaterBody(sharedFish, firstWaterBody);
-        linkFishToWaterBody(sharedFish, secondWaterBody);
+    public void testGetAllFishForWaterBodyCrappyPathMissingWaterBody() {
+        boolean fishAdded = fishService.addFish(new FishInput(TEST_FAMILY, TEST_SPECIES, TEST_IMAGE));
 
-        List<Fish> firstFish = waterBodyService.getAllFishForWaterBody(firstWaterBody.getId());
-        // size 1 on each side catches a bad join that returns the shared fish twice
-        assertEquals(1, firstFish.size(),
-                "Shared fish should be returned once for the first water body");
-        assertEquals(sharedFish.getId(), firstFish.getFirst().getId(),
-                "First water body should return the shared fish");
+        // setup check, if this fails then addFish or the test data is broken, not getAllFishForWaterBody
+        assertTrue(fishAdded, "The test fish should be added");
 
-        List<Fish> secondFish = waterBodyService.getAllFishForWaterBody(secondWaterBody.getId());
-        assertEquals(1, secondFish.size(),
-                "Shared fish should be returned once for the second water body");
-        assertEquals(sharedFish.getId(), secondFish.getFirst().getId(),
-                "Second water body should return the shared fish");
-    }
+        // addFish doesn't return the fish, and the database starts empty, so it's the only fish in the list
+        Fish savedFish = fishService.getAllFish().get(0);
 
-    // ---------- Helpers ----------
+        // a water body with a fish is saved so a lookup that ignored the ID would return that fish
+        boolean waterBodyAdded = waterBodyService.addWaterBody(new WaterBodyInput(
+                TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of(savedFish.getId())));
 
-    /**
-     * Builds a water body with fixed test values and the given slug.
-     *
-     * @param slug the slug to assign to the water body
-     * @return a new, unsaved water body
-     */
-    private WaterBody createTestWaterBody(String slug) {
-        WaterBody waterBody = new WaterBody();
+        // setup check, if this fails then addWaterBody or the test data is broken, not getAllFishForWaterBody
+        assertTrue(waterBodyAdded, "The test water body should be added with the fish linked");
 
-        waterBody.setName("Test River");
-        waterBody.setType("River");
-        waterBody.setState("Montana");
-        waterBody.setDescription("A river used for testing.");
+        WaterBody savedWaterBody = waterBodyService.getWaterBodyFromSlug(TEST_SLUG);
+        assertNotNull(savedWaterBody, "The test water body should be found by its slug");
 
-        // slug is the value lookups use, so callers pass a different one per water body
-        waterBody.setSlug(slug);
+        // only one water body exists in this test, so the next ID can't belong to any water body
+        final Long missingWaterBodyId = savedWaterBody.getId() + 1;
 
-        return waterBody;
+        List<Fish> fish = waterBodyService.getAllFishForWaterBody(missingWaterBodyId);
+
+        // callers loop over this list, so null would crash them where an empty list wouldn't
+        assertNotNull(fish, "getAllFishForWaterBody should never return null");
+        assertTrue(fish.isEmpty(), "An ID that no water body has should return an empty list");
     }
 
     /**
-     * Builds a fish with fixed test values and the given species.
-     *
-     * @param species the species to assign to the fish
-     * @return a new, unsaved fish
+     * Crappy path: a negative ID returns an empty list instead of null.
      */
-    private Fish createTestFish(String species) {
-        Fish fish = new Fish();
+    @Test
+    public void testGetAllFishForWaterBodyCrappyPathNegativeId() {
+        final Long negativeWaterBodyId = -100L;
 
-        fish.setFamily("test-family");
-        fish.setImage("test-image");
-        fish.setSpecies(species);
+        boolean fishAdded = fishService.addFish(new FishInput(TEST_FAMILY, TEST_SPECIES, TEST_IMAGE));
 
-        return fish;
+        // setup check, if this fails then addFish or the test data is broken, not getAllFishForWaterBody
+        assertTrue(fishAdded, "The test fish should be added");
+
+        // addFish doesn't return the fish, and the database starts empty, so it's the only fish in the list
+        Fish savedFish = fishService.getAllFish().get(0);
+
+        // a water body with a fish is saved so a lookup that ignored the ID would return that fish
+        boolean waterBodyAdded = waterBodyService.addWaterBody(new WaterBodyInput(
+                TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of(savedFish.getId())));
+
+        // setup check, if this fails then addWaterBody or the test data is broken, not getAllFishForWaterBody
+        assertTrue(waterBodyAdded, "The test water body should be added with the fish linked");
+
+        List<Fish> fish = waterBodyService.getAllFishForWaterBody(negativeWaterBodyId);
+
+        // the database never assigns negative IDs, so this can't match any water body
+        assertNotNull(fish, "getAllFishForWaterBody should never return null");
+        assertTrue(fish.isEmpty(), "A negative ID should return an empty list");
+    }
+
+    // ---------- addWaterBody ----------
+
+    /**
+     * Happy path: a valid water body is saved with every field it was given and its fish linked.
+     */
+    @Test
+    public void testAddWaterBodyHappyPath() {
+        boolean fishAdded = fishService.addFish(new FishInput(TEST_FAMILY, TEST_SPECIES, TEST_IMAGE));
+
+        // setup check, if this fails then addFish or the test data is broken, not addWaterBody
+        assertTrue(fishAdded, "The test fish should be added");
+
+        // addFish doesn't return the fish, and the database starts empty, so it's the only fish in the list
+        Fish savedFish = fishService.getAllFish().get(0);
+
+        boolean waterBodyAdded = waterBodyService.addWaterBody(new WaterBodyInput(
+                TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of(savedFish.getId())));
+
+        // valid input in every field, so addWaterBody should accept it
+        assertTrue(waterBodyAdded, "A valid water body should be added");
+
+        // getWaterBodyFromSlug is the only way to see what was saved, since tests can't use repositories
+        WaterBody savedWaterBody = waterBodyService.getWaterBodyFromSlug(TEST_SLUG);
+        assertNotNull(savedWaterBody, "The added water body should be saved under its slug");
+
+        // the database assigns the ID, so a saved water body should always have one
+        assertNotNull(savedWaterBody.getId(), "The saved water body should be given an ID");
+
+        // every field is checked so a water body saved with the wrong details doesn't pass
+        assertEquals(TEST_NAME, savedWaterBody.getName(), "The saved name should match the input");
+        assertEquals(TEST_TYPE, savedWaterBody.getType(), "The saved type should match the input");
+        assertEquals(TEST_STATE, savedWaterBody.getState(), "The saved state should match the input");
+        assertEquals(TEST_DESCRIPTION, savedWaterBody.getDescription(), "The saved description should match the input");
+        assertEquals(TEST_SLUG, savedWaterBody.getSlug(), "The saved slug should match the input");
+
+        // the fish link is part of the add, so it has to be saved too
+        List<Fish> linkedFish = waterBodyService.getAllFishForWaterBody(savedWaterBody.getId());
+        assertEquals(1, linkedFish.size(), "The water body should be saved with the one linked fish");
+        assertEquals(savedFish.getId(), linkedFish.get(0).getId(), "The linked fish should be the one given");
     }
 
     /**
-     * Links a fish to a water body through the water body's {@code @ManyToMany}.
-     *
-     * <p>Water body owns the relationship, so the link is added on its side.</p>
-     *
-     * @param fish the saved fish to link
-     * @param waterBody the saved water body to link
+     * Crappy path: a blank name, type, state, description, or slug is rejected and nothing is saved.
      */
-    private void linkFishToWaterBody(Fish fish, WaterBody waterBody) {
-        waterBody.getFishes().add(fish);
-        waterBodyRepository.save(waterBody);
+    @Test
+    public void testAddWaterBodyCrappyPathBlank() {
+        final String blank = "   ";
+
+        // each field is blanked on its own so every check gets hit separately
+        boolean blankNameAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(blank, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+        assertFalse(blankNameAdded, "A water body with a blank name should not be added");
+
+        boolean blankTypeAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, blank, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+        assertFalse(blankTypeAdded, "A water body with a blank type should not be added");
+
+        boolean blankStateAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, blank, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+        assertFalse(blankStateAdded, "A water body with a blank state should not be added");
+
+        boolean blankDescriptionAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, blank, TEST_SLUG, List.of()));
+        assertFalse(blankDescriptionAdded, "A water body with a blank description should not be added");
+
+        boolean blankSlugAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, blank, List.of()));
+        assertFalse(blankSlugAdded, "A water body with a blank slug should not be added");
+
+        // a rejected add returning false isn't enough, nothing should have been saved either
+        assertTrue(waterBodyService.getAllWaterBodies().isEmpty(), "No rejected water body should be saved");
     }
 
     /**
-     * Collects the slugs of a list of water bodies.
-     *
-     * @param waterBodies the water bodies to collect slugs from
-     * @return the slugs in the same order
+     * Crappy path: a name, type, state, description, or slug over its limit is rejected and nothing is saved.
      */
-    private List<String> getWaterBodySlugs(List<WaterBody> waterBodies) {
-        List<String> slugs = new ArrayList<>();
+    @Test
+    public void testAddWaterBodyCrappyPathTooLong() {
+        // one character over the limits the WaterBodyService interface gives for each field
+        final String tooLongName = "a".repeat(251);
+        final String tooLongState = "b".repeat(101);
+        final String tooLongDescription = "c".repeat(1001);
+        final String tooLongSlug = "d".repeat(101);
 
-        for (WaterBody waterBody : waterBodies) {
-            slugs.add(waterBody.getSlug());
-        }
+        // type has no length limit of its own, but anything other than River, Lake, or Stream is rejected
+        final String tooLongType = "River".repeat(21);
 
-        return slugs;
+        // each field is too long on its own so every check gets hit separately
+        boolean longNameAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(tooLongName, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+        assertFalse(longNameAdded, "A name over 250 characters should not be added");
+
+        boolean longTypeAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, tooLongType, TEST_STATE, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+        assertFalse(longTypeAdded, "A type that is not River, Lake, or Stream should not be added");
+
+        boolean longStateAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, tooLongState, TEST_DESCRIPTION, TEST_SLUG, List.of()));
+        assertFalse(longStateAdded, "A state over 100 characters should not be added");
+
+        boolean longDescriptionAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, tooLongDescription, TEST_SLUG, List.of()));
+        assertFalse(longDescriptionAdded, "A description over 1000 characters should not be added");
+
+        boolean longSlugAdded = waterBodyService.addWaterBody(
+                new WaterBodyInput(TEST_NAME, TEST_TYPE, TEST_STATE, TEST_DESCRIPTION, tooLongSlug, List.of()));
+        assertFalse(longSlugAdded, "A slug over 100 characters should not be added");
+
+        // a rejected add returning false isn't enough, nothing should have been saved either
+        assertTrue(waterBodyService.getAllWaterBodies().isEmpty(), "No rejected water body should be saved");
     }
 }
