@@ -1,39 +1,34 @@
 package edu.carroll.cs341.hookset.service;
 
-import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
 import edu.carroll.cs341.hookset.service.input.PasswordChangeInput;
 import edu.carroll.cs341.hookset.service.input.SignupInput;
-import org.junit.jupiter.api.BeforeEach;
+import edu.carroll.cs341.hookset.userDetails.HooksetUserDetails;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import entities.jpa.entity.User;
-
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Integration tests for {@link edu.carroll.cs341.hookset.service.impl.UserServiceImpl}.
+ * Integration tests for {@link UserService}.
  *
- * <p>Each service method is tested against a happy path, a crappy path, and one or more
- * crazy paths. Happy paths cover valid input with an expected result. Crappy paths cover
- * input the service is designed to reject, such as blank, too long, or taken usernames.
- * Crazy paths cover unusual input such as null values, names made only of spaces, and
- * values sitting exactly on a length limit.</p>
+ * <p>Each service method is tested against a happy path and a crappy path. Happy
+ * paths cover valid input that should be saved or pass a check. Crappy paths cover
+ * bad input that should be rejected or fail a check without changing anything.</p>
  *
- * <p>The service never reads the login itself, so tests pass the user's ID directly.
- * Two users are saved before each test so their IDs exist.</p>
+ * <p>Length checks are tested right at their limits, since that's where an
+ * off-by-one mistake would show up.</p>
  *
- * <p>Checks go through the service wherever it can answer them. The repository is only
- * used for what the service can't tell us, such as user counts, saved hashes, and the
- * exact saved username.</p>
+ * <p>Test users are created through {@link UserService#addUser(SignupInput)}, and what
+ * was saved is checked through {@link LoginService}, so no repositories are used.</p>
  *
- * <p>Tests run against the H2 test database and each test is rolled back by
- * {@link Transactional}.</p>
+ * <p>Tests run against the H2 test database, which starts empty, and each test is
+ * rolled back by {@link Transactional}.</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -44,448 +39,276 @@ public class UserServiceTest {
     @Autowired
     private UserService userService;
 
-    /** Repository used to set up and check user test data. */
+    /** Service used to load saved users, since tests can't use repositories. */
     @Autowired
-    private UserRepository userRepository;
+    private LoginService loginService;
 
-    /** Password encoder used to hash test user passwords the same way signup does. */
+    /** Password encoder used to check that a saved password is the hash of the expected password. */
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /** The main user each test acts as. */
-    private User testUser;
+    /** The username given to the main test user. */
+    private static final String TEST_USERNAME = "testuser";
 
-    /** A second user used to check that a password change only affects its own user. */
-    private User otherUser;
+    /** The plain text password the main test user signs up with. */
+    private static final String TEST_PASSWORD = "test-password";
+
+    /** The plain text password used when changing the test user's password. */
+    private static final String NEW_PASSWORD = "new-password";
+
+    // ---------- changePassword ----------
 
     /**
-     * Saves two test users before each test.
+     * Happy path: a valid new password replaces the user's old one.
      */
-    @BeforeEach
-    public void setUpUsers() {
-        testUser = userRepository.save(createTestUser("testuser"));
-        otherUser = userRepository.save(createTestUser("otheruser"));
+    @Test
+    public void testChangePasswordHappyPath() {
+        // the user is added through the service, since tests can't use repositories
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
+
+        // setup check, if this fails then addUser or the test data is broken, not changePassword
+        assertTrue(userAdded, "The test user should be added");
+
+        // addUser doesn't return the user, so loading it is how the test gets its ID
+        UserDetails savedUser = loginService.loadUserByUsername(TEST_USERNAME);
+
+        // the ID is only on Hookset's own user details, so the loaded user has to be that type
+        assertInstanceOf(HooksetUserDetails.class, savedUser, "The loaded user should be a HooksetUserDetails");
+        Long userId = ((HooksetUserDetails) savedUser).getId();
+
+        boolean passwordChanged = userService.changePassword(new PasswordChangeInput(NEW_PASSWORD, NEW_PASSWORD), userId);
+
+        // valid matching passwords for a real user, so the change should be accepted
+        assertTrue(passwordChanged, "A valid password change should be accepted");
+
+        UserDetails updatedUser = loginService.loadUserByUsername(TEST_USERNAME);
+
+        // returning true isn't enough, the saved hash has to actually be the new password
+        assertTrue(passwordEncoder.matches(NEW_PASSWORD, updatedUser.getPassword()),
+                "The saved password should be the hash of the new password");
+
+        // the old password should stop working once it's been replaced
+        assertFalse(passwordEncoder.matches(TEST_PASSWORD, updatedUser.getPassword()),
+                "The old password should no longer match");
+    }
+
+    /**
+     * Crappy path: changing the password of a user that doesn't exist is rejected.
+     */
+    @Test
+    public void testChangePasswordCrappyPathMissingUser() {
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
+
+        // setup check, if this fails then addUser or the test data is broken, not changePassword
+        assertTrue(userAdded, "The test user should be added");
+
+        UserDetails savedUser = loginService.loadUserByUsername(TEST_USERNAME);
+
+        // the ID is only on Hookset's own user details, so the loaded user has to be that type
+        assertInstanceOf(HooksetUserDetails.class, savedUser, "The loaded user should be a HooksetUserDetails");
+
+        // only one user exists in this test, so the next ID can't belong to any user
+        final Long missingUserId = ((HooksetUserDetails) savedUser).getId() + 1;
+
+        boolean passwordChanged = userService.changePassword(
+                new PasswordChangeInput(NEW_PASSWORD, NEW_PASSWORD), missingUserId);
+
+        // there's no user with this ID, so there's no password to change
+        assertFalse(passwordChanged, "Changing the password of a user that doesn't exist should be rejected");
+
+        // a change aimed at the wrong ID shouldn't touch the real user's password
+        UserDetails unchangedUser = loginService.loadUserByUsername(TEST_USERNAME);
+        assertTrue(passwordEncoder.matches(TEST_PASSWORD, unchangedUser.getPassword()),
+                "The existing user's password should not change");
+    }
+
+    /**
+     * Crappy path: a new password that doesn't match its confirmation is rejected.
+     */
+    @Test
+    public void testChangePasswordCrappyPathPasswordsDontMatch() {
+        final String otherPassword = "other-password";
+
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
+
+        // setup check, if this fails then addUser or the test data is broken, not changePassword
+        assertTrue(userAdded, "The test user should be added");
+
+        UserDetails savedUser = loginService.loadUserByUsername(TEST_USERNAME);
+
+        // the ID is only on Hookset's own user details, so the loaded user has to be that type
+        assertInstanceOf(HooksetUserDetails.class, savedUser, "The loaded user should be a HooksetUserDetails");
+        Long userId = ((HooksetUserDetails) savedUser).getId();
+
+        boolean passwordChanged = userService.changePassword(
+                new PasswordChangeInput(NEW_PASSWORD, otherPassword), userId);
+
+        // both passwords are valid on their own, so the mismatch is the only reason to reject this
+        assertFalse(passwordChanged, "A password that doesn't match its confirmation should be rejected");
+
+        // a rejected change shouldn't touch the saved password
+        UserDetails unchangedUser = loginService.loadUserByUsername(TEST_USERNAME);
+        assertTrue(passwordEncoder.matches(TEST_PASSWORD, unchangedUser.getPassword()),
+                "The user's password should not change");
+    }
+
+    /**
+     * Crappy path: a new password over the max length is rejected.
+     */
+    @Test
+    public void testChangePasswordCrappyPathTooLong() {
+        // one character over the max password length
+        final String tooLongPassword = "a".repeat(19);
+
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
+
+        // setup check, if this fails then addUser or the test data is broken, not changePassword
+        assertTrue(userAdded, "The test user should be added");
+
+        UserDetails savedUser = loginService.loadUserByUsername(TEST_USERNAME);
+
+        // the ID is only on Hookset's own user details, so the loaded user has to be that type
+        assertInstanceOf(HooksetUserDetails.class, savedUser, "The loaded user should be a HooksetUserDetails");
+        Long userId = ((HooksetUserDetails) savedUser).getId();
+
+        boolean passwordChanged = userService.changePassword(
+                new PasswordChangeInput(tooLongPassword, tooLongPassword), userId);
+
+        // the passwords match, so the length is the only reason to reject this
+        assertFalse(passwordChanged, "A password over 18 characters should be rejected");
+
+        // a rejected change shouldn't touch the saved password
+        UserDetails unchangedUser = loginService.loadUserByUsername(TEST_USERNAME);
+        assertTrue(passwordEncoder.matches(TEST_PASSWORD, unchangedUser.getPassword()),
+                "The user's password should not change");
+    }
+
+    /**
+     * Crappy path: a new password under the min length is rejected.
+     */
+    @Test
+    public void testChangePasswordCrappyPathTooShort() {
+        // one character under the min password length
+        final String tooShortPassword = "a".repeat(7);
+
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
+
+        // setup check, if this fails then addUser or the test data is broken, not changePassword
+        assertTrue(userAdded, "The test user should be added");
+
+        UserDetails savedUser = loginService.loadUserByUsername(TEST_USERNAME);
+
+        // the ID is only on Hookset's own user details, so the loaded user has to be that type
+        assertInstanceOf(HooksetUserDetails.class, savedUser, "The loaded user should be a HooksetUserDetails");
+        Long userId = ((HooksetUserDetails) savedUser).getId();
+
+        boolean passwordChanged = userService.changePassword(
+                new PasswordChangeInput(tooShortPassword, tooShortPassword), userId);
+
+        // the passwords match, so the length is the only reason to reject this
+        assertFalse(passwordChanged, "A password under 8 characters should be rejected");
+
+        // a rejected change shouldn't touch the saved password
+        UserDetails unchangedUser = loginService.loadUserByUsername(TEST_USERNAME);
+        assertTrue(passwordEncoder.matches(TEST_PASSWORD, unchangedUser.getPassword()),
+                "The user's password should not change");
     }
 
     // ---------- addUser ----------
 
     /**
-     * Happy path: a valid signup creates one new user.
+     * Happy path: a valid signup is saved and can be loaded with its password.
      */
     @Test
     public void testAddUserHappyPath() {
-        String username = "testusername";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
 
-        int before = userRepository.findAll().size();
+        // valid input in every field, so addUser should accept it
+        assertTrue(userAdded, "A valid user should be added");
 
-        boolean result = userService.addUser(signupInput);
-        assertTrue(result, "A valid signup should be saved");
+        // loading the user is the only way to see what was saved, since tests can't use repositories
+        UserDetails savedUser = loginService.loadUserByUsername(TEST_USERNAME);
+        assertNotNull(savedUser, "The added user should be saved");
+        assertEquals(TEST_USERNAME, savedUser.getUsername(), "The saved username should match the input");
 
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before + 1, after, "User count should grow by one");
-
-        assertTrue(userService.isUsernameTaken(username), "The new username should now be taken");
+        // the password is stored as a hash, so it's checked with the encoder instead of compared directly
+        assertTrue(passwordEncoder.matches(TEST_PASSWORD, savedUser.getPassword()),
+                "The saved password should be the hash of the input password");
     }
 
     /**
-     * Happy path: a mixed case username is saved in lowercase.
+     * Crappy path: a blank or too long username is rejected and no user is saved.
      */
     @Test
-    public void testAddUserHappyPathMixedCaseSavedLowercase() {
-        String username = "NewUser";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
+    public void testAddUserCrappyPathUsername() {
+        final String blankUsername = "   ";
 
-        int before = userRepository.findAll().size();
+        // one character over the max username length
+        final String tooLongUsername = "a".repeat(21);
 
-        boolean result = userService.addUser(signupInput);
-        assertTrue(result, "A valid mixed case signup should be saved");
+        boolean blankUsernameAdded = userService.addUser(new SignupInput(blankUsername, TEST_PASSWORD, TEST_PASSWORD));
+        assertFalse(blankUsernameAdded, "A user with a blank username should not be added");
 
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before + 1, after, "User count should grow by one");
+        boolean tooLongUsernameAdded = userService.addUser(
+                new SignupInput(tooLongUsername, TEST_PASSWORD, TEST_PASSWORD));
+        assertFalse(tooLongUsernameAdded, "A username over 20 characters should not be added");
 
-        // repository instead of isUsernameTaken, since that lowercases its input and can't prove how the name was saved
-        User savedUser = userRepository.findByUsername("newuser");
-        assertNotNull(savedUser, "The new user should be saved under the lowercase name");
-        assertEquals("newuser", savedUser.getUsername(), "Saved username should be lowercase");
+        // a rejected add returning false isn't enough, the user shouldn't have been saved either
+        assertThrows(UsernameNotFoundException.class,
+                () -> loginService.loadUserByUsername(tooLongUsername),
+                "The too long username should not be saved");
     }
 
     /**
-     * Crappy path: a blank username is rejected and nothing is saved.
+     * Crappy path: a blank, too short, or too long password is rejected and no user is saved.
      */
     @Test
-    public void testAddUserCrappyPathUsernameBlank() {
-        String username = "";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
+    public void testAddUserCrappyPathPassword() {
+        final String blankPassword = "   ";
 
-        int before = userRepository.findAll().size();
+        // one character under the min and one over the max password length
+        final String tooShortPassword = "a".repeat(7);
+        final String tooLongPassword = "a".repeat(19);
 
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A blank username should be rejected");
+        // each password matches its confirmation, so the password itself is the only problem
+        boolean blankPasswordAdded = userService.addUser(new SignupInput(TEST_USERNAME, blankPassword, blankPassword));
+        assertFalse(blankPasswordAdded, "A user with a blank password should not be added");
 
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
+        boolean tooShortPasswordAdded = userService.addUser(
+                new SignupInput(TEST_USERNAME, tooShortPassword, tooShortPassword));
+        assertFalse(tooShortPasswordAdded, "A password under 8 characters should not be added");
+
+        boolean tooLongPasswordAdded = userService.addUser(
+                new SignupInput(TEST_USERNAME, tooLongPassword, tooLongPassword));
+        assertFalse(tooLongPasswordAdded, "A password over 18 characters should not be added");
+
+        // a rejected add returning false isn't enough, the user shouldn't have been saved either
+        assertThrows(UsernameNotFoundException.class,
+                () -> loginService.loadUserByUsername(TEST_USERNAME),
+                "No user should be saved when every password is rejected");
     }
 
     /**
-     * Crappy path: a 21 character username is rejected and nothing is saved.
+     * Crappy path: a blank or mismatched password confirmation is rejected and no user is saved.
      */
     @Test
-    public void testAddUserCrappyPathUsernameTooLong() {
-        // one over the VARCHAR(20) username column
-        String username = "abcdefghijklmnopqrstu";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A username over 20 characters should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crappy path: a username with a space is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrappyPathUsernameHasSpaces() {
-        String username = "test user";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A username with spaces should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crappy path: a username that already exists is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrappyPathUsernameTaken() {
-        // "testuser" is saved in setUpUsers before every test
-        String username = "testuser";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A taken username should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-    }
-
-    /**
-     * Crappy path: a taken username in different case is still rejected.
-     */
-    @Test
-    public void testAddUserCrappyPathUsernameTakenDifferentCase() {
-        String username = "TESTUSER";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A taken username should be rejected regardless of case");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-    }
-
-    /**
-     * Crappy path: a password that doesn't match its confirmation is rejected.
-     */
-    @Test
-    public void testAddUserCrappyPathPasswordsDontMatch() {
-        String username = "newuser";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, "differentPassword1");
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "Mismatched passwords should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crappy path: a blank password is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrappyPathPasswordBlank() {
-        String username = "newuser";
-        String password = "";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A blank password should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crappy path: a 7 character password is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrappyPathPasswordTooShort() {
-        // one under the 8 character minimum
-        String username = "newuser";
-        String password = "passwor";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A password under 8 characters should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crappy path: a password over the 18 character limit is rejected instead of crashing BCrypt.
-     */
-    @Test
-    public void testAddUserCrappyPathPasswordTooLong() {
-        // well over the 18 character cap, and over BCrypt's 72 byte limit too
-        String username = "newuser";
-        String password = "a".repeat(73);
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A password over 18 characters should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crappy path: a password with a space is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrappyPathPasswordHasSpaces() {
-        String username = "newuser";
-        String password = "test Password1";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A password with spaces should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crazy path: a null input is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrazyPathNullSignupInput() {
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(null);
-        assertFalse(result, "A null signup input should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-    }
-
-    /**
-     * Crazy path: a null username is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrazyPathNullUsername() {
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(null, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A null username should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-    }
-
-    /**
-     * Crazy path: a null password is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrazyPathNullPassword() {
-        String username = "newuser";
-        SignupInput signupInput = createSignupInput(username, null, null);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A null password should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-
-        assertFalse(userService.isUsernameTaken(username), "The rejected username should not be taken");
-    }
-
-    /**
-     * Crazy path: a username of only spaces is rejected and nothing is saved.
-     */
-    @Test
-    public void testAddUserCrazyPathUsernameAllSpaces() {
-        // blank and contains spaces at once, either check alone should reject it
-        String username = "   ";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertFalse(result, "A username of only spaces should be rejected");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before, after, "No user should be saved");
-    }
-
-    /**
-     * Crazy path: a username of exactly 20 characters is allowed.
-     */
-    @Test
-    public void testAddUserCrazyPathUsernameExactly20Characters() {
-        // boundary case, catches a > that should have been >= in isUsernameTooLong
-        String username = "abcdefghijklmnopqrst";
-        String password = "testPassword1";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertTrue(result, "A username of exactly 20 characters should be allowed");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before + 1, after, "User count should grow by one");
-
-        assertTrue(userService.isUsernameTaken(username), "The new username should now be taken");
-    }
-
-    /**
-     * Crazy path: a password of exactly 8 characters is allowed.
-     */
-    @Test
-    public void testAddUserCrazyPathPasswordExactly8Characters() {
-        // boundary case, catches a < that should have been <= in isPasswordTooShort
-        String username = "newuser";
-        String password = "password";
-        SignupInput signupInput = createSignupInput(username, password, password);
-
-        int before = userRepository.findAll().size();
-
-        boolean result = userService.addUser(signupInput);
-        assertTrue(result, "A password of exactly 8 characters should be allowed");
-
-        List<User> userList = userRepository.findAll();
-        int after = userList.size();
-        assertEquals(before + 1, after, "User count should grow by one");
-
-        assertTrue(userService.isUsernameTaken(username), "The new username should now be taken");
-    }
-
-    // ---------- changePassword ----------
-
-    /**
-     * Happy path: the user's password is changed and the new one verifies against the saved hash.
-     */
-    @Test
-    public void testChangePasswordHappyPath() {
-        String newPassword = "newPassword1";
-        PasswordChangeInput passwordChangeInput = createPasswordChangeInput(newPassword, newPassword);
-
-        boolean result = userService.changePassword(passwordChangeInput, testUser.getId());
-        assertTrue(result, "A valid password change should succeed");
-
-        User updatedUser = userRepository.findByUsername("testuser");
-        assertNotNull(updatedUser, "The user should still exist after a password change");
-
-        // the hash is salted, so matches() is the only way to confirm the new password was set
-        assertTrue(passwordEncoder.matches(newPassword, updatedUser.getHashPassword()),
-                "The saved hash should match the new password");
-        assertFalse(passwordEncoder.matches("test-password", updatedUser.getHashPassword()),
-                "The old password should no longer match");
-
-        // the other user's password should be untouched, so a change that hit the wrong row or every row would fail here
-        User untouchedUser = userRepository.findByUsername(otherUser.getUsername());
-        assertNotNull(untouchedUser, "The other user should still exist after a password change");
-        assertTrue(passwordEncoder.matches("test-password", untouchedUser.getHashPassword()),
-                "The other user's password should not change");
-    }
-
-    /**
-     * Crappy path: a new password that doesn't match its confirmation is rejected and the old password stays.
-     */
-    @Test
-    public void testChangePasswordCrappyPath() {
-        String newPassword = "newPassword1";
-        PasswordChangeInput passwordChangeInput = createPasswordChangeInput(newPassword, "differentPassword1");
-
-        boolean result = userService.changePassword(passwordChangeInput, testUser.getId());
-        assertFalse(result, "A password change with a mismatched confirmation should be rejected");
-
-        User unchangedUser = userRepository.findByUsername("testuser");
-        assertNotNull(unchangedUser, "The user should still exist after a rejected password change");
-
-        assertTrue(passwordEncoder.matches("test-password", unchangedUser.getHashPassword()),
-                "The old password should still match");
-        assertFalse(passwordEncoder.matches(newPassword, unchangedUser.getHashPassword()),
-                "The rejected new password should not match");
+    public void testAddUserCrappyPathConfirmPassword() {
+        final String blankConfirmPassword = "   ";
+        final String otherPassword = "other-password";
+
+        // the password itself is valid, so the confirmation is the only problem
+        boolean blankConfirmAdded = userService.addUser(
+                new SignupInput(TEST_USERNAME, TEST_PASSWORD, blankConfirmPassword));
+        assertFalse(blankConfirmAdded, "A user with a blank password confirmation should not be added");
+
+        boolean mismatchedConfirmAdded = userService.addUser(
+                new SignupInput(TEST_USERNAME, TEST_PASSWORD, otherPassword));
+        assertFalse(mismatchedConfirmAdded, "A password that doesn't match its confirmation should not be added");
+
+        // a rejected add returning false isn't enough, the user shouldn't have been saved either
+        assertThrows(UsernameNotFoundException.class,
+                () -> loginService.loadUserByUsername(TEST_USERNAME),
+                "No user should be saved when the confirmation is rejected");
     }
 
     // ---------- isUsernameBlank ----------
@@ -495,38 +318,59 @@ public class UserServiceTest {
      */
     @Test
     public void testIsUsernameBlankHappyPath() {
-        assertFalse(userService.isUsernameBlank("newuser"),
-                "A normal username should not be blank");
+        boolean usernameBlank = userService.isUsernameBlank(TEST_USERNAME);
+
+        // the username has real characters in it, so it shouldn't count as blank
+        assertFalse(usernameBlank, "A normal username should not be blank");
     }
 
     /**
-     * Crappy path: an empty username is blank.
+     * Crappy path: an empty or whitespace-only username is blank.
      */
     @Test
     public void testIsUsernameBlankCrappyPath() {
-        assertTrue(userService.isUsernameBlank(""),
-                "An empty username should be blank");
+        final String emptyUsername = "";
+        final String spacesUsername = "   ";
+
+        // nothing at all is the simplest blank
+        boolean emptyBlank = userService.isUsernameBlank(emptyUsername);
+        assertTrue(emptyBlank, "An empty username should be blank");
+
+        // only spaces looks like something was typed, but there's still no username
+        boolean spacesBlank = userService.isUsernameBlank(spacesUsername);
+        assertTrue(spacesBlank, "A username of only spaces should be blank");
     }
 
     // ---------- isUsernameTooLong ----------
 
     /**
-     * Happy path: a normal length username is not too long.
+     * Happy path: a username at or under 20 characters is not too long.
      */
     @Test
     public void testIsUsernameTooLongHappyPath() {
-        assertFalse(userService.isUsernameTooLong("newuser"),
-                "A normal length username should not be too long");
+        // exactly at the limit, which is still allowed
+        final String maxLengthUsername = "a".repeat(20);
+
+        boolean normalTooLong = userService.isUsernameTooLong(TEST_USERNAME);
+        assertFalse(normalTooLong, "A normal username should not be too long");
+
+        // the limit itself is where an off-by-one mistake would wrongly reject a username
+        boolean maxLengthTooLong = userService.isUsernameTooLong(maxLengthUsername);
+        assertFalse(maxLengthTooLong, "A username of exactly 20 characters should not be too long");
     }
 
     /**
-     * Crappy path: a 21 character username is too long.
+     * Crappy path: a username over 20 characters is too long.
      */
     @Test
     public void testIsUsernameTooLongCrappyPath() {
-        // one over the 20 character limit
-        assertTrue(userService.isUsernameTooLong("abcdefghijklmnopqrstu"),
-                "A username over 20 characters should be too long");
+        // one character over the limit
+        final String tooLongUsername = "a".repeat(21);
+
+        boolean usernameTooLong = userService.isUsernameTooLong(tooLongUsername);
+
+        // the first length past the limit is where an off-by-one mistake would wrongly allow a username
+        assertTrue(usernameTooLong, "A username of 21 characters should be too long");
     }
 
     // ---------- isUsernameSpaceFree ----------
@@ -536,38 +380,74 @@ public class UserServiceTest {
      */
     @Test
     public void testIsUsernameSpaceFreeHappyPath() {
-        assertTrue(userService.isUsernameSpaceFree("newuser"),
-                "A username with no spaces should be space free");
+        boolean usernameSpaceFree = userService.isUsernameSpaceFree(TEST_USERNAME);
+
+        // the test username has no spaces, so it should pass
+        assertTrue(usernameSpaceFree, "A username with no spaces should be space free");
     }
 
     /**
-     * Crappy path: a username with a space is not space free.
+     * Crappy path: a username with a space anywhere in it is not space free.
      */
     @Test
     public void testIsUsernameSpaceFreeCrappyPath() {
-        assertFalse(userService.isUsernameSpaceFree("test user"),
-                "A username with a space should not be space free");
+        final String middleSpaceUsername = "test user";
+        final String leadingSpaceUsername = " testuser";
+        final String trailingSpaceUsername = "testuser ";
+
+        // a space in the middle is the obvious case
+        boolean middleSpaceFree = userService.isUsernameSpaceFree(middleSpaceUsername);
+        assertFalse(middleSpaceFree, "A username with a space in the middle should not be space free");
+
+        // spaces at the ends are easy to miss when typing, so they need to be caught too
+        boolean leadingSpaceFree = userService.isUsernameSpaceFree(leadingSpaceUsername);
+        assertFalse(leadingSpaceFree, "A username starting with a space should not be space free");
+
+        boolean trailingSpaceFree = userService.isUsernameSpaceFree(trailingSpaceUsername);
+        assertFalse(trailingSpaceFree, "A username ending with a space should not be space free");
     }
 
     // ---------- isUsernameTaken ----------
 
     /**
-     * Happy path: a username nobody has used is not taken.
+     * Happy path: a username no account uses is not taken.
      */
     @Test
     public void testIsUsernameTakenHappyPath() {
-        assertFalse(userService.isUsernameTaken("brandnewuser"),
-                "An unused username should not be taken");
+        final String freeUsername = "freeuser";
+
+        // a user is saved so a check that ignored the username and said taken would fail this test
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
+
+        // setup check, if this fails then addUser or the test data is broken, not isUsernameTaken
+        assertTrue(userAdded, "The test user should be added");
+
+        boolean usernameTaken = userService.isUsernameTaken(freeUsername);
+
+        // no account was created with this username, so it should be free to use
+        assertFalse(usernameTaken, "A username no account uses should not be taken");
     }
 
     /**
-     * Crappy path: a username that already exists is taken.
+     * Crappy path: a username an account already uses is taken, in any capitalization.
      */
     @Test
     public void testIsUsernameTakenCrappyPath() {
-        // "testuser" is saved in setUpUsers before every test
-        assertTrue(userService.isUsernameTaken("testuser"),
-                "An existing username should be taken");
+        // same username as the saved user with different capitalization
+        final String mixedCaseUsername = "TestUser";
+
+        boolean userAdded = userService.addUser(new SignupInput(TEST_USERNAME, TEST_PASSWORD, TEST_PASSWORD));
+
+        // setup check, if this fails then addUser or the test data is broken, not isUsernameTaken
+        assertTrue(userAdded, "The test user should be added");
+
+        // the exact saved username is the obvious duplicate
+        boolean exactTaken = userService.isUsernameTaken(TEST_USERNAME);
+        assertTrue(exactTaken, "A username an account already uses should be taken");
+
+        // the interface says the comparison ignores case, so a different capitalization is still a duplicate
+        boolean mixedCaseTaken = userService.isUsernameTaken(mixedCaseUsername);
+        assertTrue(mixedCaseTaken, "A taken username in a different case should still be taken");
     }
 
     // ---------- doPasswordsMatch ----------
@@ -577,17 +457,29 @@ public class UserServiceTest {
      */
     @Test
     public void testDoPasswordsMatchHappyPath() {
-        assertTrue(userService.doPasswordsMatch("testPassword1", "testPassword1"),
-                "Identical passwords should match");
+        boolean passwordsMatch = userService.doPasswordsMatch(TEST_PASSWORD, TEST_PASSWORD);
+
+        // both values are the same, so they should match
+        assertTrue(passwordsMatch, "Identical passwords should match");
     }
 
     /**
-     * Crappy path: a password and a different confirmation don't match.
+     * Crappy path: a password and a different confirmation don't match, even if only the case differs.
      */
     @Test
     public void testDoPasswordsMatchCrappyPath() {
-        assertFalse(userService.doPasswordsMatch("testPassword1", "differentPassword1"),
-                "Different passwords should not match");
+        final String otherPassword = "other-password";
+
+        // same password as the test password with different capitalization
+        final String mixedCasePassword = "Test-Password";
+
+        // completely different passwords are the obvious mismatch
+        boolean differentMatch = userService.doPasswordsMatch(TEST_PASSWORD, otherPassword);
+        assertFalse(differentMatch, "Different passwords should not match");
+
+        // passwords are case sensitive, so a different capitalization is a different password
+        boolean caseMatch = userService.doPasswordsMatch(TEST_PASSWORD, mixedCasePassword);
+        assertFalse(caseMatch, "Passwords that only differ by case should not match");
     }
 
     // ---------- isPasswordBlank ----------
@@ -597,59 +489,91 @@ public class UserServiceTest {
      */
     @Test
     public void testIsPasswordBlankHappyPath() {
-        assertFalse(userService.isPasswordBlank("testPassword1"),
-                "A normal password should not be blank");
+        boolean passwordBlank = userService.isPasswordBlank(TEST_PASSWORD);
+
+        // the password has real characters in it, so it shouldn't count as blank
+        assertFalse(passwordBlank, "A normal password should not be blank");
     }
 
     /**
-     * Crappy path: an empty password is blank.
+     * Crappy path: an empty or whitespace-only password is blank.
      */
     @Test
     public void testIsPasswordBlankCrappyPath() {
-        assertTrue(userService.isPasswordBlank(""),
-                "An empty password should be blank");
+        final String emptyPassword = "";
+        final String spacesPassword = "   ";
+
+        // nothing at all is the simplest blank
+        boolean emptyBlank = userService.isPasswordBlank(emptyPassword);
+        assertTrue(emptyBlank, "An empty password should be blank");
+
+        // only spaces looks like something was typed, but there's still no password
+        boolean spacesBlank = userService.isPasswordBlank(spacesPassword);
+        assertTrue(spacesBlank, "A password of only spaces should be blank");
     }
 
     // ---------- isPasswordTooShort ----------
 
     /**
-     * Happy path: a normal length password is not too short.
+     * Happy path: a password at or over 8 characters is not too short.
      */
     @Test
     public void testIsPasswordTooShortHappyPath() {
-        assertFalse(userService.isPasswordTooShort("testPassword1"),
-                "A normal length password should not be too short");
+        // exactly at the limit, which is still allowed
+        final String minLengthPassword = "a".repeat(8);
+
+        boolean normalTooShort = userService.isPasswordTooShort(TEST_PASSWORD);
+        assertFalse(normalTooShort, "A normal password should not be too short");
+
+        // the limit itself is where an off-by-one mistake would wrongly reject a password
+        boolean minLengthTooShort = userService.isPasswordTooShort(minLengthPassword);
+        assertFalse(minLengthTooShort, "A password of exactly 8 characters should not be too short");
     }
 
     /**
-     * Crappy path: a 7 character password is too short.
+     * Crappy path: a password under 8 characters is too short.
      */
     @Test
     public void testIsPasswordTooShortCrappyPath() {
-        // one under the 8 character minimum
-        assertTrue(userService.isPasswordTooShort("passwor"),
-                "A password under 8 characters should be too short");
+        // one character under the limit
+        final String tooShortPassword = "a".repeat(7);
+
+        boolean passwordTooShort = userService.isPasswordTooShort(tooShortPassword);
+
+        // the first length under the limit is where an off-by-one mistake would wrongly allow a password
+        assertTrue(passwordTooShort, "A password of 7 characters should be too short");
     }
 
     // ---------- isPasswordTooLong ----------
 
     /**
-     * Happy path: a normal length password is not too long.
+     * Happy path: a password at or under 18 characters is not too long.
      */
     @Test
     public void testIsPasswordTooLongHappyPath() {
-        assertFalse(userService.isPasswordTooLong("testPassword1"),
-                "A normal length password should not be too long");
+        // exactly at the limit, which is still allowed
+        final String maxLengthPassword = "a".repeat(18);
+
+        boolean normalTooLong = userService.isPasswordTooLong(TEST_PASSWORD);
+        assertFalse(normalTooLong, "A normal password should not be too long");
+
+        // the limit itself is where an off-by-one mistake would wrongly reject a password
+        boolean maxLengthTooLong = userService.isPasswordTooLong(maxLengthPassword);
+        assertFalse(maxLengthTooLong, "A password of exactly 18 characters should not be too long");
     }
 
     /**
-     * Crappy path: a 19 character password is too long.
+     * Crappy path: a password over 18 characters is too long.
      */
     @Test
     public void testIsPasswordTooLongCrappyPath() {
-        // one over the 18 character limit
-        assertTrue(userService.isPasswordTooLong("a".repeat(19)),
-                "A password over 18 characters should be too long");
+        // one character over the limit
+        final String tooLongPassword = "a".repeat(19);
+
+        boolean passwordTooLong = userService.isPasswordTooLong(tooLongPassword);
+
+        // the first length past the limit is where an off-by-one mistake would wrongly allow a password
+        assertTrue(passwordTooLong, "A password of 19 characters should be too long");
     }
 
     // ---------- isPasswordSpaceFree ----------
@@ -659,59 +583,30 @@ public class UserServiceTest {
      */
     @Test
     public void testIsPasswordSpaceFreeHappyPath() {
-        assertTrue(userService.isPasswordSpaceFree("testPassword1"),
-                "A password with no spaces should be space free");
+        boolean passwordSpaceFree = userService.isPasswordSpaceFree(TEST_PASSWORD);
+
+        // the test password has no spaces, so it should pass
+        assertTrue(passwordSpaceFree, "A password with no spaces should be space free");
     }
 
     /**
-     * Crappy path: a password with a space is not space free.
+     * Crappy path: a password with a space anywhere in it is not space free.
      */
     @Test
     public void testIsPasswordSpaceFreeCrappyPath() {
-        assertFalse(userService.isPasswordSpaceFree("test Password1"),
-                "A password with a space should not be space free");
-    }
+        final String middleSpacePassword = "test password";
+        final String leadingSpacePassword = " test-password";
+        final String trailingSpacePassword = "test-password ";
 
-    // ---------- Helpers ----------
+        // a space in the middle is the obvious case
+        boolean middleSpaceFree = userService.isPasswordSpaceFree(middleSpacePassword);
+        assertFalse(middleSpaceFree, "A password with a space in the middle should not be space free");
 
-    /**
-     * Builds a user with fixed test values and the given username.
-     *
-     * <p>The password is hashed with the app's password encoder, the same way signup stores it.</p>
-     *
-     * @param username the username to assign to the user
-     * @return a new, unsaved user
-     */
-    private User createTestUser(String username) {
-        User user = new User();
+        // spaces at the ends are easy to miss when typing, so they need to be caught too
+        boolean leadingSpaceFree = userService.isPasswordSpaceFree(leadingSpacePassword);
+        assertFalse(leadingSpaceFree, "A password starting with a space should not be space free");
 
-        user.setUsername(username);
-        user.setIsAdmin(false);
-        user.setHashPassword(passwordEncoder.encode("test-password"));
-
-        return user;
-    }
-
-    /**
-     * Builds signup input with the given values.
-     *
-     * @param username the username for the new account
-     * @param password the password for the new account
-     * @param confirmPassword the password confirmation
-     * @return new signup input
-     */
-    private SignupInput createSignupInput(String username, String password, String confirmPassword) {
-        return new SignupInput(username, password, confirmPassword);
-    }
-
-    /**
-     * Builds password change input with the given new password and confirmation.
-     *
-     * @param password the new password
-     * @param confirmPassword the new password confirmation
-     * @return new password change input
-     */
-    private PasswordChangeInput createPasswordChangeInput(String password, String confirmPassword) {
-        return new PasswordChangeInput(password, confirmPassword);
+        boolean trailingSpaceFree = userService.isPasswordSpaceFree(trailingSpacePassword);
+        assertFalse(trailingSpaceFree, "A password ending with a space should not be space free");
     }
 }
