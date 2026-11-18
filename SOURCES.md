@@ -53,6 +53,10 @@ I used [Claude](https://claude.ai/) by Anthropic to write comments and Javadoc f
 
 Claude wrote `CatchServiceTest` and `UserServiceTest`. They follow the style and level of testing I used across the rest of the project's service tests. That means happy and crappy paths for every service method.
 
+### Default Data Scripts
+
+Claude built `hookset_flies_with_slugs.sql` and `fish-waterbody-importer.sql`. For the flies, it gathered the patterns, colors, and size ranges from the Big Y Fly Co and Montana Fly Goods product pages cited in the script. For the water bodies and fish, it gathered the rivers, descriptions, and species from the Fly Guys N Lies pages and the other sources cited in the script. It wrote the INSERT statements for both.
+
 ### Images
 
 [ChatGPT](https://chatgpt.com/) by OpenAI generated the Hookset logo and all of the fish, water body, and fly images in Hookset.
