@@ -17,6 +17,11 @@ use hookset;
 -- Their sources are other pages, cited above each one's fish links.
 -- ============================================================
 
+-- Built by Claude (https://claude.ai/) by Anthropic. Claude gathered the
+-- water bodies, descriptions, and fish species from the pages cited in this
+-- script and wrote the INSERT statements for the WaterBody, Fish, and
+-- FishWaterBody tables.
+
 -- ============================================================
 -- WATER BODIES
 -- ============================================================

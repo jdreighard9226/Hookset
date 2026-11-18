@@ -5,6 +5,11 @@ USE hookset;
 -- Each fly type uses one entities emblem image (dry.png, nymph.png, streamer.png).
 -- Inserts only: does not drop tables or delete existing rows.
 --
+
+-- Built by Claude (https://claude.ai/) by Anthropic. Claude gathered the
+-- patterns, colors, and size ranges from the retailer pages cited below and
+-- wrote the INSERT statements for this script.
+
 -- Source of truth: every pattern, color, and size range below comes from a
 -- retailer product page, cited in the comment above each group. Checked 2026-11-05.
 --   Big Y Fly Co, Best Trout Flies collection:
