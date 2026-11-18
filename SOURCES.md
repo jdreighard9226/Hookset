@@ -1,14 +1,14 @@
 # Sources Used
 
-This file lists the libraries Hookset uses, the AI tools I used, and where its images and data came from.
+This file lists the libraries and frameworks Hookset uses, the AI tools I used, and where its images and data came from.
 
-## Libraries
+## Libraries and Frameworks
 
 ### Back End
 
 Hookset is built with Gradle 9.7.1 on Spring Boot 4.1.1. The Spring Boot starters don't list their own versions in `build.gradle`. Spring Boot's dependency management picks them.
 
-| Library | What Hookset uses it for |
+| Library or Framework | What Hookset uses it for |
 |---|---|
 | [Spring Boot](https://spring.io/projects/spring-boot) | Runs the app and sets up everything below. |
 | [Spring Web MVC](https://docs.spring.io/spring-framework/reference/web/webmvc.html) | Controllers and page routing. |
@@ -24,7 +24,7 @@ Hookset is built with Gradle 9.7.1 on Spring Boot 4.1.1. The Spring Boot starter
 
 ### Testing
 
-| Library | What Hookset uses it for |
+| Library or Framework | What Hookset uses it for |
 |---|---|
 | [Spring Boot Test](https://docs.spring.io/spring-boot/reference/testing/index.html) | Starting the app for the service tests. |
 | [JUnit 5](https://junit.org/) | Writing and running the tests. |
@@ -34,14 +34,14 @@ Hookset is built with Gradle 9.7.1 on Spring Boot 4.1.1. The Spring Boot starter
 
 These are loaded from a CDN in the page templates.
 
-| Library | Version | What Hookset uses it for |
+| Library or Framework | Version | What Hookset uses it for |
 |---|---|---|
 | [Bootstrap](https://getbootstrap.com/) | 5.3.8 | Page layout and styling. |
 | [jQuery](https://jquery.com/) | 3.7.1 | Required by DataTables 2. Hookset's own scripts don't use it. |
 | [DataTables](https://datatables.net/) | 2.3.7 | Sorting, searching, and paging on the fly and catch lists. |
 | [htmx](https://htmx.org/) | 2.0.4 | Reloading the fish list when a water body is picked on the catch forms. |
 
-I used each library's own documentation extensively throughout the project to understand how it works.
+I used the documentation for each library and framework extensively throughout the project to understand how it works.
 
 ## AI Tools
 
