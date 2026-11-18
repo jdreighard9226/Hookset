@@ -2,6 +2,7 @@ package edu.carroll.cs341.hookset.service.impl;
 
 import edu.carroll.cs341.hookset.jpa.repo.CatchRepository;
 import edu.carroll.cs341.hookset.jpa.repo.FlyRepository;
+import edu.carroll.cs341.hookset.jpa.repo.UserRepository;
 import edu.carroll.cs341.hookset.service.FlyService;
 import edu.carroll.cs341.hookset.service.input.FlyInput;
 import org.slf4j.Logger;
@@ -53,15 +54,21 @@ public class FlyServiceImpl implements FlyService {
     /** The repository used to check whether catches use a fly. */
     private final CatchRepository catchRepository;
 
+    /** The repository used to check that a fly's owner exists before saving it. */
+    private final UserRepository userRepository;
+
     /**
      * Creates the fly service with the repositories it depends on.
      *
      * @param flyRepository the repository used to access fly records
      * @param catchRepository the repository used to check whether catches use a fly
+     * @param userRepository the repository used to check that a fly's owner exists before saving it
      */
-    public FlyServiceImpl(FlyRepository flyRepository, CatchRepository catchRepository) {
+    public FlyServiceImpl(FlyRepository flyRepository, CatchRepository catchRepository,
+                          UserRepository userRepository) {
         this.flyRepository = flyRepository;
         this.catchRepository = catchRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -206,13 +213,19 @@ public class FlyServiceImpl implements FlyService {
      * @param flyInput the details of the new fly
      * @param userId the ID of the user adding the fly
      * @return {@code true} if the fly was saved, otherwise {@code false} if the user ID is null,
-     *         the input fails validation, or the name matches a fly the user can already see
+     *         no user has that ID, the input fails validation, or the name matches a fly the user can already see
      */
     @Override
     public boolean addFly(FlyInput flyInput, Long userId) {
         // a custom fly has to belong to someone, and a null owner would turn it into a default fly
         if (userId == null) {
             log.warn("Fly not saved. User ID is null");
+            return false;
+        }
+
+        // the Fly table's userId is a foreign key, so an owner that doesn't exist would throw on save
+        if (!userRepository.existsById(userId)) {
+            log.warn("Fly not saved. User ID {} does not exist", userId);
             return false;
         }
 
@@ -238,6 +251,49 @@ public class FlyServiceImpl implements FlyService {
 
         // the database assigns the ID during save, so it's only available after this point
         log.info("Saved custom fly ID {} with slug {} for user ID {}", fly.getId(), fly.getSlug(), userId);
+        return true;
+    }
+
+    /**
+     * Saves a new default Hookset fly that every user can see.
+     *
+     * <p>This method was added specifically for testing. Tests can only depend on
+     * services, not repositories, so this gives them a way to create default fly
+     * test data. The app itself does not add default flies yet.</p>
+     *
+     * <p>The input has to pass the same checks as {@link #addFly(FlyInput, Long)}.
+     * The name's slug can't match any existing fly, default or custom, so a new
+     * default fly can never hide a user's custom fly with the same slug.</p>
+     *
+     * @param flyInput the details of the new default fly
+     * @return {@code true} if the fly was saved, otherwise {@code false} if the input fails
+     *         validation or the name matches any existing fly
+     */
+    @Override
+    public boolean addDefaultHooksetFly(FlyInput flyInput) {
+        // runs every check itself so no caller can save a bad fly
+        if (!isFlyInputValid(flyInput)) {
+            log.warn("Default fly not saved. The input failed validation");
+            return false;
+        }
+
+        // built after validation, since generateFlySlug can't handle a null name
+        String newSlug = generateFlySlug(flyInput.name());
+
+        // getFlyFromSlug checks default flies first, so a default fly sharing a custom fly's slug would hide it
+        if (flyRepository.existsBySlug(newSlug)) {
+            log.warn("Default fly not saved. A fly with slug {} already exists", newSlug);
+            return false;
+        }
+
+        // a null owner is what makes this a default fly
+        Fly fly = toFly(flyInput, null);
+
+        log.info("Saving default fly {}", fly.getName());
+
+        flyRepository.save(fly);
+
+        log.info("Saved default fly ID {} with slug {}", fly.getId(), fly.getSlug());
         return true;
     }
 

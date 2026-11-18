@@ -63,4 +63,12 @@ public interface FlyRepository extends JpaRepository<Fly, Long> {
      * @return the matching default fly, or {@code null} if none exists
      */
     Fly findBySlugAndUserIdIsNull(String slug);
+
+    /**
+     * Checks whether any fly, default or custom, already uses a slug.
+     *
+     * @param slug the slug to match
+     * @return {@code true} if any fly has that slug, otherwise {@code false}
+     */
+    boolean existsBySlug(String slug);
 }

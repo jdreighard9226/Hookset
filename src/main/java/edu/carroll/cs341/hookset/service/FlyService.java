@@ -77,9 +77,26 @@ public interface FlyService {
      * @param flyInput the details of the new fly
      * @param userId the ID of the user adding the fly
      * @return {@code true} if the fly was saved, otherwise {@code false} if the user ID is null,
-     *         the input fails validation, or the name matches a fly the user can already see
+     *         no user has that ID, the input fails validation, or the name matches a fly the user can already see
      */
     boolean addFly(FlyInput flyInput, Long userId);
+
+    /**
+     * Saves a new default Hookset fly that every user can see.
+     *
+     * <p>This method was added specifically for testing. Tests can only depend on
+     * services, not repositories, so this gives them a way to create default fly
+     * test data. The app itself does not add default flies yet.</p>
+     *
+     * <p>The input has to pass the same checks as {@link #addFly(FlyInput, Long)}.
+     * The name's slug can't match any existing fly, default or custom, so a new
+     * default fly can never hide a user's custom fly with the same slug.</p>
+     *
+     * @param flyInput the details of the new default fly
+     * @return {@code true} if the fly was saved, otherwise {@code false} if the input fails
+     *         validation or the name matches any existing fly
+     */
+    boolean addDefaultHooksetFly(FlyInput flyInput);
 
     /**
      * Updates a custom fly owned by a user.
