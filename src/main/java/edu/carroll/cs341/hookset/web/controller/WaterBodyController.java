@@ -62,13 +62,18 @@ public class WaterBodyController {
     /**
      * Handles GET requests to the water body list page.
      *
-     * @param user the logged-in user, used only to log who loaded the page
+     * @param user the logged-in user, or {@code null} for an anonymous visitor, used only for logging
      * @param model the model used to pass the water bodies to the view
      * @return the name of the water body list view to render
      */
     @GetMapping
     public String index(@AuthenticationPrincipal HooksetUserDetails user, Model model) {
-        log.info("User ID {} loading the water bodies page", user.getId());
+        // user is null for anonymous visitors, so calling getId() without this check would crash
+        if (user != null) {
+            log.info("User ID {} loading the water bodies page", user.getId());
+        } else {
+            log.info("Anonymous visitor loading the water bodies page");
+        }
 
         // every water body in the database, since this page lists them all
         List<WaterBody> waterBodyEntities = waterBodyService.getAllWaterBodies();
@@ -83,7 +88,11 @@ public class WaterBodyController {
         // each water body's slug is used by the view to build its link to the details page
         model.addAttribute("waterBodies", waterBodies);
 
-        log.info("Showing {} water bodies to user ID {}", waterBodies.size(), user.getId());
+        if (user != null) {
+            log.info("Showing {} water bodies to user ID {}", waterBodies.size(), user.getId());
+        } else {
+            log.info("Showing {} water bodies to an anonymous visitor", waterBodies.size());
+        }
 
         return "waterbodies/index";
     }
@@ -92,7 +101,7 @@ public class WaterBodyController {
      * Handles GET requests to a water body's details page.
      *
      * @param slug the slug of the water body taken from the URL
-     * @param user the logged-in user, used only to log who loaded the page
+     * @param user the logged-in user, or {@code null} for an anonymous visitor, used only for logging
      * @param model the model used to pass the water body and its fish species to the view
      * @return the name of the water body details view, or a redirect to the list if no water body matches
      */
@@ -100,15 +109,25 @@ public class WaterBodyController {
     public String getDetails(@PathVariable String slug,
                              @AuthenticationPrincipal HooksetUserDetails user,
                              Model model) {
-        log.info("User ID {} loading the details page for water body slug: {}", user.getId(), slug);
+        // user is null for anonymous visitors, so calling getId() without this check would crash
+        if (user != null) {
+            log.info("User ID {} loading the details page for water body slug: {}", user.getId(), slug);
+        } else {
+            log.info("Anonymous visitor loading the details page for water body slug: {}", slug);
+        }
 
         // the service lowercases the slug, so a URL typed in the wrong case still finds the water body
         WaterBody waterBodyEntity = waterBodyService.getWaterBodyFromSlug(slug);
 
         // a mistyped or old URL would otherwise crash the mapper on null
         if (waterBodyEntity == null) {
-            log.warn("User ID {} requested details for water body slug {}, which does not exist. Redirecting to the water bodies page",
-                    user.getId(), slug);
+            if (user != null) {
+                log.warn("User ID {} requested details for water body slug {}, which does not exist. Redirecting to the water bodies page",
+                        user.getId(), slug);
+            } else {
+                log.warn("Anonymous visitor requested details for water body slug {}, which does not exist. Redirecting to the water bodies page",
+                        slug);
+            }
             return "redirect:/waterbodies";
         }
 
@@ -126,8 +145,13 @@ public class WaterBodyController {
         model.addAttribute("waterBody", waterBody);
         model.addAttribute("fishes", fishDtos);
 
-        log.info("Showing water body ID {} with {} fish species to user ID {}",
-                waterBodyEntity.getId(), fishDtos.size(), user.getId());
+        if (user != null) {
+            log.info("Showing water body ID {} with {} fish species to user ID {}",
+                    waterBodyEntity.getId(), fishDtos.size(), user.getId());
+        } else {
+            log.info("Showing water body ID {} with {} fish species to an anonymous visitor",
+                    waterBodyEntity.getId(), fishDtos.size());
+        }
 
         return "waterbodies/details";
     }
