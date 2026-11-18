@@ -23,14 +23,6 @@
         </rollingPolicy>
     </appender>
 
-    <!--
-      The logger name is typically the Java/Scala package name.
-      This configures the log level to log at for a package and its children packages.
-    -->
-    <!-- Overwrite level for a internal code - Commented out for now
-    <logger name="edu.carroll.cs341" level="DEBUG"/>
-    -->
-
     <!-- Reduce DB startup chatter -->
     <logger name="org.hibernate" level="INFO" />
     <logger name="com.zaxxer.hikari" level="INFO" />
