@@ -41,6 +41,12 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>Tests run against the H2 test database, which only has the tables and no data,
  * and each test is rolled back by {@link Transactional}. That means the only rows a
  * test sees are the ones saved in setup and in the test itself.</p>
+ *
+ * <p>Sources Used:</p>
+ * <ul>
+ *     <li>Claude (Anthropic) was used to build this test code for CatchService, based on how
+ *     I wrote all my previous tests. All code has been looked through and verified by me.</li>
+ * </ul>
  */
 @SpringBootTest
 @ActiveProfiles("test")
