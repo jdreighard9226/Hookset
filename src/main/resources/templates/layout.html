@@ -34,10 +34,10 @@
                     <!-- Logged out -->
                     <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/login}">Log In</a>
                     <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/signup}">Sign Up</a>
+                    <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/waterbodies}">Water Bodies</a>
+                    <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/fish}">Fish</a>
 
                     <!-- Logged in -->
-                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/waterbodies}">Water Bodies</a>
-                    <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/fish}">Fish</a>
                     <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/flies}">Flies</a>
                     <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/catches}">Catches</a>
                     <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/profile}">Profile</a>

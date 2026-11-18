@@ -73,6 +73,8 @@ public class SecurityConfig {
                                 "/signup",
                                 "/css/**",
                                 "/js/**",
+                                "/fish",
+                                "/waterbodies/**",
                                 "/images/**",
                                 "/favicon.ico",
                                 "/error"
