@@ -31,11 +31,11 @@
             <nav class="navbar navbar-expand-lg navbar-dark">
                 <div class="navbar-nav mx-auto">
                     <a class="nav-link" th:href="@{/}">Home</a>
+                    <a class="nav-link" th:href="@{/waterbodies}">Water Bodies</a>
+                    <a class="nav-link" th:href="@{/fish}">Fish</a>
                     <!-- Logged out -->
                     <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/login}">Log In</a>
                     <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/signup}">Sign Up</a>
-                    <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/waterbodies}">Water Bodies</a>
-                    <a class="nav-link" sec:authorize="isAnonymous()" th:href="@{/fish}">Fish</a>
 
                     <!-- Logged in -->
                     <a class="nav-link" sec:authorize="isAuthenticated()" th:href="@{/flies}">Flies</a>
